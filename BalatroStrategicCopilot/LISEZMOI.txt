@@ -16,6 +16,9 @@ Installation (Windows)
   4. Lancer le jeu : un bandeau vert « actif » apparaît en haut de l'écran pendant l'intro
      puis 15 secondes au menu (rouge avec la cause en cas d'erreur).
      Aucun bandeau = le mod n'a pas été trouvé : revoir l'étape 3.
+     Si AUCUN mod ne marche (pas de fenêtre « Lovely », pas de bouton Mods) : Lovely
+     (winmm.dll) n'est plus dans le dossier du jeu, par exemple après une réinstallation
+     du jeu. Le réinstaller (lanceur Balatro Multiplayer, ou docs/INSTALL.md étape 2).
      Les conseils s'affichent en partie. Touche C : panneau, V : détails, B : badges.
 
 Désinstallation

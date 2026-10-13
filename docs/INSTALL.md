@@ -8,18 +8,42 @@
 | Lovely | `lovely-x86_64-pc-windows-msvc.zip` sur la page *Releases* de `ethangreen-dev/lovely-injector` | injecteur utilisé par Steamodded |
 | Steamodded | page *Releases* de `Steamodded/smods` | chargeur de mods |
 
-Si Steamodded est déjà installé et fonctionne (le menu *Mods* apparaît dans Balatro), passez
-directement à l'étape 3.
+Le copilote est un mod Steamodded comme Balatro Multiplayer : **si Multiplayer fonctionne, le
+copilote peut fonctionner** ; si Multiplayer ne marche plus, le problème est en amont (Lovely ou
+Steamodded) et aucun mod ne peut se charger.
 
-## 2. Installer Lovely et Steamodded
+**Test rapide** : en lançant Balatro par Steam, une **deuxième fenêtre noire « Lovely x.x.x »**
+doit s'ouvrir, puis le menu principal doit afficher un bouton **Mods**. Si les deux sont là,
+passez directement à l'étape 3.
 
-1. Dans Steam : clic droit sur Balatro → *Gérer* → *Parcourir les fichiers locaux*.
-2. Copier `winmm.dll` (contenu de l'archive Lovely) dans ce dossier du jeu. Si une ancienne
-   version de Lovely a laissé un `version.dll`, le supprimer.
-3. Ouvrir `%AppData%\Balatro\` (touche Windows + R, taper `%AppData%\Balatro`). Créer le
-   dossier `Mods` s'il n'existe pas (ou lancer le jeu une fois avec Lovely : il le crée).
-4. Extraire Steamodded dans `%AppData%\Balatro\Mods\` (un dossier, par exemple `smods`).
-5. Lancer Balatro : le menu principal doit afficher un bouton *Mods*.
+## 2. Installer (ou réinstaller) Lovely et Steamodded
+
+Deux façons, au choix :
+
+**A. Le lanceur de Balatro Multiplayer** (méthode recommandée par Multiplayer) : télécharger le
+*Balatro Multiplayer Launcher* (Windows) depuis balatromp.com, le lancer et suivre ses
+instructions ; il installe Lovely, Steamodded et Multiplayer. Puis passer à l'étape 3.
+
+**B. À la main** (guide officiel de Steamodded, docs.smods.dev, que Multiplayer cite pour
+l'installation manuelle) :
+1. Dans Steam : clic droit sur Balatro → *Gérer* → *Parcourir les fichiers locaux*. C'est le
+   **dossier du jeu** (celui de `Balatro.exe`). Si l'antivirus supprime `winmm.dll`, ajouter une
+   exclusion pour ce dossier.
+2. Télécharger `lovely-x86_64-pc-windows-msvc.zip` (page *Releases* de
+   `ethangreen-dev/lovely-injector`) et copier le `winmm.dll` qu'il contient **dans le dossier du
+   jeu**. Si un ancien `version.dll` (Lovely ≤ 0.9.0) s'y trouve, le supprimer.
+3. Lancer Balatro par Steam : la fenêtre « Lovely x.x.x » doit apparaître. Sinon `winmm.dll`
+   n'est pas à côté de `Balatro.exe`.
+4. Télécharger Steamodded (*Source code (zip)* de la dernière version, release.smods.dev),
+   l'extraire et placer **le** dossier qu'il contient dans `%AppData%\Balatro\Mods\`
+   (résultat `Mods\smods\<fichiers>`, pas `Mods\smods\smods\`).
+5. Relancer : le menu principal affiche un bouton *Mods*.
+
+**Le dossier du jeu et le dossier `Mods` sont deux endroits différents.** `Mods` est dans
+`%AppData%\Balatro\` et ne bouge pas quand on réinstalle le jeu ; `winmm.dll` est dans le dossier
+du jeu et **disparaît si le jeu est réinstallé ou déplacé sur un autre disque**. Dans ce cas les
+mods sont toujours là mais plus aucun ne se charge : refaire l'étape 2 (A ou B) pour le nouveau
+dossier du jeu.
 
 ## 3. Installer Balatro Strategic Copilot
 

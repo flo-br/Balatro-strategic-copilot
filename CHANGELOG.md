@@ -11,6 +11,9 @@
   les pièges vérifiés et une commande PowerShell pour localiser les copies du mod.
 * **Bandeau de démarrage** : le compte à rebours (15 s) ne commence qu'après l'intro du jeu, pour
   qu'il soit encore visible au menu principal.
+* Installation de Lovely/Steamodded alignée sur le guide officiel de Steamodded et sur le lanceur
+  de Balatro Multiplayer ; diagnostic « aucun mod ne marche » (Lovely absent du dossier du jeu
+  après une réinstallation ou un déplacement du jeu).
 
 ### Ajouté
 * `tools/smods_loader_check.lua` : exécute le vrai chargeur d'un Steamodded ancien sur un dossier

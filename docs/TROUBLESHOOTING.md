@@ -9,8 +9,10 @@ au menu principal (1.0.2+) :
   (résumé en haut à droite, `C` pour le panneau complet) ;
 * **rouge « erreur au démarrage »** : le message indique la cause ; le détail complet est dans le
   journal de Lovely ;
-* **aucun bandeau** : le mod n'est pas chargé du tout par Steamodded. Presque toujours un
-  problème d'emplacement : `.zip` déposé sans être extrait, dossier rangé trop profond, ou dépôt
+* **aucun bandeau** : le mod n'est pas chargé du tout. D'abord vérifier que **les mods en
+  général** se chargent : fenêtre « Lovely x.x.x » au lancement et bouton *Mods* au menu. Sans
+  eux, c'est Lovely ou Steamodded qui manque (souvent après une réinstallation du jeu) : voir
+  INSTALL.md, étape 2. Avec eux, c'est presque toujours un problème d'emplacement du copilote : `.zip` déposé sans être extrait, dossier rangé trop profond, ou dépôt
   GitHub extrait deux fois (voir « Pièges vérifiés » dans [INSTALL.md](INSTALL.md)). Vérifier :
   ```
   Get-ChildItem "$env:APPDATA\Balatro\Mods" -Recurse -Filter BalatroStrategicCopilot.json | Select-Object -ExpandProperty FullName
@@ -26,6 +28,8 @@ le mod a démarré. Le journal propre au mod est `%AppData%\Balatro\BSC\logs\bsc
 
 | Symptôme | Cause probable | Solution |
 |---|---|---|
+| **Aucun mod ne marche** (Multiplayer non plus), pas de fenêtre « Lovely », pas de bouton *Mods* | Lovely absent du dossier du jeu : jeu réinstallé ou déplacé sur un autre disque (le dossier `Mods` reste, `winmm.dll` disparaît), ou `winmm.dll` supprimé par l'antivirus | réinstaller Lovely dans le **nouveau** dossier du jeu : relancer le lanceur Balatro Multiplayer, ou copier `winmm.dll` à côté de `Balatro.exe` (INSTALL.md, étape 2) |
+| Fenêtre « Lovely » présente mais pas de bouton *Mods* | Steamodded mal placé | `Mods` doit être dans `%AppData%\Balatro\` (pas dans le dossier du jeu), avec `Mods\smods\<fichiers>` |
 | Aucun bandeau, archive `BalatroStrategicCopilot-*.zip` dans `Mods` | Steamodded ancien (ex. `1.0.0~BETA-0509c`) : il ignore les `.zip` (vérifié avec son chargeur) | extraire l'archive et ne garder que le dossier `BalatroStrategicCopilot` ; supprimer le `.zip` |
 | Aucun bandeau, le `.json` est 3 dossiers sous `Mods` (ex. `Mods\X\X\BalatroStrategicCopilot\`) | Steamodded ne cherche les mods qu'à 2 niveaux sous `Mods` | déplacer le dossier `BalatroStrategicCopilot` directement dans `Mods` |
 | Aucun bandeau, mod absent de *Mods* | dossier mal placé ou dossier en double | `%AppData%\Balatro\Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json` doit exister, **une seule copie** du mod dans `Mods` (les anciens Steamodded refusent les doublons : erreur `dupe`) |
