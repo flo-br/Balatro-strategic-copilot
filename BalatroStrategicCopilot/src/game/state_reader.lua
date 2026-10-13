@@ -383,6 +383,9 @@ function SR.snapshot(opts)
         s.deck = deck
         s.deck_count = #deck
         local full = read_area({ cards = G.playing_cards }, SR.read_playing_card, { reveal = true })
+        for _, c in ipairs(full) do c.face_down = nil; c.highlighted = nil; c.forced = nil end
+        table.sort(full, deck_sort)
+        s.full_deck = full
         s.full_deck_stats = SR.deck_stats(full, U.num(G.GAME.starting_deck_size, 52))
     end)
 
@@ -398,6 +401,33 @@ function SR.snapshot(opts)
             s.pack = { cards = read_area(G.pack_cards, SR.read_item, 'pack'),
                 choices_left = U.num(G.GAME.pack_choices, 1) }
         end
+    end)
+
+    -- joker pool as the game builds it (unlocked, enhancement gates, pool flags, bans)
+    section('pool', function()
+        if s.phase ~= 'shop' then return end
+        local centers = get(function() return G.P_CENTER_POOLS.Joker end, nil)
+        if type(centers) ~= 'table' then return end
+        local flags = G.GAME.pool_flags or {}
+        local banned = G.GAME.banned_keys or {}
+        local enh_present = {}
+        for _, c in ipairs(s.full_deck or {}) do if c.enh then enh_present[c.enh] = true end end
+        local pool = {}
+        for _, center in ipairs(centers) do
+            if type(center) == 'table' and center.key then
+                local avail = (center.unlocked ~= false) and not banned[center.key]
+                if center.enhancement_gate then avail = avail and enh_present[center.enhancement_gate] == true end
+                if center.yes_pool_flag then avail = avail and flags[center.yes_pool_flag] and true or false end
+                if center.no_pool_flag and flags[center.no_pool_flag] then avail = false end
+                pool[#pool + 1] = { key = center.key, rarity = center.rarity, available = avail and true or false }
+            end
+        end
+        s.joker_pool = pool
+    end)
+
+    section('tags', function()
+        local tags = get(function() return G.GAME.round_resets.blind_tags end, nil)
+        if type(tags) == 'table' then s.blind_tags = { Small = tags.Small, Big = tags.Big } end
     end)
 
     section('targets', function()

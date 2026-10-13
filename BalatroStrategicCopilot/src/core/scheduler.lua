@@ -22,9 +22,12 @@ function S.set_util(u) U = u end
 
 -- Submit (or replace) a named task. fn(task) runs in a coroutine; it should call
 -- task:check() regularly. on_done(result, err) is called on completion.
-function S:submit(name, fn, on_done)
+function S:submit(name, fn, on_done, on_progress)
     self:cancel(name)
     local task = { name = name, on_done = on_done, sched = self, cancelled = false, steps = 0 }
+    function task.publish(partial)
+        if on_progress and not task.cancelled then on_progress(partial) end
+    end
     function task.check()
         if task.cancelled then error({ cancelled = true }) end
         if self.deadline and self.clock() >= self.deadline then

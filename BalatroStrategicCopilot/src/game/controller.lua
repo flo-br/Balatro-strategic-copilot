@@ -20,6 +20,7 @@ Ctl.analyzers = {}       -- phase -> function(state, task, cfg) -> result
 Ctl.formatters = {}      -- phase -> function(state, result, detail) -> lines
 Ctl.badgers = {}         -- phase -> function(result) -> { [uid] = badge }
 Ctl.results = {}         -- phase -> result
+Ctl.partial = {}         -- phase -> true while the result is still being refined
 Ctl.state = nil          -- last stable snapshot
 Ctl.version = 0
 Ctl.events = {}          -- queue of observed game events
@@ -154,8 +155,14 @@ function Ctl.refresh(force)
             end
             if version == Ctl.version then
                 Ctl.results[phase] = res
+                Ctl.partial[phase] = nil
                 Ctl.failures[phase] = 0
                 emit('analysis', { phase = phase, result = res, state = s })
+            end
+        end, function(partial)
+            if version == Ctl.version then
+                Ctl.results[phase] = partial
+                Ctl.partial[phase] = true
             end
         end)
     end
