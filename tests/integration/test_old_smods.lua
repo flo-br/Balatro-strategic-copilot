@@ -35,6 +35,33 @@ function S.status_banner_and_mode(T)
     FG.uninstall()
 end
 
+-- The banner must still be visible when the main menu appears after the splash screen.
+function S.banner_countdown_starts_after_splash(T)
+    local FG = dofile(T.REPO_ROOT .. '/tests/integration/fake_game.lua')
+    FG.install({ mod_root = T.MOD_ROOT, state = 13 })
+    local clock = 100
+    love.timer.getTime = function() return clock end
+    BSCopilot = nil
+    dofile(T.MOD_ROOT .. '/main.lua')
+    local function shown()
+        FG.calls.draw = {}
+        Game.draw(G)
+        for _, c in ipairs(FG.calls.draw) do if c:find('actif') then return true end end
+        return false
+    end
+    T.eq(G.STATE, G.STATES.SPLASH)
+    T.ok(shown(), 'visible during the splash')
+    clock = clock + 40
+    T.ok(shown(), 'still visible after a long splash')
+    G.STATE = G.STATES.MENU
+    T.ok(shown(), 'visible when the main menu appears')
+    clock = clock + 14
+    T.ok(shown(), 'visible during the countdown')
+    clock = clock + 2
+    T.ok(not shown(), 'hidden after the countdown')
+    FG.uninstall()
+end
+
 function S.startup_error_is_visible(T)
     local FG = dofile(T.REPO_ROOT .. '/tests/integration/fake_game.lua')
     FG.install({ mod_root = T.MOD_ROOT })

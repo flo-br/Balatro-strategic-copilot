@@ -29,10 +29,10 @@ Aucune dépendance de test : `tests/testlib.lua` fournit assertions, exécution 
 | `integration/test_mod_load` | 8 | `main.lua` réellement chargé via un faux Steamodded : accroches, touches, onglet de config, **première recommandation réelle**, rendu, sélection notée exactement, `calculate` renvoie toujours `nil`, robustesse à un état cassé, **aucune action de jeu appelée** (fonctions piégées), rafraîchissement du panneau |
 | `integration/test_state_reader` | 6 | lecture complète, **ordre du deck non divulgué**, cartes face cachée masquées, améliorations/éditions/sceaux, jokers et boutique, erreurs confinées par section |
 | `integration/test_compat` | 5 | mods détectés, nombres Talisman, contrôle croisé avec le jeu, dégradation des scores « exacts », multiplicateur appris |
-| `integration/test_old_smods` | 5 | Steamodded sans événements de mod (1.0.0~BETA-0509c) : mode de repli, main/défausse/achat/vente/relance reconstruits, bandeau actif, **bandeau d'erreur au démarrage**, retour au mode natif sans double comptage |
+| `integration/test_old_smods` | 6 | Steamodded sans événements de mod (1.0.0~BETA-0509c) : mode de repli, main/défausse/achat/vente/relance reconstruits, bandeau actif, **bandeau encore visible au menu après l'intro**, **bandeau d'erreur au démarrage**, retour au mode natif sans double comptage |
 | `integration/test_full_flow` | 2 | partie complète (main → défaite → bilan → fichiers → **redémarrage avec profil conservé**), boutique de bout en bout avec badges |
 | `unit/test_performance` | 6 | mesures (ci-dessous) |
-| **Total** | **174** | |
+| **Total** | **175** | |
 
 ### Tests de référence (scores)
 
@@ -69,9 +69,9 @@ prédiction (journal + diagnostic de compatibilité).
 
 | Environnement | Résultat |
 |---|---|
-| LuaJIT 2.1.1703358377 | **174 réussis, 0 échec** |
-| Lua 5.1.5 | **174 réussis, 0 échec** |
-| Paquet `dist/BalatroStrategicCopilot-1.0.1.zip` extrait, puis tests d'intégration sur cette copie | 9 réussis, 0 échec (paquet complet) |
+| LuaJIT 2.1.1703358377 | **175 réussis, 0 échec** |
+| Lua 5.1.5 | **175 réussis, 0 échec** |
+| Paquet `dist/BalatroStrategicCopilot-1.0.2.zip` extrait, puis tests d'intégration sur cette copie | voir ci-dessous |
 
 ### Performances mesurées (LuaJIT, conteneur Linux, plusieurs exécutions)
 
@@ -83,6 +83,28 @@ prédiction (journal + diagnostic de compatibilité).
 | Analyse de boutique complète | 630–810 ms de CPU |
 | Plus longue tranche de calcul par image (budget 4 ms) | 6–10 ms |
 | Sauvegarde du profil (2 000 observations) | ≈ 4 ms |
+
+### Vrai chargeur de Steamodded (`tools/smods_loader_check.lua`)
+
+Exécute **le code réel** de `loadMods()` de Steamodded `1.0.0~BETA-0509c` (sources non incluses
+dans le projet, licence GPL-3.0) sur un dossier `Mods`, le jeu étant simulé par
+`tests/integration/fake_game.lua`. Résultats (2026-10-13), paquet 1.0.2 :
+
+| Disposition dans `Mods` | Trouvé | Bandeau |
+|---|---|---|
+| `BalatroStrategicCopilot\` (archive extraite) | oui | « 1.0.2 actif » |
+| `BalatroStrategicCopilot-1.0.2.zip` déposé tel quel | **non** | aucun |
+| dépôt GitHub entier `balatro-strategic-copilot-…\` | oui | « 1.0.2 actif » |
+| dépôt GitHub extrait deux fois `X\X\BalatroStrategicCopilot\` | **non** | aucun |
+| `BalatroStrategicCopilot-1.0.2\BalatroStrategicCopilot\` (« Extraire tout ») | oui | « 1.0.2 actif » |
+| dépôt entier renommé `BalatroStrategicCopilot\BalatroStrategicCopilot\` | oui | « 1.0.2 actif » |
+| dossier du mod + dépôt entier (doublon) | oui (1 copie, l'autre rejetée `dupe`) | « 1.0.2 actif » |
+| `BalatroStrategicCopilot\BalatroStrategicCopilot-1.0.2\BalatroStrategicCopilot\` | **non** | aucun |
+
+Cause des « non » dans le code de Steamodded : les fichiers `.json` ne sont cherchés qu'à 1 ou 2
+dossiers sous `Mods` (`depth > 3` arrête l'exploration) et une archive `.zip` n'est ni un dossier ni
+un `.json` (seul le chargeur récent, `src/preflight/loader.lua`, monte les zips). La documentation
+1.0.0/1.0.1 affirmait à tort qu'un zip déposé tel quel fonctionnait : corrigé en 1.0.2.
 
 ### Runtime LÖVE réel (harnais `tools/love_harness`)
 

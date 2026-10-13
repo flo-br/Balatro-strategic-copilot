@@ -1,5 +1,21 @@
 # Historique des versions
 
+## 1.0.2 — 2026-10-13
+
+### Corrigé
+* **Documentation d'installation erronée** : elle affirmait qu'une archive `.zip` déposée telle
+  quelle dans `Mods` était chargée. C'est faux avec les anciens Steamodded (vérifié en exécutant
+  le vrai chargeur de `1.0.0~BETA-0509c`) : le mod est alors **ignoré sans aucun message**. Il en
+  va de même si le dossier est rangé trop profond (par exemple dépôt GitHub extrait deux fois).
+  INSTALL.md, LISEZMOI.txt, README et TROUBLESHOOTING.md indiquent désormais l'emplacement exact,
+  les pièges vérifiés et une commande PowerShell pour localiser les copies du mod.
+* **Bandeau de démarrage** : le compte à rebours (15 s) ne commence qu'après l'intro du jeu, pour
+  qu'il soit encore visible au menu principal.
+
+### Ajouté
+* `tools/smods_loader_check.lua` : exécute le vrai chargeur d'un Steamodded ancien sur un dossier
+  `Mods` pour vérifier qu'il trouve et démarre le copilote (8 dispositions vérifiées, TESTS.md).
+
 ## 1.0.1 — 2026-10-13
 
 ### Corrigé / ajouté

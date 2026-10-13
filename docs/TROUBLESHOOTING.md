@@ -2,13 +2,21 @@
 
 ## Premier réflexe : le bandeau de démarrage (version 1.0.1+)
 
-Au lancement du jeu, un bandeau s'affiche en haut de l'écran pendant 10 secondes :
+Au lancement du jeu, un bandeau s'affiche en haut de l'écran pendant l'intro, puis 15 secondes
+au menu principal (1.0.2+) :
 * **vert « … actif — touche C : panneau »** : le mod fonctionne. Au menu principal il n'affiche
   rien d'autre (sauf l'historique avec `C`) ; les conseils apparaissent **pendant une partie**
   (résumé en haut à droite, `C` pour le panneau complet) ;
 * **rouge « erreur au démarrage »** : le message indique la cause ; le détail complet est dans le
   journal de Lovely ;
-* **aucun bandeau** : le mod n'est pas chargé du tout par Steamodded (voir ci-dessous).
+* **aucun bandeau** : le mod n'est pas chargé du tout par Steamodded. Presque toujours un
+  problème d'emplacement : `.zip` déposé sans être extrait, dossier rangé trop profond, ou dépôt
+  GitHub extrait deux fois (voir « Pièges vérifiés » dans [INSTALL.md](INSTALL.md)). Vérifier :
+  ```
+  Get-ChildItem "$env:APPDATA\Balatro\Mods" -Recurse -Filter BalatroStrategicCopilot.json | Select-Object -ExpandProperty FullName
+  ```
+  (PowerShell) doit afficher exactement
+  `…\AppData\Roaming\Balatro\Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json`, une seule fois.
 
 ## Trouver le journal
 
@@ -18,6 +26,8 @@ le mod a démarré. Le journal propre au mod est `%AppData%\Balatro\BSC\logs\bsc
 
 | Symptôme | Cause probable | Solution |
 |---|---|---|
+| Aucun bandeau, archive `BalatroStrategicCopilot-*.zip` dans `Mods` | Steamodded ancien (ex. `1.0.0~BETA-0509c`) : il ignore les `.zip` (vérifié avec son chargeur) | extraire l'archive et ne garder que le dossier `BalatroStrategicCopilot` ; supprimer le `.zip` |
+| Aucun bandeau, le `.json` est 3 dossiers sous `Mods` (ex. `Mods\X\X\BalatroStrategicCopilot\`) | Steamodded ne cherche les mods qu'à 2 niveaux sous `Mods` | déplacer le dossier `BalatroStrategicCopilot` directement dans `Mods` |
 | Aucun bandeau, mod absent de *Mods* | dossier mal placé ou dossier en double | `%AppData%\Balatro\Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json` doit exister, **une seule copie** du mod dans `Mods` (les anciens Steamodded refusent les doublons : erreur `dupe`) |
 | Mod présent dans *Mods* mais désactivé | interrupteur du mod sur « off » | l'activer dans *Mods*, puis redémarrer |
 | Bandeau « détection par état (Steamodded ancien) » | Steamodded antérieur au support des événements de mod | normal : tout fonctionne ; mettre Steamodded à jour reste conseillé si vos autres mods le permettent |

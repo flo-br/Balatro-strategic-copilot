@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Build the installable package: dist/BalatroStrategicCopilot-<version>.zip
 
-The archive contains a single folder, BalatroStrategicCopilot/, to copy into
-%AppData%/Balatro/Mods/ (Steamodded can also load the zip directly).
+The archive contains a single folder, BalatroStrategicCopilot/, to extract into
+%AppData%/Balatro/Mods/. Old Steamodded versions (1.0.0~BETA-0509c, checked with
+tools/smods_loader_check.lua) ignore a zip dropped as is: it must be extracted.
 Only the mod files are packaged (no tests, no tools, no development files).
 """
 import json

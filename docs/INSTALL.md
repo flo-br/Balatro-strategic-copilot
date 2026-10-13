@@ -23,13 +23,22 @@ directement à l'étape 3.
 
 ## 3. Installer Balatro Strategic Copilot
 
-Option A — dossier :
-1. Copier le dossier `BalatroStrategicCopilot` (celui qui contient `BalatroStrategicCopilot.json`
-   et `main.lua`) dans `%AppData%\Balatro\Mods\`.
-2. Arborescence attendue :
+**Seul le dossier `BalatroStrategicCopilot` va dans `Mods`** (celui qui contient directement
+`BalatroStrategicCopilot.json` et `main.lua`). Le reste du dépôt GitHub (`docs`, `tests`,
+`tools`, `README.md`…) ne sert pas au jeu.
+
+1. Fermer le jeu.
+2. Supprimer toute ancienne copie du mod dans `%AppData%\Balatro\Mods\` (dossier ou `.zip`).
+3. Ouvrir l'archive `BalatroStrategicCopilot-1.0.2.zip` (ou le zip téléchargé depuis GitHub) et
+   **glisser le dossier `BalatroStrategicCopilot` qu'elle contient** dans `%AppData%\Balatro\Mods\`.
+4. Vérifier que ce fichier existe **exactement** à cet endroit :
+   ```
+   %AppData%\Balatro\Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json
+   ```
+   Arborescence attendue :
    ```
    %AppData%\Balatro\Mods\
-     smods\                         (Steamodded)
+     smods-main\                   (Steamodded, le nom peut varier)
      BalatroStrategicCopilot\
        BalatroStrategicCopilot.json
        main.lua
@@ -37,13 +46,33 @@ Option A — dossier :
        LISEZMOI.txt
        src\core\ src\engine\ src\game\ src\io\ src\learning\ src\model\ src\ui\
    ```
+5. Lancer le jeu : un bandeau vert « Balatro Strategic Copilot 1.0.2 actif » s'affiche en haut de
+   l'écran pendant l'intro puis 15 secondes au menu principal. Dans *Mods*, « Balatro Strategic
+   Copilot » apparaît. En partie, le résumé compact s'affiche en haut à droite ; `C` ouvre le
+   panneau complet.
 
-Option B — archive : copier `BalatroStrategicCopilot-1.0.1.zip` tel quel dans
-`%AppData%\Balatro\Mods\` (Steamodded sait charger un mod zippé) ou l'extraire à cet endroit.
-L'archive se construit avec `python tools/build.py` (dossier `dist/`).
+### Pièges vérifiés sur le chargeur de Steamodded
 
-Lancer le jeu. Dans *Mods*, « Balatro Strategic Copilot » doit apparaître sans avertissement.
-En partie, le résumé compact s'affiche en haut à droite ; `C` ouvre le panneau complet.
+Vérifié en exécutant le vrai chargeur de Steamodded `1.0.0~BETA-0509c` sur chaque disposition
+(`tools/smods_loader_check.lua`, voir TESTS.md) :
+
+| Disposition dans `Mods` | Résultat |
+|---|---|
+| `Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json` | ✔ chargé (disposition recommandée) |
+| un dossier intermédiaire : `Mods\BalatroStrategicCopilot-1.0.2\BalatroStrategicCopilot\…json` ou dépôt GitHub entier `Mods\balatro-strategic-copilot-…\BalatroStrategicCopilot\…json` | ✔ chargé (toléré) |
+| **deux** dossiers intermédiaires, par exemple après « Extraire tout » de Windows dans un dossier déjà créé : `Mods\X\X\BalatroStrategicCopilot\…json` | ✘ **ignoré sans aucun message** : Steamodded ne cherche pas plus profond |
+| **archive `.zip` déposée telle quelle** dans `Mods` | ✘ **ignorée sans aucun message** avec ce Steamodded (les versions récentes de Steamodded savent monter un zip, pas celle-ci) : il faut l'extraire |
+| deux copies du mod | une seule est chargée, l'autre provoque l'erreur `dupe` (bouton *Mods* signalé) : n'en garder qu'une |
+
+Dans tous les cas « ignoré », **aucun bandeau** n'apparaît : c'est le signe que le mod n'a pas été
+trouvé. Pour voir où se trouvent les copies du mod, coller dans PowerShell :
+```
+Get-ChildItem "$env:APPDATA\Balatro\Mods" -Recurse -Filter BalatroStrategicCopilot.json | Select-Object -ExpandProperty FullName
+Get-ChildItem "$env:APPDATA\Balatro\Mods" -Filter *.zip | Select-Object -ExpandProperty Name
+```
+La première commande doit afficher une seule ligne,
+`C:\Users\<vous>\AppData\Roaming\Balatro\Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json` ;
+la seconde ne doit pas lister d'archive du mod.
 
 ## 4. Où sont les données ?
 
@@ -62,14 +91,15 @@ Ces fichiers sont séparés des sauvegardes de Balatro, qui ne sont jamais modif
 ## 5. Mise à jour
 
 1. Fermer le jeu.
-2. Remplacer le dossier `Mods\BalatroStrategicCopilot` par la nouvelle version.
+2. Supprimer le dossier `Mods\BalatroStrategicCopilot`, puis y glisser celui de la nouvelle
+   version (ne pas l'extraire **dans** l'ancien dossier : dossiers en trop et fichiers mélangés).
 3. Les données `BSC\` sont conservées ; si leur format change, elles sont migrées
    automatiquement après une copie de sécurité dans `BSC\backups\`.
 
 ## 6. Désinstallation
 
 1. Fermer le jeu.
-2. Supprimer `%AppData%\Balatro\Mods\BalatroStrategicCopilot` (ou l'archive zip).
+2. Supprimer `%AppData%\Balatro\Mods\BalatroStrategicCopilot`.
 3. Optionnel : supprimer `%AppData%\Balatro\BSC\` (historique et apprentissage) et
    `%AppData%\Balatro\config\BalatroStrategicCopilot.jkr` (configuration).
 

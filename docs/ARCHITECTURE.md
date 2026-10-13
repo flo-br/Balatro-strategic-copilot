@@ -33,7 +33,8 @@ BalatroStrategicCopilot/              <- dossier à copier dans %AppData%/Balatr
   src/game/      state_reader (GameStateReader), compat (CompatibilityManager), hooks, controller
   src/ui/        format (textes/couleurs, pur), ui_manager (UIManager, rendu LÖVE)
 tests/           suite de tests (LuaJIT / Lua 5.1), simulateur de `G` pour l'intégration
-tools/           script de paquet (zip) et harnais LÖVE (tests de persistance réelle)
+tools/           script de paquet (zip), harnais LÖVE (tests de persistance réelle),
+                 vérification avec le vrai chargeur de Steamodded (smods_loader_check.lua)
 docs/            documentation
 ```
 

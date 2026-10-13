@@ -3,7 +3,7 @@
 
 BSCopilot = BSCopilot or {}
 local BSC = BSCopilot
-BSC.VERSION = '1.0.1'
+BSC.VERSION = '1.0.2'
 BSC.mod = SMODS and SMODS.current_mod or BSC.mod
 BSC.modules = BSC.modules or {}
 
@@ -33,9 +33,16 @@ function BSC.draw_status()
     local st = BSC.status
     if not st or not love or not love.graphics then return end
     local now = (love.timer and love.timer.getTime()) or os.clock()
-    st.t0 = st.t0 or now
-    local age = now - st.t0
-    if st.ok and age > (st.ttl or 10) then return end
+    -- The countdown starts once the splash screen is over (fully visible until then, 60 s at
+    -- most), so that the banner is still there when the main menu appears.
+    st.first = st.first or now
+    if not st.t0 then
+        local G = rawget(_G, 'G')
+        local splash = G and G.STATES and G.STATES.SPLASH ~= nil and G.STATE == G.STATES.SPLASH
+        if not splash or now - st.first > 60 then st.t0 = now end
+    end
+    local age = st.t0 and (now - st.t0) or 0
+    if st.ok and age > (st.ttl or 15) then return end
     local g = love.graphics
     local W, H = g.getDimensions()
     g.push('all')
@@ -53,7 +60,7 @@ function BSC.draw_status()
         w = math.min(w + 24, W - 20)
         local h = #lines * font:getHeight() * 1.2 + 12
         local x = math.floor(W / 2 - w / 2)
-        local alpha = st.ok and math.min(1, ((st.ttl or 10) - age) / 1.5) or 1
+        local alpha = st.ok and math.min(1, ((st.ttl or 15) - age) / 1.5) or 1
         if st.ok then g.setColor(0.10, 0.36, 0.22, 0.92 * alpha) else g.setColor(0.55, 0.10, 0.10, 0.95) end
         g.rectangle('fill', x, 8, w, h, 6, 6)
         g.setColor(1, 1, 1, alpha)
@@ -80,7 +87,7 @@ end)
 if ok then
     local keys = BSC.config and BSC.config.keys or {}
     local events = BSC.events_mode == 'native' and 'événements natifs' or 'détection par état (Steamodded ancien)'
-    BSC.status = { ok = true, ttl = 10, text = 'Balatro Strategic Copilot ' .. BSC.VERSION .. ' actif — touche '
+    BSC.status = { ok = true, ttl = 15, text = 'Balatro Strategic Copilot ' .. BSC.VERSION .. ' actif — touche '
         .. string.upper(keys.panel or 'c') .. ' : panneau  (' .. events .. ')' }
 else
     local msg = tostring(err)

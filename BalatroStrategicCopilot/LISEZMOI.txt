@@ -1,4 +1,4 @@
-Balatro Strategic Copilot 1.0.1
+Balatro Strategic Copilot 1.0.2
 ================================
 
 Copilote stratégique pour Balatro : il analyse, calcule, recommande et apprend.
@@ -6,10 +6,17 @@ Il ne joue JAMAIS à votre place.
 
 Installation (Windows)
   1. Installer Lovely (winmm.dll dans le dossier du jeu) et Steamodded.
-  2. Copier ce dossier "BalatroStrategicCopilot" dans %AppData%\Balatro\Mods\
-  3. Lancer le jeu : un bandeau vert « actif » apparaît en haut de l'écran
-     (rouge avec la cause en cas d'erreur). Les conseils s'affichent en partie.
-     Touche C : panneau, V : détails, B : badges.
+  2. Supprimer toute ancienne copie du mod (dossier ou .zip) dans %AppData%\Balatro\Mods\
+  3. Glisser CE dossier "BalatroStrategicCopilot" (pas le .zip, pas le dépôt GitHub entier)
+     dans %AppData%\Balatro\Mods\
+     Ce fichier doit exister exactement ici :
+       %AppData%\Balatro\Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json
+     Un .zip déposé tel quel, ou un dossier rangé trop profond, est ignoré sans message
+     par les anciennes versions de Steamodded.
+  4. Lancer le jeu : un bandeau vert « actif » apparaît en haut de l'écran pendant l'intro
+     puis 15 secondes au menu (rouge avec la cause en cas d'erreur).
+     Aucun bandeau = le mod n'a pas été trouvé : revoir l'étape 3.
+     Les conseils s'affichent en partie. Touche C : panneau, V : détails, B : badges.
 
 Désinstallation
   - Supprimer le dossier %AppData%\Balatro\Mods\BalatroStrategicCopilot
