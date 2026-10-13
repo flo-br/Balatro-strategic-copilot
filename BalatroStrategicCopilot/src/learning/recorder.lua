@@ -124,6 +124,10 @@ function Rec:on_state(prev, s, results)
             end
             self.pending_hand = nil
             self.dirty = true
+            if ph.entry.actual then
+                local okc, CM = pcall(BSC.require, 'game/compat')
+                if okc and CM then CM.record_score(ph.entry.predicted, ph.entry.actual, ph.entry.exact) end
+            end
         end
     end
 

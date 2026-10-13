@@ -64,6 +64,17 @@ function F.cards_text(cards)
     return table.concat(parts, ' ')
 end
 
+-- Probability text that never hides uncertainty: a simulated 100 % (or 0 %) is shown as
+-- its confidence bound (">= 94 %"), only exact computations may display 100 %.
+function F.prob_text(p, method, lo, hi)
+    if p == nil then return T('not_available') end
+    if method ~= 'exact' and method ~= 'enumeration' then
+        if p >= 1 and lo then return '≥ ' .. I.pct(lo) end
+        if p <= 0 and hi then return '≤ ' .. I.pct(hi) end
+    end
+    return I.pct(p)
+end
+
 function F.method_text(method, n)
     if method == 'monte_carlo' then return T('method_monte_carlo', n or '?') end
     return T('method_' .. tostring(method))
@@ -81,9 +92,14 @@ function F.confidence(method, lo, hi, complete)
     return 'low'
 end
 
+local function trust_exact()
+    local CM = BSC.modules and BSC.modules['game/compat']
+    return not CM or CM.trust_exact()
+end
+
 function F.score_text(play)
     if not play then return T('not_available') end
-    if play.complete == false then return T('score_partial', U.fmt_num(play.mean)) end
+    if play.complete == false or not trust_exact() then return T('score_partial', U.fmt_num(play.mean)) end
     if play.min == play.max then return T('score_exact', U.fmt_num(play.mean)) end
     return T('score_range', U.fmt_num(play.mean), U.fmt_num(play.min), U.fmt_num(play.max))
 end
@@ -124,7 +140,7 @@ function F.hand_panel(state, r, detail)
     if r.round then
         local cls = F.class_prob(r.round.p_clear)
         local conf = F.confidence(r.round.method, r.round.lo, r.round.hi, r.coverage and #r.coverage.unsupported == 0)
-        local ptxt = I.pct(r.round.p_clear)
+        local ptxt = F.prob_text(r.round.p_clear, r.round.method, r.round.lo, r.round.hi)
         if conf == 'low' and r.coverage and #r.coverage.unsupported > 0 then ptxt = '≈ ' .. ptxt end
         lines[#lines + 1] = line(seg(F.mark(cls) .. ' ', cls), seg(T('win_blind', ptxt), cls))
         lines[#lines + 1] = line(seg(T('confidence', T('conf_' .. conf)) .. ' — ' .. F.method_text(r.round.method, r.round.n), 'dim'))
@@ -163,7 +179,7 @@ function F.hand_panel(state, r, detail)
             local c = r.candidates[i]
             local l = line(seg((c.type == 'play' and T('play_label') or T('discard_label')) .. ' ', 'dim'))
             append(l, F.cards_segments(c.cards))
-            l[#l + 1] = seg('  ' .. I.pct(c.p_clear), F.class_prob(c.p_clear))
+            l[#l + 1] = seg('  ' .. F.prob_text(c.p_clear, 'monte_carlo', c.lo, c.hi), F.class_prob(c.p_clear))
             lines[#lines + 1] = l
         end
     elseif detail and r.plays and #r.plays > 1 then

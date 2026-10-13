@@ -60,6 +60,28 @@ function S.overlay_draws_without_touching_game(T)
     FG.uninstall()
 end
 
+function S.panel_refreshes_when_result_completes_in_place(T)
+    local FG = load_fake({ state = 7 })
+    local Ctl = BSCopilot.controller
+    local function text()
+        local m = Ctl.ui_model()
+        local out = {}
+        for _, l in ipairs(m.lines or {}) do for _, sg in ipairs(l) do out[#out + 1] = sg.t end end
+        return table.concat(out, ' ')
+    end
+    local saw_partial = false
+    for _ = 1, 4000 do
+        FG.frames(1, 0.05)
+        if Ctl.partial.blind_select then saw_partial = true; text() end
+        if Ctl.results.blind_select and not Ctl.partial.blind_select then break end
+    end
+    T.ok(saw_partial, 'a partial result was displayed first')
+    local final = text()
+    T.ok(final:find('Victoire blinde'), 'final panel shows the completed result: ' .. final)
+    T.no(final:find('Analyse en cours'), 'no stale "computing" line')
+    FG.uninstall()
+end
+
 function S.selection_is_scored_exactly(T)
     local FG = load_fake()
     local Ctl = BSCopilot.controller

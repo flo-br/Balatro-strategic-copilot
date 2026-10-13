@@ -89,6 +89,17 @@ I.strings = {
         },
         suits = { Spades = 'Pique', Hearts = 'Cœur', Clubs = 'Trèfle', Diamonds = 'Carreau' },
         suit_letters = { Spades = 'P', Hearts = 'C', Clubs = 'T', Diamonds = 'K' },
+        boss_effects = {
+            discard_2_random = 'défausse 2 cartes au hasard à chaque main', most_played_money = 'argent à 0 si vous jouez votre main la plus jouée',
+            first_hand_face_down = 'première main face cachée', big = 'blinde très grande', face_down_1_in_7 = '1 carte sur 7 face cachée',
+            level_down = 'baisse le niveau de la main jouée', debuff_suit = 'une couleur est affaiblie', face_down_after_play = 'cartes face cachée après chaque main',
+            five_cards = 'il faut jouer 5 cartes', no_discards = 'aucune défausse', hand_size_minus = '-1 taille de main',
+            no_repeat_hand = 'pas deux fois le même type de main', one_hand_type = 'un seul type de main autorisé', debuff_face = 'figures affaiblies',
+            draw_3 = 'pioche toujours 3 cartes', debuff_played_ante = 'cartes déjà jouées dans l\'ante affaiblies', hands_1 = 'une seule main',
+            money_per_card = '-1 $ par carte jouée', halve_base = 'jetons et multiplicateur de base divisés par 2', faces_face_down = 'figures face cachée',
+            jokers_hidden = 'jokers retournés et mélangés', debuff_all = 'toutes les cartes affaiblies jusqu\'à la vente d\'un joker',
+            random_joker_disabled = 'un joker désactivé à chaque main', forced_card = 'une carte imposée dans chaque main',
+        },
         ranks = { [11] = 'V', [12] = 'D', [13] = 'R', [14] = 'A' },
     },
     en = {

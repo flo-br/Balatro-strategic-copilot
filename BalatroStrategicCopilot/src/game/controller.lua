@@ -127,6 +127,10 @@ function Ctl.refresh(force)
     Ctl.last_sig = sig
     local prev = Ctl.state
     local s = SR.snapshot()
+    if BSC.learning_runtime and BSC.learning_runtime.unknown_multipliers then
+        local okm, m = pcall(BSC.learning_runtime.unknown_multipliers, s)
+        if okm then s.learned_multipliers = m end
+    end
     Ctl.state = s
     Ctl.version = Ctl.version + 1
     Ctl.selection = nil
@@ -155,6 +159,7 @@ function Ctl.refresh(force)
             end
             if version == Ctl.version then
                 Ctl.results[phase] = res
+                Ctl.result_ver = (Ctl.result_ver or 0) + 1
                 Ctl.partial[phase] = nil
                 Ctl.failures[phase] = 0
                 emit('analysis', { phase = phase, result = res, state = s })
@@ -162,6 +167,7 @@ function Ctl.refresh(force)
         end, function(partial)
             if version == Ctl.version then
                 Ctl.results[phase] = partial
+                Ctl.result_ver = (Ctl.result_ver or 0) + 1
                 Ctl.partial[phase] = true
             end
         end)
@@ -191,6 +197,18 @@ function Ctl.update_selection()
     local held = {}
     for _, c in ipairs(s.hand_cards) do if not set[c] then held[#held + 1] = c end end
     local r = Score.evaluate(s, played, held, { max_branches = 64, samples = 200 })
+    -- cross-check the hand name with the game's own evaluation of the same highlighted cards
+    local G = rawget(_G, 'G')
+    local CM = BSC.require('game/compat')
+    if G and G.hand and G.hand.highlighted then
+        local okc, same, native = pcall(CM.cross_check_hand, G.hand.highlighted, played, Score.prepare(s).rules)
+        if okc and same == false then
+            r.native_hand = native
+            r.hand = native
+            r.exact = false
+            r.complete = false
+        end
+    end
     local remaining = math.max(0, (s.blind and s.blind.chips_required or 0) - (s.blind and s.blind.chips_scored or 0))
     r.p_win = remaining > 0 and r.p_at_least(remaining) or 1
     r.cards = played
@@ -323,8 +341,8 @@ function Ctl.selection_lines()
     local r = Ctl.selection
     if not r then return nil end
     local seg = function(t, c) return { t = t, c = c } end
-    local l = { seg(I.hand_name(r.hand or '?') .. ' : ', 'text'), seg(Fmt.score_text(r), 'chips') }
-    if r.debuffed_hand then l = { seg(I.hand_name(r.hand or '?') .. ' : 0', 'bad') } end
+    local l = { seg('Sélection : ' .. I.hand_name(r.hand or '?') .. ' ', 'text'), seg(Fmt.score_text(r), 'chips') }
+    if r.debuffed_hand then l = { seg('Sélection : ' .. I.hand_name(r.hand or '?') .. ' : 0 (annulée par la blinde)', 'bad') } end
     return { l, { seg(I.T('p_now', I.pct(r.p_win)), Fmt.class_prob(r.p_win)) } }
 end
 
@@ -334,19 +352,38 @@ function Ctl.ui_model()
     local s = Ctl.state
     local m = { panel_open = Ctl.panel_open, anchor = c.ui and c.ui.anchor, scale = c.ui and c.ui.scale or 1, alerts = Ctl.alerts }
     if phase == 'menu' or phase == 'none' then
-        m.lines = nil
+        -- history and learning summary, only on demand (panel key) outside a run
         m.compact_lines = nil
+        m.lines = nil
+        local lr = BSC.learning_runtime
+        if Ctl.panel_open and lr and lr.menu_lines then
+            local ok, lines = pcall(lr.menu_lines, Ctl.detail)
+            if ok then m.lines = lines; m.title = I.T('title') .. ' — Historique' end
+        end
         return m
     end
     local view_phase = (phase == 'busy' and Ctl.last_phase) or phase
     Ctl.last_phase = view_phase
     local result = Ctl.results[view_phase]
     local fmt = Ctl.formatters[view_phase]
-    local lines = {}
-    if fmt and s then lines = fmt(s, result, Ctl.detail) or {} end
+    -- formatted lines are cached until something they depend on changes
+    local cache = Ctl.ui_cache
+    local lines
+    -- (results are published and then completed in place: the version counter tracks that)
+    if cache and cache.phase == view_phase and cache.result == result and cache.ver == Ctl.result_ver
+        and cache.state == s and cache.detail == Ctl.detail then
+        lines = cache.lines
+    else
+        lines = {}
+        if fmt and s then lines = fmt(s, result, Ctl.detail) or {} end
+        Ctl.ui_cache = { phase = view_phase, result = result, ver = Ctl.result_ver, state = s, detail = Ctl.detail, lines = lines }
+    end
+    local copy = {}
+    for i, l in ipairs(lines) do copy[i] = l end
+    lines = copy
     local sel = Ctl.selection_lines()
     if sel and view_phase == 'hand' then
-        for _, l in ipairs(sel) do table.insert(lines, 1, l) end
+        for i = #sel, 1, -1 do table.insert(lines, 1, sel[i]) end
     end
     m.title = I.T('title') .. ' — ' .. I.T('phase_' .. view_phase)
     m.lines = lines
@@ -359,7 +396,8 @@ function Ctl.ui_model()
     local keys = c.keys or {}
     m.footer = I.T('keys_help', (keys.panel or 'c'):upper(), (keys.detail or 'v'):upper(), (keys.badges or 'b'):upper())
     -- badges
-    if Ctl.show_badges and result and Ctl.badgers[view_phase] then
+    local show_badges = not (c.ui and c.ui.show_badges == false)
+    if show_badges and result and Ctl.badgers[view_phase] then
         local wanted = Ctl.badgers[view_phase](result) or {}
         if next(wanted) then
             local cards = collect_cards()
@@ -381,6 +419,11 @@ end
 -- key actions
 function Ctl.toggle_panel() Ctl.panel_open = not Ctl.panel_open end
 function Ctl.toggle_detail() Ctl.detail = not Ctl.detail end
-function Ctl.toggle_badges() Ctl.show_badges = not Ctl.show_badges end
+function Ctl.toggle_badges()
+    local c = cfg()
+    c.ui = c.ui or {}
+    c.ui.show_badges = (c.ui.show_badges == false)
+    Ctl.show_badges = c.ui.show_badges
+end
 
 return Ctl

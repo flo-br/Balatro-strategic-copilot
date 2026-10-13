@@ -21,9 +21,10 @@ local function signed_pct(d)
 end
 FS.signed_pct = signed_pct
 
-local function prob_line(label, p, extra)
+local function prob_line(label, p, extra, lo, hi, method)
     local cls = Fmt.class_prob(p)
-    return line(seg(Fmt.mark(cls) .. ' ', cls), seg(label .. ' : ' .. I.pct(p), cls), seg(extra and ('  ' .. extra) or '', 'dim'))
+    return line(seg(Fmt.mark(cls) .. ' ', cls), seg(label .. ' : ' .. Fmt.prob_text(p, method or 'monte_carlo', lo, hi), cls),
+        seg(extra and ('  ' .. extra) or '', 'dim'))
 end
 
 local function posture(danger)
@@ -39,8 +40,10 @@ local function outlook_lines(lines, r)
             lines[#lines + 1] = line(seg(string.format('Progression attendue : ~%.1f blindes (confiance limitée)', r.expected_blinds or 0), 'dim'))
         else
             local cls = Fmt.class_prob(r.p_win)
-            lines[#lines + 1] = line(seg(Fmt.mark(cls) .. ' ', cls), seg(T('win_run', I.pct(r.p_win)), cls),
-                seg('  (' .. T('conf_low') .. ', croissance ×' .. string.format('%.1f', r.growth or 2) .. '/ante ' ..
+            -- model estimate: never displayed as certain
+            local pw = math.max(0.001, math.min(0.999, r.p_win))
+            lines[#lines + 1] = line(seg(Fmt.mark(cls) .. ' ', cls), seg(T('win_run', I.pct(pw)), cls),
+                seg('  (confiance ' .. T('conf_low') .. ', croissance ×' .. string.format('%.1f', r.growth or 2) .. '/ante ' ..
                     (r.growth_source == 'learned' and 'apprise' or 'a priori') .. ')', 'dim'))
         end
     end
@@ -83,10 +86,10 @@ function FS.shop_panel(state, r, detail)
     if not r or not r.base then lines[#lines + 1] = line(seg(T('computing'), 'dim')); return lines end
     local b = r.base
     if r.next_blind and b.p_next then
-        lines[#lines + 1] = prob_line('Victoire prochaine blinde', b.p_next, U.fmt_num(r.next_blind.chips) .. ' requis')
+        lines[#lines + 1] = prob_line('Victoire prochaine blinde', b.p_next, U.fmt_num(r.next_blind.chips) .. ' requis', b.p_next_lo, b.p_next_hi)
     end
     if r.boss and b.p_boss then
-        lines[#lines + 1] = prob_line('Victoire boss ' .. tostring(r.boss.name or ''), b.p_boss, '')
+        lines[#lines + 1] = prob_line('Victoire boss ' .. tostring(r.boss.name or ''), b.p_boss, '', b.p_boss_lo, b.p_boss_hi)
     end
     outlook_lines(lines, b)
     lines[#lines + 1] = line(seg(T('build_power', U.fmt_num(b.median or b.mean or 0)) .. ' (médiane, simulation)', 'chips'))
@@ -114,7 +117,7 @@ function FS.shop_panel(state, r, detail)
     if r.sells and r.sells[1] and r.sells[1].note >= 58 then
         local s = r.sells[1]
         lines[#lines + 1] = line(seg(T('sell', s.name, s.sell), 'accent'),
-            seg(string.format('  contribution %s', I.pct(math.max(0, s.contribution or 0))), 'dim'))
+            seg(string.format('  (score sans lui : -%s)', I.pct(math.max(0, s.contribution or 0))), 'dim'))
     end
     -- order
     if r.order and r.order.gain and r.order.gain >= 0.05 then
@@ -153,7 +156,7 @@ function FS.blind_panel(state, r, detail)
     if r.current then
         lines[#lines + 1] = line(seg(T('next_blind', r.current.name or r.current.key or '?', U.fmt_num(r.current.chips)), 'text'))
         if r.p_current then
-            lines[#lines + 1] = prob_line('Victoire blinde', r.p_current.p, Fmt.method_text('monte_carlo', r.p_current.n))
+            lines[#lines + 1] = prob_line('Victoire blinde', r.p_current.p, Fmt.method_text('monte_carlo', r.p_current.n), r.p_current.lo, r.p_current.hi)
         else
             lines[#lines + 1] = line(seg(T('computing'), 'dim'))
         end
@@ -164,10 +167,13 @@ function FS.blind_panel(state, r, detail)
     end
     if r.boss and r.boss ~= r.current then
         lines[#lines + 1] = line(seg(T('boss_upcoming', r.boss.name or r.boss.key or '?') .. ' (' .. U.fmt_num(r.boss.chips) .. ')', 'title'))
-        if r.p_boss then lines[#lines + 1] = prob_line('Victoire boss', r.p_boss.p, '') end
+        if r.p_boss then lines[#lines + 1] = prob_line('Victoire boss', r.p_boss.p, '', r.p_boss.lo, r.p_boss.hi) end
     end
     if r.boss_info and r.boss_info.effect then
-        lines[#lines + 1] = line(seg('  effet : ' .. tostring(r.boss_info.effect), 'dim'))
+        local fx = I.T('boss_effects')
+        local txt = (type(fx) == 'table' and fx[r.boss_info.effect]) or r.boss_info.effect
+        if r.boss_info.suit then txt = txt .. ' (' .. I.suit_name(r.boss_info.suit) .. ')' end
+        lines[#lines + 1] = line(seg('  effet : ' .. txt, 'dim'))
     end
     if r.outlook then outlook_lines(lines, { p_win = r.outlook.p_win, endless = r.outlook.endless, expected_blinds = r.outlook.expected_blinds,
         growth = r.outlook.growth, growth_source = r.outlook.growth_source }) end
@@ -177,12 +183,14 @@ function FS.blind_panel(state, r, detail)
         local s = r.skip
         local txt = s.recommended and 'possible' or 'déconseillé'
         lines[#lines + 1] = line(seg(T('skip_advice', txt), s.recommended and 'good' or 'mid'),
-            seg(string.format('  (tag ~%d $ vs ~%d $ perdus, blinde suivante %s, heuristique)', s.tag_value, s.lost, I.pct(s.p_following)), 'dim'))
+            seg(string.format('  (tag ~%d $ vs ~%d $ perdus, blinde suivante %s, heuristique)', s.tag_value, s.lost,
+                I.pct(math.max(0.001, math.min(0.999, s.p_following or 0)))), 'dim'))
     end
     if detail and r.contributions and #r.contributions > 0 then
-        lines[#lines + 1] = line(seg('Contribution mesurée des jokers', 'title'))
+        lines[#lines + 1] = line(seg('Contribution mesurée (score sans le joker)', 'title'))
         for _, c in ipairs(r.contributions) do
-            lines[#lines + 1] = line(seg('  ' .. tostring(c.name) .. ' : ', 'text'), seg(I.pct(math.max(0, c.share or 0)) .. ' du score', 'chips'))
+            local drop = math.max(0, c.share or 0)
+            lines[#lines + 1] = line(seg('  ' .. tostring(c.name) .. ' : ', 'text'), seg('-' .. I.pct(drop), drop > 0.05 and 'chips' or 'dim'))
         end
     end
     if r.order and r.order.gain and r.order.gain >= 0.05 then

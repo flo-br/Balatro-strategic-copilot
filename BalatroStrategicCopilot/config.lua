@@ -15,6 +15,7 @@ return {
         show_compact = true,     -- small summary box when the panel is closed
         panel_open = false,
         detail = true,
+        use_game_font = true,    -- false: LÖVE default font (crisper at small sizes)
     },
     alerts = {
         enabled = true,

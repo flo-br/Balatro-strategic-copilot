@@ -134,7 +134,15 @@ function Score.prepare(state, opts)
         }
         P.jokers[i] = entry
         if not def then
-            if not j.debuff then coverage.unsupported[#coverage.unsupported + 1] = j.name or j.key or '?' end
+            if not j.debuff then
+                coverage.unsupported[#coverage.unsupported + 1] = j.name or j.key or '?'
+                local lm = state.learned_multipliers and j.key and state.learned_multipliers[j.key]
+                if lm then
+                    P.learned_mult = (P.learned_mult or 1) * lm
+                    coverage.learned = coverage.learned or {}
+                    coverage.learned[#coverage.learned + 1] = j.name or j.key
+                end
+            end
         elseif def.rule and not j.debuff then
             rules[def.rule] = true
         end
@@ -436,7 +444,7 @@ local function run_once(P, played_src, held_src, ch, trace)
     end
 
     res.chips, res.mult = chips, mult
-    res.score = floor(chips * mult)
+    res.score = floor(chips * mult * (P.learned_mult or 1))
     res.dollars = earned
     res.level = level
     res.trace = log

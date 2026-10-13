@@ -11,7 +11,7 @@ local Boot = {}
 local DEFAULTS = {
     enabled = true, lang = 'fr',
     keys = { panel = 'c', detail = 'v', badges = 'b' },
-    ui = { anchor = 'right', scale = 1.0, show_badges = true, show_compact = true, panel_open = false, detail = true },
+    ui = { anchor = 'right', scale = 1.0, show_badges = true, show_compact = true, panel_open = false, detail = true, use_game_font = true },
     alerts = { enabled = true, danger_threshold = 0.5, great_buy_note = 80, joker_order_gain = 0.10, cooldown = 25, duration = 5 },
     thresholds = { prob_good = 0.80, prob_mid = 0.50, note_good = 70, note_mid = 45 },
     compute = { budget_ms = 4, rollouts = 64, max_branches = 48, samples = 160, poll_interval = 0.15, shop_samples = 120 },
@@ -38,6 +38,9 @@ function Boot.start()
     end)
     if not ok_p then L.warn('boot', 'persistence unavailable: %s', tostring(err_p)) end
 
+    local ok_cm, err_cm = pcall(function() BSC.compat = BSC.require('game/compat'); BSC.compat.scan() end)
+    if not ok_cm then L.warn('boot', 'compatibility scan failed: %s', tostring(err_cm)) end
+
     local Ctl = BSC.require('game/controller')
     local UI = BSC.require('ui/ui_manager')
     Ctl.init()
@@ -51,12 +54,6 @@ function Boot.start()
         end)
         if not ok then L.warn('boot', 'module %s unavailable: %s', name, tostring(err)) end
     end
-
-    -- font of the game (if readable) for a consistent look
-    pcall(function()
-        local G = rawget(_G, 'G')
-        if G and G.LANG and G.LANG.font and G.LANG.font.file then UI.font_file = G.LANG.font.file end
-    end)
 
     local Hooks = BSC.require('game/hooks')
     local installed = Hooks.install(Ctl, UI)

@@ -50,6 +50,19 @@ end
 
 function RT.weights() return RT.profile_data and RT.profile_data.weights end
 
+-- Learned score multipliers for jokers the engine does not know (modded), if any data.
+function RT.unknown_multipliers(state)
+    local DB = BSC.require('model/jokers_db')
+    local out
+    for _, j in ipairs(state.jokers or {}) do
+        if j.key and not DB.get(j.key, j.name) then
+            local m, n = LE.unknown_multiplier(RT.profile_data, j.key)
+            if m and n and n >= 3 then out = out or {}; out[j.key] = m end
+        end
+    end
+    return out
+end
+
 local function save(name, schema, data)
     if not RT.store then return false end
     local ok, err = RT.store:save(name, schema, data)
@@ -121,6 +134,44 @@ function RT.attach(Ctl)
     end)
     Ctl.register('game_over', function() return RT.last_review end, RV.panel, nil)
     return true
+end
+
+-- History view (main menu): last review + objective learning summary.
+function RT.menu_lines(detail)
+    local I = BSC.require('core/i18n')
+    local function seg(t, c) return { t = t, c = c or 'text' } end
+    local lines = {}
+    local sm = LE.summary(RT.profile_data)
+    if not sm or (sm.runs or 0) == 0 then
+        lines[#lines + 1] = { seg(I.T('learning_none'), 'dim') }
+        return lines
+    end
+    lines[#lines + 1] = { seg(string.format('%d parties, %d victoires (%s, intervalle %s–%s)', sm.runs, sm.wins,
+        I.pct(sm.win_rate), I.pct(sm.win_lo), I.pct(sm.win_hi)), 'text') }
+    lines[#lines + 1] = { seg(string.format('Ante moyenne %.1f, maximale %d', sm.mean_ante or 0, sm.max_ante or 0), 'dim') }
+    local cal = sm.calibration or {}
+    if cal.n and cal.n > 0 then
+        lines[#lines + 1] = { seg(string.format('Prédictions de blinde : %d, Brier %.3f, ECE %.3f, calibration %s', cal.n,
+            cal.brier or 0, cal.ece or 0, cal.enabled and 'active' or 'inactive (' .. tostring(cal.reason) .. ')'), 'dim') }
+    end
+    if sm.score and sm.score.n and sm.score.n > 0 then
+        lines[#lines + 1] = { seg(string.format('Scores : erreur relative moyenne %s ; exacts vérifiés %d/%d', I.pct(sm.score.mean_rel_err or 0),
+            (sm.score.exact_n or 0) - (sm.score.exact_mismatch or 0), sm.score.exact_n or 0), 'dim') }
+    end
+    if sm.followed and sm.deviated then
+        lines[#lines + 1] = { seg(string.format('Blinde suivante gagnée : %s en suivant les conseils (n=%d), %s sinon (n=%d) — descriptif, pas causal',
+            I.pct(sm.followed.p), sm.followed.n, I.pct(sm.deviated.p), sm.deviated.n), 'dim') }
+    end
+    local tr = LE.trend(RT.profile_data)
+    if tr.enough then
+        lines[#lines + 1] = { seg(string.format('Tendance : %s → %s de victoires (%s)', I.pct(tr.old.win), I.pct(tr.new.win),
+            tr.significant and 'différence significative' or 'différence non significative'), tr.significant and 'accent' or 'dim') }
+    end
+    if RT.last_review then
+        lines[#lines + 1] = { seg(I.T('review_title'), 'title') }
+        for _, l in ipairs(RV.panel(nil, RT.last_review, detail)) do lines[#lines + 1] = l end
+    end
+    return lines
 end
 
 -- Export / import / reset --------------------------------------------------------------------

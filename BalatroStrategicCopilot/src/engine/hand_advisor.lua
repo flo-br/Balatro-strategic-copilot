@@ -546,22 +546,28 @@ function HA.analyse(state, opts, task)
         local n = opts.rollouts or 64
         local seed = opts.seed or 'round'
         for _, cand in ipairs(candidates) do
-            local wins = 0
+            local wins, used = 0, 0
             for i = 1, n do
                 check()
                 local rng = R.new(seed .. ':' .. i) -- common random numbers across candidates
-                local ok = HA.rollout(P, cand, hand, deck, h, d, remaining, rng, ctx)
-                if ok then wins = wins + 1 end
+                local ok, hands_used = HA.rollout(P, cand, hand, deck, h, d, remaining, rng, ctx)
+                if ok then wins = wins + 1; used = used + (hands_used or 0) end
             end
             local p, lo, hi = PR.wilson(wins, n)
             cand.p_clear, cand.lo, cand.hi, cand.n = p, lo, hi, n
+            -- hands needed when winning: fewer hands left unused = less money ($1 per hand left)
+            cand.hands_used = wins > 0 and used / wins or math.huge
             if cand.ref then cand.ref.p_clear = p; cand.ref.p_lo = lo; cand.ref.p_hi = hi; cand.ref.sim_n = n end
         end
         table.sort(candidates, function(a, b)
             if math.abs(a.p_clear - b.p_clear) > 1e-9 then return a.p_clear > b.p_clear end
-            -- tie: prefer playing (keeps discards) and higher immediate score
+            -- tie: win with fewer hands (more money), then prefer playing (keeps discards),
+            -- then the higher immediate score, then fewer cards spent
+            if math.abs(a.hands_used - b.hands_used) > 0.05 then return a.hands_used < b.hands_used end
             if a.type ~= b.type then return a.type == 'play' end
-            return (a.ref and a.ref.mean or 0) > (b.ref and b.ref.mean or 0)
+            local ma, mb = (a.ref and a.ref.mean or 0), (b.ref and b.ref.mean or 0)
+            if ma ~= mb then return ma > mb end
+            return #a.cards < #b.cards
         end)
         local best = candidates[1]
         if best then

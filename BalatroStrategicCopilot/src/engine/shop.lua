@@ -214,9 +214,10 @@ local function risk_of(def, joker)
 end
 
 local function econ_of(def, joker, state)
-    if not def or not def.econ then return 0 end
+    if not def or not def.econ then return 0, nil end
     local e = def.econ
     local v = 0
+    local why
     if e.per_round then v = v + e.per_round end
     if e.per_nine_per_round then v = v + e.per_nine_per_round * ((state.full_deck_stats or {}).nines or 4) end
     if e.interest_bonus then v = v + math.min(5, math.floor(((state.econ or {}).dollars or 0) / 5)) end
@@ -230,8 +231,9 @@ local function econ_of(def, joker, state)
     if e.per_matching_discard then v = v + 3 end
     if e.first_discard_single then v = v + 2 end
     if e.conditional_discard then v = v + 2 end
-    if e.debt then v = v + 1 end
-    return v
+    if e.debt then v = v + 1; why = 'permet de s\'endetter jusqu\'à ' .. e.debt .. ' $' end
+    if v > 0 and not why then why = string.format('rapporte ~%d $/manche (estimation)', math.floor(v + 0.5)) end
+    return v, why
 end
 
 -- Value (dollars-equivalent) of a joker type for the reroll/booster estimates.
@@ -270,8 +272,9 @@ function SH.analyse(state, opts, task)
     local boss_key = boss_b and boss_b.key
     local ps_boss = ST.power_samples(state, { n = ctx.n, seed = 'shop', task = task, boss = boss_key })
     local outlook = ST.run_outlook(state, ps0, { profile = ctx.profile, calibrate = ctx.calibrate, B = 300 })
-    local p_next = ctx.X_next and ST.p_clear_bootstrap(ps0, ctx.X_next, { seed = 'next', B = 300 }) or nil
-    local p_boss = ctx.X_boss and ST.p_clear_bootstrap(ps_boss, ctx.X_boss, { seed = 'boss', B = 300 }) or nil
+    local p_next, p_next_lo, p_next_hi, p_boss, p_boss_lo, p_boss_hi
+    if ctx.X_next then p_next, p_next_lo, p_next_hi = ST.p_clear_bootstrap(ps0, ctx.X_next, { seed = 'next', B = 300 }) end
+    if ctx.X_boss then p_boss, p_boss_lo, p_boss_hi = ST.p_clear_bootstrap(ps_boss, ctx.X_boss, { seed = 'boss', B = 300 }) end
     if ctx.calibrate then
         if p_next then p_next = ctx.calibrate(p_next) end
         if p_boss then p_boss = ctx.calibrate(p_boss) end
@@ -282,6 +285,7 @@ function SH.analyse(state, opts, task)
     local themes = SY.themes(state, ps0)
     local res = {
         base = { mean = ps0.mean, median = ps0.median, q25 = ps0.q25, q75 = ps0.q75, p_next = p_next, p_boss = p_boss,
+            p_next_lo = p_next_lo, p_next_hi = p_next_hi, p_boss_lo = p_boss_lo, p_boss_hi = p_boss_hi,
             p_win = outlook.p_win, expected_blinds = outlook.expected_blinds, growth = outlook.growth,
             growth_source = outlook.growth_source, endless = outlook.endless, usage = ST.usage_fractions(ps0) },
         next_blind = next_b, boss = boss_b, danger = danger, weights = w, options = {}, sells = {},
@@ -356,8 +360,8 @@ function SH.analyse(state, opts, task)
                 for _, r in ipairs(why) do opt.reasons[#opt.reasons + 1] = r end
                 local risk, rnotes = risk_of(def, j)
                 for _, r in ipairs(rnotes) do opt.risks[#opt.risks + 1] = r end
-                local ev = econ_of(def, j, state)
-                if ev > 0 then opt.reasons[#opt.reasons + 1] = string.format('rapporte ~%d $/manche', math.floor(ev + 0.5)) end
+                local ev, ewhy = econ_of(def, j, state)
+                if ewhy then opt.reasons[#opt.reasons + 1] = ewhy end
                 if not def then opt.risks[#opt.risks + 1] = 'joker non reconnu : effet non simulé'; opt.method = 'partial' end
                 local comp = components(m, { potential = pot, synergy = fit, econ = U.clamp(ev * 3 / 20, -1, 1), cost = cc, risk = risk,
                     reliability = (def and m.complete) and 1 or 0.5 })

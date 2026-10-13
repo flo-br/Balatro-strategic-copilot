@@ -65,6 +65,7 @@ function FG.install(opts)
 
     -- LÖVE -------------------------------------------------------------------------------------
     local mem = {}
+    FG.mem = mem
     local function font(size)
         return {
             size = size,
@@ -73,7 +74,7 @@ function FG.install(opts)
             hasGlyphs = function(self, t) return opts.glyphs == true end,
         }
     end
-    love = {
+    if not opts.real_love then love = {
         timer = { getTime = function() return os.clock() end },
         graphics = {
             getDimensions = function() return 1920, 1080 end,
@@ -105,8 +106,7 @@ function FG.install(opts)
             end,
             getSaveDirectory = function() return 'memory' end,
         },
-    }
-    FG.mem = mem
+    } end
 
     -- logging functions provided by Steamodded
     for _, n in ipairs({ 'sendDebugMessage', 'sendInfoMessage', 'sendWarnMessage', 'sendErrorMessage', 'sendTraceMessage' }) do

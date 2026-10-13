@@ -22,7 +22,7 @@ local files = {
     'unit/test_shop', 'unit/test_strategy', 'unit/test_persistence', 'unit/test_learning',
     'unit/test_recorder', 'unit/test_format',
     -- integration
-    'integration/test_mod_load', 'integration/test_state_reader', 'integration/test_full_flow',
+    'integration/test_mod_load', 'integration/test_state_reader', 'integration/test_compat', 'integration/test_full_flow',
     -- performance
     'unit/test_performance',
 }

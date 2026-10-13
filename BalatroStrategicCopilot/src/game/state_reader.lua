@@ -13,6 +13,8 @@ local C = BSC.require('model/cards')
 local H = BSC.require('model/hands')
 local DB = BSC.require('model/jokers_db')
 local BL = BSC.require('model/blinds_db')
+local CM = BSC.require('game/compat')
+local num = CM.num -- tolerant to Talisman big numbers
 
 local SR = {}
 
@@ -93,20 +95,20 @@ function SR.read_playing_card(card, opts)
     C.apply_enhancement_defaults(c)
     if ck == 'm_stone' then c.id = 0 end
     -- read the real values from the game (they include modifications)
-    c.bonus = U.num(ab.bonus, c.bonus)
-    c.mult = U.num(ab.mult, c.mult)
-    c.x_mult = U.num(ab.x_mult, c.x_mult)
-    c.h_x_mult = U.num(ab.h_x_mult, c.h_x_mult)
-    c.h_mult = U.num(ab.h_mult, c.h_mult)
-    c.p_dollars = U.num(ab.p_dollars, c.p_dollars)
-    c.h_dollars = U.num(ab.h_dollars, c.h_dollars)
-    c.perma_bonus = U.num(ab.perma_bonus, 0)
-    c.perma_mult = U.num(ab.perma_mult, 0)
-    c.perma_x_mult = U.num(ab.perma_x_mult, 0)
-    c.perma_h_mult = U.num(ab.perma_h_mult, 0)
-    c.perma_h_x_mult = U.num(ab.perma_h_x_mult, 0)
-    c.perma_p_dollars = U.num(ab.perma_p_dollars, 0)
-    c.perma_repetitions = U.num(ab.perma_repetitions, 0)
+    c.bonus = num(ab.bonus, c.bonus)
+    c.mult = num(ab.mult, c.mult)
+    c.x_mult = num(ab.x_mult, c.x_mult)
+    c.h_x_mult = num(ab.h_x_mult, c.h_x_mult)
+    c.h_mult = num(ab.h_mult, c.h_mult)
+    c.p_dollars = num(ab.p_dollars, c.p_dollars)
+    c.h_dollars = num(ab.h_dollars, c.h_dollars)
+    c.perma_bonus = num(ab.perma_bonus, 0)
+    c.perma_mult = num(ab.perma_mult, 0)
+    c.perma_x_mult = num(ab.perma_x_mult, 0)
+    c.perma_h_mult = num(ab.perma_h_mult, 0)
+    c.perma_h_x_mult = num(ab.perma_h_x_mult, 0)
+    c.perma_p_dollars = num(ab.perma_p_dollars, 0)
+    c.perma_repetitions = num(ab.perma_repetitions, 0)
     c.seal = card.seal
     if c.seal and not ({ Red = 1, Blue = 1, Gold = 1, Purple = 1 })[c.seal] then c.unknown_seal = true end
     c.edition = edition_key(card.edition)
@@ -130,8 +132,8 @@ function SR.read_joker(card)
         rarity = get(function() return card.config.center.rarity end, def and def.rarity),
         blueprint_compat = get(function() return card.config.center.blueprint_compat end, def and def.bp),
         edition = edition_key(card.edition),
-        sell_cost = U.num(card.sell_cost, 0),
-        cost = U.num(card.cost, def and def.cost or 0),
+        sell_cost = num(card.sell_cost, 0),
+        cost = num(card.cost, def and def.cost or 0),
         debuff = card.debuff and true or false,
         face_down = get(function() return card.facing == 'back' end, false) or nil,
         eternal = get(function() return card.ability.eternal end, false) and true or nil,
@@ -149,7 +151,7 @@ function SR.read_consumable(card)
         key = center_key(card), name = ab.name, set = ab.set,
         hand_type = get(function() return ab.consumeable.hand_type end, nil),
         edition = edition_key(card.edition),
-        sell_cost = U.num(card.sell_cost, 0),
+        sell_cost = num(card.sell_cost, 0),
         debuff = card.debuff and true or false,
     }
 end
@@ -161,7 +163,7 @@ function SR.read_item(card, area)
     local item = {
         uid = get(function() return card.sort_id end, nil) or tostring(card),
         key = center_key(card), name = ab.name, set = set, area = area,
-        cost = U.num(card.cost, 0), edition = edition_key(card.edition),
+        cost = num(card.cost, 0), edition = edition_key(card.edition),
     }
     if set == 'Joker' then
         item.joker = SR.read_joker(card)
@@ -218,10 +220,10 @@ local function read_hands(G)
     local hands = {}
     for name, h in pairs(G.GAME.hands or {}) do
         hands[name] = {
-            level = U.num(h.level, 1), chips = U.num(h.chips, 0), mult = U.num(h.mult, 1),
-            l_chips = U.num(h.l_chips, 0), l_mult = U.num(h.l_mult, 0),
-            s_chips = U.num(h.s_chips, nil), s_mult = U.num(h.s_mult, nil),
-            played = U.num(h.played, 0), played_this_round = U.num(h.played_this_round, 0),
+            level = num(h.level, 1), chips = num(h.chips, 0), mult = num(h.mult, 1),
+            l_chips = num(h.l_chips, 0), l_mult = num(h.l_mult, 0),
+            s_chips = num(h.s_chips, nil), s_mult = num(h.s_mult, nil),
+            played = num(h.played, 0), played_this_round = num(h.played_this_round, 0),
             visible = h.visible ~= false, modded = H.BASE[name] == nil or nil,
         }
     end
@@ -286,22 +288,22 @@ function SR.snapshot(opts)
     section('run', function()
         local GG = G.GAME
         s.run = {
-            ante = U.num(get(function() return GG.round_resets.ante end, 1), 1),
-            round = U.num(GG.round, 0),
-            win_ante = U.num(GG.win_ante, 8),
-            stake = U.num(GG.stake, 1),
+            ante = num(get(function() return GG.round_resets.ante end, 1), 1),
+            round = num(GG.round, 0),
+            win_ante = num(GG.win_ante, 8),
+            stake = num(GG.stake, 1),
             deck_key = get(function() return GG.selected_back.effect.center.key end, nil),
             deck_name = get(function() return GG.selected_back.name end, nil),
             challenge = GG.challenge,
             seeded = GG.seeded and true or false,
             seed = get(function() return GG.pseudorandom.seed end, nil),
             won = GG.won and true or false,
-            hands_played = U.num(GG.hands_played, 0),
-            skips = U.num(GG.skips, 0),
-            tarots_used = U.num(get(function() return GG.consumeable_usage_tally.tarot end, 0), 0),
-            planets_used = U.num(get(function() return GG.consumeable_usage_tally.planet end, 0), 0),
-            scaling = U.num(get(function() return GG.modifiers.scaling end, 1), 1),
-            ante_scaling = U.num(get(function() return GG.starting_params.ante_scaling end, 1), 1),
+            hands_played = num(GG.hands_played, 0),
+            skips = num(GG.skips, 0),
+            tarots_used = num(get(function() return GG.consumeable_usage_tally.tarot end, 0), 0),
+            planets_used = num(get(function() return GG.consumeable_usage_tally.planet end, 0), 0),
+            scaling = num(get(function() return GG.modifiers.scaling end, 1), 1),
+            ante_scaling = num(get(function() return GG.starting_params.ante_scaling end, 1), 1),
             endless = (GG.won and true or false),
         }
     end)
@@ -309,22 +311,22 @@ function SR.snapshot(opts)
     section('econ', function()
         local GG = G.GAME
         s.econ = {
-            dollars = U.num(GG.dollars, 0),
-            interest_cap = U.num(GG.interest_cap, 25),
-            interest_amount = U.num(GG.interest_amount, 1),
+            dollars = num(GG.dollars, 0),
+            interest_cap = num(GG.interest_cap, 25),
+            interest_amount = num(GG.interest_amount, 1),
             no_interest = get(function() return GG.modifiers.no_interest end, false) and true or false,
-            money_per_hand = U.num(get(function() return GG.modifiers.money_per_hand end, nil), 1),
-            money_per_discard = U.num(get(function() return GG.modifiers.money_per_discard end, nil), 0),
-            reroll_cost = U.num(get(function() return GG.current_round.reroll_cost end, 5), 5),
-            free_rerolls = U.num(get(function() return GG.current_round.free_rerolls end, 0), 0),
-            base_reroll_cost = U.num(get(function() return GG.round_resets.reroll_cost end, 5), 5),
-            bankrupt_at = U.num(GG.bankrupt_at, 0),
-            discount_percent = U.num(GG.discount_percent, 0),
-            inflation = U.num(GG.inflation, 0),
+            money_per_hand = num(get(function() return GG.modifiers.money_per_hand end, nil), 1),
+            money_per_discard = num(get(function() return GG.modifiers.money_per_discard end, nil), 0),
+            reroll_cost = num(get(function() return GG.current_round.reroll_cost end, 5), 5),
+            free_rerolls = num(get(function() return GG.current_round.free_rerolls end, 0), 0),
+            base_reroll_cost = num(get(function() return GG.round_resets.reroll_cost end, 5), 5),
+            bankrupt_at = num(GG.bankrupt_at, 0),
+            discount_percent = num(GG.discount_percent, 0),
+            inflation = num(GG.inflation, 0),
             rates = {
-                joker = U.num(GG.joker_rate, 20), tarot = U.num(GG.tarot_rate, 4), planet = U.num(GG.planet_rate, 4),
-                spectral = U.num(GG.spectral_rate, 0), playing_card = U.num(GG.playing_card_rate, 0),
-                edition = U.num(GG.edition_rate, 1),
+                joker = num(GG.joker_rate, 20), tarot = num(GG.tarot_rate, 4), planet = num(GG.planet_rate, 4),
+                spectral = num(GG.spectral_rate, 0), playing_card = num(GG.playing_card_rate, 0),
+                edition = num(GG.edition_rate, 1),
             },
         }
     end)
@@ -335,7 +337,7 @@ function SR.snapshot(opts)
             s.blind = {
                 key = get(function() return b.config.blind.key end, nil),
                 name = b.name, boss = b.boss and true or false,
-                chips_required = U.num(b.chips, 0), chips_scored = U.num(G.GAME.chips, 0),
+                chips_required = num(b.chips, 0), chips_scored = num(G.GAME.chips, 0),
                 disabled = b.disabled and true or false,
                 in_blind = b.in_blind and true or false,
                 hands_used = U.deepcopy(b.hands, 2), only_hand = b.only_hand,
@@ -349,11 +351,11 @@ function SR.snapshot(opts)
     section('round', function()
         local cr = G.GAME.current_round or {}
         s.round = {
-            hands_left = U.num(cr.hands_left, 0), discards_left = U.num(cr.discards_left, 0),
-            hands_played = U.num(cr.hands_played, 0), discards_used = U.num(cr.discards_used, 0),
-            hand_size = U.num(get(function() return G.hand.config.card_limit end, 8), 8),
-            round_hands = U.num(get(function() return G.GAME.round_resets.hands end, 4), 4),
-            round_discards = U.num(get(function() return G.GAME.round_resets.discards end, 3), 3),
+            hands_left = num(cr.hands_left, 0), discards_left = num(cr.discards_left, 0),
+            hands_played = num(cr.hands_played, 0), discards_used = num(cr.discards_used, 0),
+            hand_size = num(get(function() return G.hand.config.card_limit end, 8), 8),
+            round_hands = num(get(function() return G.GAME.round_resets.hands end, 4), 4),
+            round_discards = num(get(function() return G.GAME.round_resets.discards end, 3), 3),
         }
     end)
 
@@ -361,15 +363,15 @@ function SR.snapshot(opts)
 
     section('jokers', function()
         s.jokers = read_area(G.jokers, SR.read_joker)
-        s.joker_slots = U.num(get(function() return G.jokers.config.card_limit end, 5), 5)
+        s.joker_slots = num(get(function() return G.jokers.config.card_limit end, 5), 5)
     end)
 
     section('consumables', function()
         s.consumables = read_area(G.consumeables, SR.read_consumable)
-        s.consumable_slots = U.num(get(function() return G.consumeables.config.card_limit end, 2), 2)
+        s.consumable_slots = num(get(function() return G.consumeables.config.card_limit end, 2), 2)
         s.vouchers = U.deepcopy(G.GAME.used_vouchers, 2) or {}
         s.flags = s.flags or {}
-        s.flags.observatory_x = U.num(get(function() return G.P_CENTERS.v_observatory.config.extra end, 1.5), 1.5)
+        s.flags.observatory_x = num(get(function() return G.P_CENTERS.v_observatory.config.extra end, 1.5), 1.5)
     end)
 
     section('cards', function()
@@ -386,7 +388,7 @@ function SR.snapshot(opts)
         for _, c in ipairs(full) do c.face_down = nil; c.highlighted = nil; c.forced = nil end
         table.sort(full, deck_sort)
         s.full_deck = full
-        s.full_deck_stats = SR.deck_stats(full, U.num(G.GAME.starting_deck_size, 52))
+        s.full_deck_stats = SR.deck_stats(full, num(G.GAME.starting_deck_size, 52))
     end)
 
     section('shop', function()
@@ -399,7 +401,7 @@ function SR.snapshot(opts)
         end
         if s.phase == 'pack' then
             s.pack = { cards = read_area(G.pack_cards, SR.read_item, 'pack'),
-                choices_left = U.num(G.GAME.pack_choices, 1) }
+                choices_left = num(G.GAME.pack_choices, 1) }
         end
     end)
 
@@ -437,14 +439,14 @@ function SR.snapshot(opts)
         s.targets = {
             ancient_suit = get(function() return cr.ancient_card.suit end, nil),
             castle_suit = get(function() return cr.castle_card.suit end, nil),
-            idol = idol and { id = U.num(idol.id, nil) or (C.RANKS[idol.rank] and C.RANKS[idol.rank].id), suit = idol.suit, rank = idol.rank } or nil,
-            mail_id = mail and (U.num(mail.id, nil) or (C.RANKS[mail.rank] and C.RANKS[mail.rank].id)) or nil,
+            idol = idol and { id = num(idol.id, nil) or (C.RANKS[idol.rank] and C.RANKS[idol.rank].id), suit = idol.suit, rank = idol.rank } or nil,
+            mail_id = mail and (num(mail.id, nil) or (C.RANKS[mail.rank] and C.RANKS[mail.rank].id)) or nil,
             most_played_hand = cr.most_played_poker_hand,
         }
     end)
 
     section('flags', function()
-        s.probabilities_normal = U.num(get(function() return G.GAME.probabilities.normal end, 1), 1)
+        s.probabilities_normal = num(get(function() return G.GAME.probabilities.normal end, 1), 1)
         s.flags = s.flags or {}
         s.flags.plasma = (s.run and s.run.deck_key == 'b_plasma') or false
     end)

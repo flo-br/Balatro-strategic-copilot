@@ -5,7 +5,7 @@
 --   synergies that the current build cannot exploit);
 -- * marginal contribution of each joker, MEASURED with the score engine on the same sample
 --   hands (score with vs without the joker);
--- * best joker order (exhaustive for <= 6 order-sensitive jokers, else local search).
+-- * best joker order (exhaustive for <= 5 jokers, else local search with pairwise swaps).
 
 local BSC = BSCopilot
 local U = BSC.require('core/util')

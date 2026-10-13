@@ -67,6 +67,15 @@ function S.whole_run_learns_and_persists(T)
     BSCopilot = nil
     dofile(T.MOD_ROOT .. '/main.lua')
     T.eq(BSCopilot.learning_runtime.profile().runs, 1, 'learning survived the restart')
+    -- history view in the main menu (panel opened by the player)
+    G.STAGE = G.STAGES.MAIN_MENU
+    BSCopilot.controller.panel_open = true
+    local m = BSCopilot.controller.ui_model()
+    local txt = {}
+    for _, l in ipairs(m.lines or {}) do for _, sg in ipairs(l) do txt[#txt + 1] = sg.t end end
+    T.ok(table.concat(txt, ' '):find('1 parties'), 'history summary shown in the menu: ' .. table.concat(txt, ' '))
+    BSCopilot.controller.panel_open = false
+    T.eq(BSCopilot.controller.ui_model().lines, nil, 'nothing drawn in the menu when the panel is closed')
     FG.uninstall()
 end
 
@@ -85,8 +94,13 @@ function S.shop_phase_analysis(T)
     T.eq(r.options[1].key, 'j_duo')
     T.ok(r.reroll ~= nil)
     -- badges are positioned over the shop cards
-    Ctl.show_badges = true
+    BSCopilot.config.ui.show_badges = true
     local m = Ctl.ui_model()
+    T.ok(m.badges and #m.badges >= 2, 'badges on shop items')
+    Ctl.toggle_badges()
+    T.eq(Ctl.ui_model().badges, nil, 'badges hidden by the key')
+    Ctl.toggle_badges()
+    m = Ctl.ui_model()
     T.ok(m.badges and #m.badges >= 2, 'badges on shop items')
     FG.uninstall()
 end

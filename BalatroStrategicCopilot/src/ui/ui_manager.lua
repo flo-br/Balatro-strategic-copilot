@@ -80,41 +80,49 @@ local function colour(name, alpha)
     return c[1], c[2], c[3], (c[4] or 1) * (alpha or 1)
 end
 
--- Draw a list of lines (segments) in a box; returns used height.
-local function draw_lines(lines, x, y, w, font, line_h, alpha)
-    local g = lg()
-    g.setFont(font)
-    local cy = y
-    for _, l in ipairs(lines) do
-        local cx = x
-        for _, s in ipairs(l) do
-            local text = clean(s.t)
-            local tw = font:getWidth(text)
-            if cx + tw > x + w and cx > x then
-                cx = x + font:getWidth('  ')
-                cy = cy + line_h
-            end
-            g.setColor(colour(s.c, alpha))
-            g.print(text, math.floor(cx), math.floor(cy))
-            cx = cx + tw
-        end
-        cy = cy + line_h
-    end
-    return cy - y
-end
-
-local function measure_lines(lines, w, font, line_h)
+-- Lay out segments word by word (wrapping inside long segments), returns placed pieces.
+local function layout(lines, w, font, line_h)
+    local pieces = {}
     local cy = 0
+    local indent = font:getWidth('  ')
     for _, l in ipairs(lines) do
         local cx = 0
         for _, s in ipairs(l) do
-            local tw = font:getWidth(clean(s.t))
-            if cx + tw > w and cx > 0 then cx = font:getWidth('  '); cy = cy + line_h end
-            cx = cx + tw
+            local text = clean(s.t)
+            -- split into words keeping the spaces attached
+            for word in text:gmatch('%S*%s*') do
+                if word ~= '' then
+                    local ww = font:getWidth(word)
+                    if cx + ww > w and cx > indent then
+                        cx = indent
+                        cy = cy + line_h
+                        word = word:gsub('^%s+', '')
+                        ww = font:getWidth(word)
+                    end
+                    pieces[#pieces + 1] = { x = cx, y = cy, t = word, c = s.c }
+                    cx = cx + ww
+                end
+            end
         end
         cy = cy + line_h
     end
-    return cy
+    return pieces, cy
+end
+
+local function draw_lines(lines, x, y, w, font, line_h, alpha)
+    local g = lg()
+    g.setFont(font)
+    local pieces, h = layout(lines, w, font, line_h)
+    for _, p in ipairs(pieces) do
+        g.setColor(colour(p.c, alpha))
+        g.print(p.t, math.floor(x + p.x), math.floor(y + p.y))
+    end
+    return h
+end
+
+local function measure_lines(lines, w, font, line_h)
+    local _, h = layout(lines, w, font, line_h)
+    return h
 end
 
 -- model = { panel_open, detail, title, lines, compact_lines, badges = {{x,y,w,h,text,class}},
@@ -122,6 +130,16 @@ end
 function UI.draw(model)
     local g = lg()
     if not g or not model then return end
+    -- the game font may not be ready when the mod loads: resolve it lazily, once
+    if not UI.font_resolved then
+        UI.font_resolved = true
+        local G = rawget(_G, 'G')
+        local use_game = not (BSC.config and BSC.config.ui and BSC.config.ui.use_game_font == false)
+        if use_game and not UI.font_file and G and G.LANG and G.LANG.font and G.LANG.font.file then
+            UI.font_file = G.LANG.font.file
+        end
+        if not use_game then UI.font_file = nil end
+    end
     local W, H = g.getDimensions()
     local base = math.max(11, math.floor(H / 54 * (model.scale or 1)))
     local font = UI.font(base)
