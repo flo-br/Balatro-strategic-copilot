@@ -23,8 +23,8 @@ local ENH = {
 function FG.card(code, opts)
     opts = opts or {}
     local rs, ss = code:match('^(%w-)(%a)$')
-    local rank = SHORT[rs] or rs
-    local suit = SUITS[ss]
+    local rank = SHORT[rs:upper()] or rs
+    local suit = SUITS[ss:upper()]
     local r = RANKS[rank]
     local x = opts.x or 0
     local c = {
