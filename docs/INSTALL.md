@@ -38,7 +38,7 @@ Option A — dossier :
        src\core\ src\engine\ src\game\ src\io\ src\learning\ src\model\ src\ui\
    ```
 
-Option B — archive : copier `BalatroStrategicCopilot-1.0.0.zip` tel quel dans
+Option B — archive : copier `BalatroStrategicCopilot-1.0.1.zip` tel quel dans
 `%AppData%\Balatro\Mods\` (Steamodded sait charger un mod zippé) ou l'extraire à cet endroit.
 L'archive se construit avec `python tools/build.py` (dossier `dist/`).
 

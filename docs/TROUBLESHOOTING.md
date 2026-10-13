@@ -1,7 +1,26 @@
 # Dépannage
 
+## Premier réflexe : le bandeau de démarrage (version 1.0.1+)
+
+Au lancement du jeu, un bandeau s'affiche en haut de l'écran pendant 10 secondes :
+* **vert « … actif — touche C : panneau »** : le mod fonctionne. Au menu principal il n'affiche
+  rien d'autre (sauf l'historique avec `C`) ; les conseils apparaissent **pendant une partie**
+  (résumé en haut à droite, `C` pour le panneau complet) ;
+* **rouge « erreur au démarrage »** : le message indique la cause ; le détail complet est dans le
+  journal de Lovely ;
+* **aucun bandeau** : le mod n'est pas chargé du tout par Steamodded (voir ci-dessous).
+
+## Trouver le journal
+
+`%AppData%\Balatro\Mods\lovely\log\` : ouvrir le fichier le plus récent et chercher
+`BSCopilot` ou `BalatroStrategicCopilot`. Une ligne `ready (update=true draw=true …)` signifie que
+le mod a démarré. Le journal propre au mod est `%AppData%\Balatro\BSC\logs\bsc.log`.
+
 | Symptôme | Cause probable | Solution |
 |---|---|---|
+| Aucun bandeau, mod absent de *Mods* | dossier mal placé ou dossier en double | `%AppData%\Balatro\Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json` doit exister, **une seule copie** du mod dans `Mods` (les anciens Steamodded refusent les doublons : erreur `dupe`) |
+| Mod présent dans *Mods* mais désactivé | interrupteur du mod sur « off » | l'activer dans *Mods*, puis redémarrer |
+| Bandeau « détection par état (Steamodded ancien) » | Steamodded antérieur au support des événements de mod | normal : tout fonctionne ; mettre Steamodded à jour reste conseillé si vos autres mods le permettent |
 | Le mod n'apparaît pas dans *Mods* | dossier mal placé (un niveau de trop) | `%AppData%\Balatro\Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json` doit exister |
 | « Missing dependency Steamodded » | Steamodded absent ou trop ancien | installer une version récente de Steamodded |
 | Aucun panneau en partie | touche différente, ou résumé compact désactivé | appuyer sur `C` ; vérifier `ui.show_compact` et `keys.panel` dans la config |

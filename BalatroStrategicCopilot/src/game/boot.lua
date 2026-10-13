@@ -38,6 +38,9 @@ function Boot.start()
     end)
     if not ok_p then L.warn('boot', 'persistence unavailable: %s', tostring(err_p)) end
 
+    BSC.events_mode = BSC.require('game/event_fallback').detect()
+    L.info('boot', 'Steamodded %s, events: %s', tostring(rawget(_G, 'MODDED_VERSION') or '?'), BSC.events_mode)
+
     local ok_cm, err_cm = pcall(function() BSC.compat = BSC.require('game/compat'); BSC.compat.scan() end)
     if not ok_cm then L.warn('boot', 'compatibility scan failed: %s', tostring(err_cm)) end
 

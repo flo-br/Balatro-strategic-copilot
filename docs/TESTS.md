@@ -29,9 +29,10 @@ Aucune dépendance de test : `tests/testlib.lua` fournit assertions, exécution 
 | `integration/test_mod_load` | 8 | `main.lua` réellement chargé via un faux Steamodded : accroches, touches, onglet de config, **première recommandation réelle**, rendu, sélection notée exactement, `calculate` renvoie toujours `nil`, robustesse à un état cassé, **aucune action de jeu appelée** (fonctions piégées), rafraîchissement du panneau |
 | `integration/test_state_reader` | 6 | lecture complète, **ordre du deck non divulgué**, cartes face cachée masquées, améliorations/éditions/sceaux, jokers et boutique, erreurs confinées par section |
 | `integration/test_compat` | 5 | mods détectés, nombres Talisman, contrôle croisé avec le jeu, dégradation des scores « exacts », multiplicateur appris |
+| `integration/test_old_smods` | 5 | Steamodded sans événements de mod (1.0.0~BETA-0509c) : mode de repli, main/défausse/achat/vente/relance reconstruits, bandeau actif, **bandeau d'erreur au démarrage**, retour au mode natif sans double comptage |
 | `integration/test_full_flow` | 2 | partie complète (main → défaite → bilan → fichiers → **redémarrage avec profil conservé**), boutique de bout en bout avec badges |
 | `unit/test_performance` | 6 | mesures (ci-dessous) |
-| **Total** | **169** | |
+| **Total** | **174** | |
 
 ### Tests de référence (scores)
 
@@ -68,9 +69,9 @@ prédiction (journal + diagnostic de compatibilité).
 
 | Environnement | Résultat |
 |---|---|
-| LuaJIT 2.1.1703358377 | **169 réussis, 0 échec** |
-| Lua 5.1.5 | **169 réussis, 0 échec** |
-| Paquet `dist/BalatroStrategicCopilot-1.0.0.zip` extrait, puis tests d'intégration sur cette copie | 9 réussis, 0 échec (paquet complet) |
+| LuaJIT 2.1.1703358377 | **174 réussis, 0 échec** |
+| Lua 5.1.5 | **174 réussis, 0 échec** |
+| Paquet `dist/BalatroStrategicCopilot-1.0.1.zip` extrait, puis tests d'intégration sur cette copie | 9 réussis, 0 échec (paquet complet) |
 
 ### Performances mesurées (LuaJIT, conteneur Linux, plusieurs exécutions)
 

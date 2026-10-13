@@ -45,6 +45,7 @@ end
 
 function love.update(dt)
     frame = frame + 1
+    if frame == 20 then love.graphics.captureScreenshot('banner_' .. scenario .. '.png') end -- banner_shot
     Game.update(G, dt)
     local Ctl = BSCopilot.controller
     local ph = (scenario == 'shop' and 'shop') or (scenario == 'blind' and 'blind_select') or 'hand'

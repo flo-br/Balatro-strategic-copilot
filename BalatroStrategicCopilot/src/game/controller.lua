@@ -13,6 +13,7 @@ local SR = BSC.require('game/state_reader')
 local Score = BSC.require('engine/score')
 local HA = BSC.require('engine/hand_advisor')
 local Fmt = BSC.require('ui/format')
+local EF = BSC.require('game/event_fallback')
 
 local Ctl = {}
 
@@ -131,6 +132,22 @@ function Ctl.refresh(force)
         local okm, m = pcall(BSC.learning_runtime.unknown_multipliers, s)
         if okm then s.learned_multipliers = m end
     end
+    -- event fallback for Steamodded versions that do not call mod.calculate: actions are
+    -- rebuilt by comparing snapshots and emitted with the PREVIOUS state as context
+    if BSC.events_mode == 'native' and EF.pending_play and (Ctl.native_seen or 0) == 0 then
+        BSC.events_mode = 'polling'
+        L.info('events', 'no event received from Steamodded: switching to state comparison')
+    end
+    if BSC.events_mode == 'polling' then
+        local okd, evs = pcall(EF.diff, prev, s)
+        if okd then
+            for _, ev in ipairs(evs) do emit('event', ev) end
+        else
+            L.warn('events', 'fallback diff failed: %s', tostring(evs))
+        end
+    else
+        EF.pending_play = nil
+    end
     Ctl.state = s
     Ctl.version = Ctl.version + 1
     Ctl.selection = nil
@@ -222,6 +239,7 @@ function Ctl.update(dt)
     local interval = (c.compute and c.compute.poll_interval) or 0.15
     if Ctl.poll_timer >= interval then
         Ctl.poll_timer = 0
+        guarded('capture', EF.capture)
         guarded('refresh', Ctl.refresh)
         guarded('selection', Ctl.update_selection)
         Ctl.process_events()
@@ -241,6 +259,7 @@ local WATCH = {
 -- Called for EVERY calculate_context: must be cheap and must never alter the game.
 function Ctl.observe(context)
     if type(context) ~= 'table' then return end
+    Ctl.native_seen = (Ctl.native_seen or 0) + 1
     if context.individual or context.repetition or context.other_card and not context.selling_card and not context.buying_card then
         -- per-card sub-contexts are irrelevant to the decision log
         if not context.pre_discard then return end
@@ -248,6 +267,11 @@ function Ctl.observe(context)
     if context.blueprint or context.retrigger_joker then return end
     for _, k in ipairs(WATCH) do
         if context[k] then
+            if BSC.events_mode ~= 'native' then
+                -- Steamodded does deliver events after all: never mix both sources
+                BSC.events_mode = 'native'
+                EF.pending_play = nil
+            end
             local ev = { kind = k, t = U.now() }
             if k == 'before' or k == 'pre_discard' or k == 'after' then
                 ev.uids = {}

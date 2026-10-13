@@ -194,6 +194,10 @@ function FG.install(opts)
         end,
     }
     SMODS.Mods.BalatroStrategicCopilot = SMODS.current_mod
+    if not opts.old_smods then
+        -- modern Steamodded dispatches contexts to mods (absent in 1.0.0~BETA-0509c)
+        SMODS.get_mods_scoring_targets = function() return {} end
+    end
     SMODS.Keybind = setmetatable({}, { __call = function(_, t) calls.keybinds[#calls.keybinds + 1] = t; return t end })
     MODDED_VERSION = '26.1002.0'
     VERSION = '1.0.1o-FULL'

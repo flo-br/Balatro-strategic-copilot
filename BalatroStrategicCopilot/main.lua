@@ -3,7 +3,7 @@
 
 BSCopilot = BSCopilot or {}
 local BSC = BSCopilot
-BSC.VERSION = '1.0.0'
+BSC.VERSION = '1.0.1'
 BSC.mod = SMODS and SMODS.current_mod or BSC.mod
 BSC.modules = BSC.modules or {}
 
@@ -24,11 +24,71 @@ function BSC.require(name)
     return m
 end
 
+-- Startup status banner, installed FIRST and independent of every other module, so that the
+-- player always sees whether the copilot started, and why not if it failed (instead of a
+-- silent failure that only appears in the log).
+BSC.status = { ok = nil, text = 'Balatro Strategic Copilot : démarrage…' }
+
+function BSC.draw_status()
+    local st = BSC.status
+    if not st or not love or not love.graphics then return end
+    local now = (love.timer and love.timer.getTime()) or os.clock()
+    st.t0 = st.t0 or now
+    local age = now - st.t0
+    if st.ok and age > (st.ttl or 10) then return end
+    local g = love.graphics
+    local W, H = g.getDimensions()
+    g.push('all')
+    g.origin()
+    local ok_font, font = pcall(function()
+        BSC.status_font = BSC.status_font or g.newFont(math.max(14, math.floor(H / 50)))
+        return BSC.status_font
+    end)
+    if ok_font and font then
+        g.setFont(font)
+        local lines = {}
+        for l in (st.text .. '\n'):gmatch('(.-)\n') do lines[#lines + 1] = l end
+        local w = 0
+        for _, l in ipairs(lines) do w = math.max(w, font:getWidth(l)) end
+        w = math.min(w + 24, W - 20)
+        local h = #lines * font:getHeight() * 1.2 + 12
+        local x = math.floor(W / 2 - w / 2)
+        local alpha = st.ok and math.min(1, ((st.ttl or 10) - age) / 1.5) or 1
+        if st.ok then g.setColor(0.10, 0.36, 0.22, 0.92 * alpha) else g.setColor(0.55, 0.10, 0.10, 0.95) end
+        g.rectangle('fill', x, 8, w, h, 6, 6)
+        g.setColor(1, 1, 1, alpha)
+        for i, l in ipairs(lines) do g.print(l, x + 12, 14 + (i - 1) * font:getHeight() * 1.2) end
+    end
+    g.pop()
+end
+
+pcall(function()
+    if type(Game) == 'table' and type(Game.draw) == 'function' and not BSC.status_hooked then
+        BSC.status_hooked = true
+        local draw_ref = Game.draw
+        Game.draw = function(self, ...)
+            draw_ref(self, ...)
+            pcall(BSC.draw_status)
+        end
+    end
+end)
+
 local ok, err = pcall(function()
     BSC.config = (BSC.mod and BSC.mod.config) or {}
     BSC.require('game/boot').start()
 end)
-if not ok then
-    local msg = 'Balatro Strategic Copilot failed to start: ' .. tostring(err)
-    if sendErrorMessage then sendErrorMessage(msg, 'BSCopilot') else print(msg) end
+if ok then
+    local keys = BSC.config and BSC.config.keys or {}
+    local events = BSC.events_mode == 'native' and 'événements natifs' or 'détection par état (Steamodded ancien)'
+    BSC.status = { ok = true, ttl = 10, text = 'Balatro Strategic Copilot ' .. BSC.VERSION .. ' actif — touche '
+        .. string.upper(keys.panel or 'c') .. ' : panneau  (' .. events .. ')' }
+else
+    local msg = tostring(err)
+    BSC.boot_error = msg
+    local full = 'Balatro Strategic Copilot failed to start: ' .. msg
+    if sendErrorMessage then sendErrorMessage(full, 'BSCopilot') else print(full) end
+    local first = msg:gsub('\n.*', '')
+    if #first > 140 then first = first:sub(1, 140) .. '…' end
+    BSC.status = { ok = false, text = 'Balatro Strategic Copilot : erreur au démarrage\n' .. first
+        .. '\nDétails : %AppData%\\Balatro\\Mods\\lovely\\log (rechercher BSCopilot)' }
 end

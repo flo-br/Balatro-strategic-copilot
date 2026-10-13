@@ -7,7 +7,7 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 
 > Statut : version 1.0.0. Développée et testée **hors du jeu** (aucune installation de Balatro
 > n'était disponible dans l'environnement de développement). Le code a été validé par
-> 169 tests automatisés, un environnement Balatro/Steamodded simulé et le vrai runtime LÖVE 11.5,
+> 174 tests automatisés, un environnement Balatro/Steamodded simulé et le vrai runtime LÖVE 11.5,
 > mais **pas encore dans Balatro réel**. Voir [Limites](docs/LIMITATIONS.md) et [Tests](docs/TESTS.md).
 
 ![Panneau en phase de main](docs/img/overlay_hand.png)
@@ -32,8 +32,9 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 1. Installer [Lovely](https://github.com/ethangreen-dev/lovely-injector) et
    [Steamodded](https://github.com/Steamodded/smods) (voir [docs/INSTALL.md](docs/INSTALL.md)).
 2. Copier le dossier `BalatroStrategicCopilot/` dans `%AppData%\Balatro\Mods\`
-   (ou utiliser l'archive `dist/BalatroStrategicCopilot-1.0.0.zip` produite par `python tools/build.py`).
-3. Lancer Balatro. Le badge du mod apparaît dans le menu *Mods*.
+   (ou utiliser l'archive `dist/BalatroStrategicCopilot-1.0.1.zip` produite par `python tools/build.py`).
+3. Lancer Balatro. Un **bandeau vert « actif »** s'affiche quelques secondes en haut de l'écran
+   (ou un bandeau rouge expliquant l'erreur). Les conseils apparaissent **en partie**.
 
 Désinstallation : supprimer `%AppData%\Balatro\Mods\BalatroStrategicCopilot` (et, si souhaité,
 les données apprises `%AppData%\Balatro\BSC\`). Détails dans [docs/INSTALL.md](docs/INSTALL.md).
@@ -92,7 +93,7 @@ elles montrent le rendu du mod, pas l'apparence du jeu.*
 |---|---|---|
 | Balatro | 1.0.1 (série 1.0.1x, lue via `G.VERSION`) | jeu |
 | Lovely | ≥ 0.9.0 (dépendance de Steamodded) | injecteur |
-| Steamodded | ≥ `1.0.0~BETA-0301a` déclaré ; API vérifiées sur `26.1002.0` | chargeur de mods |
+| Steamodded | ≥ `1.0.0~BETA-0301a` déclaré ; API vérifiées sur `26.1002.0` et `1.0.0~BETA-0509c` (mai 2025, sans événements de mod : détection par état) | chargeur de mods |
 
 Aucune autre dépendance, aucune connexion réseau, aucune télémétrie. Le mod n'utilise
 **aucun patch Lovely** et ne modifie aucun fichier du jeu ni ses sauvegardes.
