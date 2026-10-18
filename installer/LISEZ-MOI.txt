@@ -1,0 +1,47 @@
+BALATRO STRATEGIC COPILOT - INSTALLATION EN 3 ÉTAPES (Windows, Balatro sur Steam)
+==================================================================================
+
+1. Extraire TOUTE l'archive
+   Clic droit sur le fichier .zip > « Extraire tout... » > Extraire.
+   (Ne pas lancer les fichiers depuis l'intérieur du .zip.)
+
+2. Fermer Balatro, puis double-cliquer sur INSTALLER_COPILOT.bat
+   Si Windows affiche « Windows a protégé votre ordinateur » : « Informations
+   complémentaires » > « Exécuter quand même ».
+   Le programme vérifie et répare, dans l'ordre, tout ce dont le copilote a besoin :
+     - le dossier du jeu (trouvé via Steam, même sur un autre disque) ;
+     - Lovely (fichier winmm.dll à côté de Balatro.exe) : il manque souvent après une
+       réinstallation ou un déplacement du jeu, et alors AUCUN mod ne marche ;
+     - Steamodded (dans %AppData%\Balatro\Mods) ;
+     - le copilote (au bon endroit, une seule copie ; les anciennes copies sont
+       déplacées dans %AppData%\Balatro\BSC_anciennes_copies, jamais supprimées).
+   Il demande votre accord avant chaque modification. Il ne télécharge rien tout seul :
+   s'il manque Lovely ou Steamodded, il ouvre la page officielle (si vous l'acceptez),
+   vous téléchargez le fichier indiqué, et il l'installe au bon endroit.
+
+3. Accepter « Lancer Balatro maintenant » : il lance le jeu par Steam, lit le journal
+   de Lovely et vous dit si tout s'est chargé. Ce que vous devez voir :
+     - une deuxième fenêtre noire « Lovely x.x.x » ;
+     - un bouton « Mods » au menu principal ;
+     - un bandeau vert « Balatro Strategic Copilot ... actif » en haut de l'écran.
+   En partie : résumé en haut à droite, touche C = panneau complet, V = détails, B = badges.
+
+Si ça ne marche toujours pas
+   Un rapport est enregistré sur le Bureau : Rapport_Copilot_Balatro.txt.
+   Envoyez-le : il dit exactement quel maillon bloque.
+   DIAGNOSTIC_COPILOT.bat refait toutes les vérifications SANS rien modifier
+   (à lancer après avoir lancé le jeu une fois).
+
+Autre méthode pour Lovely + Steamodded
+   Le lanceur Balatro Multiplayer (balatromp.com) installe Lovely et Steamodded.
+   Ensuite, lancez INSTALLER_COPILOT.bat pour installer le copilote.
+
+Installation manuelle (sans le programme)
+   Glisser le dossier BalatroStrategicCopilot dans %AppData%\Balatro\Mods\ pour que ce
+   fichier existe : %AppData%\Balatro\Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json
+
+Désinstallation
+   Supprimer %AppData%\Balatro\Mods\BalatroStrategicCopilot
+   (optionnel : les données apprises dans %AppData%\Balatro\BSC\).
+
+Le copilote ne joue jamais à votre place, fonctionne hors ligne et n'envoie aucune donnée.

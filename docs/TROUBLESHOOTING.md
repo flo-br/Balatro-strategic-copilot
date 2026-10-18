@@ -1,6 +1,14 @@
 # Dépannage
 
-## Premier réflexe : le bandeau de démarrage (version 1.0.1+)
+## Premier réflexe : le programme de diagnostic (version 1.0.3+)
+
+Dans le dossier extrait de l'archive, double-cliquer sur **`DIAGNOSTIC_COPILOT.bat`** (ne modifie
+rien) ou **`INSTALLER_COPILOT.bat`** (propose les réparations). Il vérifie toute la chaîne — jeu,
+Lovely, Steamodded, copilote, journal du dernier lancement — et écrit
+`Rapport_Copilot_Balatro.txt` sur le Bureau. Le rapport dit quel maillon bloque ; c'est le fichier
+à envoyer pour obtenir de l'aide. Détail des vérifications : [INSTALL.md](INSTALL.md).
+
+## Le bandeau de démarrage (version 1.0.1+)
 
 Au lancement du jeu, un bandeau s'affiche en haut de l'écran pendant l'intro, puis 15 secondes
 au menu principal (1.0.2+) :
@@ -28,6 +36,8 @@ le mod a démarré. Le journal propre au mod est `%AppData%\Balatro\BSC\logs\bsc
 
 | Symptôme | Cause probable | Solution |
 |---|---|---|
+| Copilote présent dans *Mods* mais désactivé, aucun bandeau | Steamodded récent : `BalatroStrategicCopilot` listé dans `Mods\lovely\blacklist.txt`, soit désactivé depuis le menu *Mods*, soit **désactivé automatiquement** parce que deux copies du mod existaient | le réactiver dans le menu *Mods*, ou lancer `INSTALLER_COPILOT.bat` (retire la ligne après copie de sécurité) ; garder une seule copie |
+| Message Lovely « An old Lovely installation was detected » | ancien `version.dll` ou `dwmapi.dll` à côté de `winmm.dll` | le supprimer ou le renommer (l'installateur le renomme) |
 | **Aucun mod ne marche** (Multiplayer non plus), pas de fenêtre « Lovely », pas de bouton *Mods* | Lovely absent du dossier du jeu : jeu réinstallé ou déplacé sur un autre disque (le dossier `Mods` reste, `winmm.dll` disparaît), ou `winmm.dll` supprimé par l'antivirus | réinstaller Lovely dans le **nouveau** dossier du jeu : relancer le lanceur Balatro Multiplayer, ou copier `winmm.dll` à côté de `Balatro.exe` (INSTALL.md, étape 2) |
 | Fenêtre « Lovely » présente mais pas de bouton *Mods* | Steamodded mal placé | `Mods` doit être dans `%AppData%\Balatro\` (pas dans le dossier du jeu), avec `Mods\smods\<fichiers>` |
 | Aucun bandeau, archive `BalatroStrategicCopilot-*.zip` dans `Mods` | Steamodded ancien (ex. `1.0.0~BETA-0509c`) : il ignore les `.zip` (vérifié avec son chargeur) | extraire l'archive et ne garder que le dossier `BalatroStrategicCopilot` ; supprimer le `.zip` |

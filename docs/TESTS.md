@@ -11,6 +11,12 @@ luajit tests/run.lua shop     # filtre sur le nom du fichier
 Sous Windows : installer LuaJIT, puis `luajit tests\run.lua` depuis la racine du dépôt.
 Aucune dépendance de test : `tests/testlib.lua` fournit assertions, exécution et rapport.
 
+```bash
+python3 tools/build.py                                    # paquet dist/…zip
+pwsh -NoProfile -File tests/installer/test_installer.ps1 -Zip dist/BalatroStrategicCopilot-1.0.3.zip [-Smods <sources Steamodded>]
+luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai chargeur Steamodded
+```
+
 ## Inventaire
 
 | Fichier | Tests | Couvre |
@@ -65,13 +71,37 @@ prédiction (journal + diagnostic de compatibilité).
 * idempotence, croissance, contributions, multiplicateur inconnu à peine modifié par 1 observation ;
 * profil sauvegardé puis rechargé par une nouvelle instance (« redémarrage ») : statistiques intactes.
 
-## Résultats obtenus (2026-10-13)
+## Résultats obtenus (2026-10-18)
 
 | Environnement | Résultat |
 |---|---|
 | LuaJIT 2.1.1703358377 | **175 réussis, 0 échec** |
 | Lua 5.1.5 | **175 réussis, 0 échec** |
-| Paquet `dist/BalatroStrategicCopilot-1.0.2.zip` extrait, puis tests d'intégration sur cette copie | voir ci-dessous |
+| Paquet `dist/BalatroStrategicCopilot-1.0.3.zip` extrait, tests d'intégration sur cette copie | **16 réussis, 0 échec** |
+| Installateur extrait du paquet, PowerShell 7.4 (Linux) | **9 scénarios, 53 vérifications réussies** |
+| Installateur, analyse statique de compatibilité Windows PowerShell 5.1 (PSScriptAnalyzer 1.25, profil Windows 10 / PS 5.1) | **0 erreur de syntaxe, 0 incompatibilité** |
+
+### Installateur-diagnostic (`tests/installer/test_installer.ps1`)
+
+Chaque scénario construit une fausse arborescence Windows (racine Steam, bibliothèques,
+`appmanifest`, dossiers du jeu, `%AppData%\Balatro\Mods`, Téléchargements, journaux de Lovely),
+exécute l'installateur **extrait de l'archive réelle**, puis contrôle le résultat :
+
+| Scénario | Ce qui est vérifié |
+|---|---|
+| S1 jeu réinstallé dans une autre bibliothèque | bonne installation choisie (celle déclarée à Steam), Lovely absent détecté puis copié depuis l'ancienne installation, Steamodded et autres mods listés, ancienne copie imbriquée + zip déplacés hors de `Mods` (rien supprimé), une seule copie installée, ancien journal signalé comme antérieur aux corrections |
+| S2 diagnostic seul après un lancement réussi | Lovely, Steamodded (nombre de patchs) et « copilote prêt » lus dans le journal ; **aucune modification** |
+| S3 Steamodded rangé trop bas + doublon désactivé, `version.dll` avec `winmm.dll`, `--vanilla` | Steamodded remonté, doublon déplacé, ancien fichier renommé, option `--vanilla` du bon jeu signalée comme bloquante |
+| S4 Lovely et Steamodded absents, archives officielles dans Téléchargements | `winmm.dll` extrait de l'archive Lovely, Steamodded extrait directement dans `Mods\smods`, copilote installé |
+| S5 paquet extrait **dans** `Mods` et lancé de là | une seule copie au bon endroit, programme en cours non déplacé, utilisateur prévenu |
+| S6 journaux | Steamodded non chargé, copilote absent, erreur au démarrage du copilote, mode vanilla, plantage, autre dossier `Mods` |
+| S7 lancement puis attente | journal écrit pendant l'attente détecté, arrêt dès que le copilote est prêt |
+| S8 paquet incomplet | message « extraire toute l'archive » |
+| S9 copilote désactivé (`Mods\lovely\blacklist.txt`) | ligne retirée, autres lignes conservées, copie de sécurité |
+
+Les dossiers `Mods` produits par S1, S4, S5, S7 et S9 sont ensuite passés aux **deux vrais
+chargeurs** de Steamodded (ci-dessous) : copilote trouvé, activé, bandeau « 1.0.3 actif » dans
+chaque cas.
 
 ### Performances mesurées (LuaJIT, conteneur Linux, plusieurs exécutions)
 
@@ -84,11 +114,14 @@ prédiction (journal + diagnostic de compatibilité).
 | Plus longue tranche de calcul par image (budget 4 ms) | 6–10 ms |
 | Sauvegarde du profil (2 000 observations) | ≈ 4 ms |
 
-### Vrai chargeur de Steamodded (`tools/smods_loader_check.lua`)
+### Vrais chargeurs de Steamodded (`tools/smods_loader_check.lua`)
 
-Exécute **le code réel** de `loadMods()` de Steamodded `1.0.0~BETA-0509c` (sources non incluses
-dans le projet, licence GPL-3.0) sur un dossier `Mods`, le jeu étant simulé par
-`tests/integration/fake_game.lua`. Résultats (2026-10-13), paquet 1.0.2 :
+Exécute **le code réel** du chargeur de Steamodded — `loadMods()` de `1.0.0~BETA-0509c` (mai 2025)
+et `loadMods()` + `load_mods()` de `26.1009.0` (récent) ; sources non incluses dans le projet,
+licence GPL-3.0 — sur un dossier `Mods`, le jeu étant simulé par
+`tests/integration/fake_game.lua`. Le dossier `Mods` n'est jamais modifié (les écritures de
+Steamodded sont seulement affichées). Résultats avec 0509c (2026-10-13, paquet 1.0.2 ; identiques
+avec le chargeur récent sauf mention) :
 
 | Disposition dans `Mods` | Trouvé | Bandeau |
 |---|---|---|
@@ -98,13 +131,16 @@ dans le projet, licence GPL-3.0) sur un dossier `Mods`, le jeu étant simulé pa
 | dépôt GitHub extrait deux fois `X\X\BalatroStrategicCopilot\` | **non** | aucun |
 | `BalatroStrategicCopilot-1.0.2\BalatroStrategicCopilot\` (« Extraire tout ») | oui | « 1.0.2 actif » |
 | dépôt entier renommé `BalatroStrategicCopilot\BalatroStrategicCopilot\` | oui | « 1.0.2 actif » |
-| dossier du mod + dépôt entier (doublon) | oui (1 copie, l'autre rejetée `dupe`) | « 1.0.2 actif » |
+| dossier du mod + dépôt entier (doublon) | oui (1 copie, l'autre rejetée `dupe`) ; **récent : écrit `BalatroStrategicCopilot` dans `blacklist.txt`** | « 1.0.2 actif » |
+| `BalatroStrategicCopilot` listé dans `Mods\lovely\blacklist.txt` (récent) | oui, **désactivé** | aucun |
 | `BalatroStrategicCopilot\BalatroStrategicCopilot-1.0.2\BalatroStrategicCopilot\` | **non** | aucun |
 
 Cause des « non » dans le code de Steamodded : les fichiers `.json` ne sont cherchés qu'à 1 ou 2
 dossiers sous `Mods` (`depth > 3` arrête l'exploration) et une archive `.zip` n'est ni un dossier ni
-un `.json` (seul le chargeur récent, `src/preflight/loader.lua`, monte les zips). La documentation
-1.0.0/1.0.1 affirmait à tort qu'un zip déposé tel quel fonctionnait : corrigé en 1.0.2.
+un `.json` (seul le chargeur récent, `src/preflight/loader.lua`, monte les zips ; non simulé ici
+car il faut LÖVE). La documentation 1.0.0/1.0.1 affirmait à tort qu'un zip déposé tel quel
+fonctionnait : corrigé en 1.0.2. Le chargeur récent désactive durablement un mod en double via
+`blacklist.txt` : pris en charge par l'installateur en 1.0.3.
 
 ### Runtime LÖVE réel (harnais `tools/love_harness`)
 
@@ -129,7 +165,12 @@ dossier de sauvegarde LÖVE, **0 erreur**. Captures : `docs/img/overlay_*.png`.
 
 * **Balatro réel** : non installé dans l'environnement (Linux, conteneur). Aucun test en jeu n'a
   été réalisé ; aucun n'est revendiqué.
-* Le vrai chargeur Steamodded (remplacé par un faux respectant les signatures vérifiées).
+* Steamodded complet dans le jeu : seuls ses **chargeurs** ont été exécutés (deux versions) ; le
+  reste (API, interface, injection des objets) est remplacé par un faux respectant les signatures
+  vérifiées.
+* L'installateur sous **Windows réel** : il a été exécuté avec PowerShell 7 sous Linux et analysé
+  pour Windows PowerShell 5.1, mais ni `cmd.exe` (fichiers `.bat`), ni le registre, ni Steam
+  (`steam://`), ni la détection du processus du jeu, ni un antivirus n'ont pu être exercés.
 * La position réelle des badges sur les cartes (formule vérifiée dans les sources, cohérente
   dans le harnais, non observée dans le jeu).
 * La police du jeu (`m6x11plus`) : non disponible ; le remplacement des glyphes manquants est

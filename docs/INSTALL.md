@@ -1,5 +1,32 @@
 # Installation, mise à jour et désinstallation (Windows)
 
+## Méthode recommandée : l'installateur (1.0.3+)
+
+1. Extraire **toute** l'archive `BalatroStrategicCopilot-1.0.3.zip` (clic droit → *Extraire tout…*).
+2. Fermer Balatro, puis double-cliquer sur **`INSTALLER_COPILOT.bat`** dans le dossier extrait
+   (si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires* →
+   *Exécuter quand même*).
+3. Accepter « Lancer Balatro maintenant » : le programme lance le jeu par Steam, lit le journal de
+   Lovely et dit si tout s'est chargé. Un rapport `Rapport_Copilot_Balatro.txt` est écrit sur le
+   Bureau.
+
+Ce que le programme vérifie, dans l'ordre de la chaîne de chargement (chaque modification est
+proposée et doit être acceptée ; rien n'est téléchargé ni supprimé) :
+
+| Maillon | Vérifications | Réparation proposée |
+|---|---|---|
+| Jeu | dossier de `Balatro.exe` via le registre et les bibliothèques Steam (`libraryfolders.vdf`, `appmanifest_2379780.acf`), recherche sur les disques, autres installations, version Xbox (non prise en charge), options de lancement Steam `--vanilla` / `-d` | — (options : indiquées) |
+| Lovely | `winmm.dll` à côté de `Balatro.exe` (DLL valide), ancien `version.dll` / `dwmapi.dll` (Lovely refuse alors de démarrer) | copie de `winmm.dll` depuis une ancienne installation du jeu ou depuis `lovely-x86_64-pc-windows-msvc.zip` téléchargé par vous (page officielle ouverte sur demande) ; ancien fichier **renommé** |
+| Steamodded | présent **directement** dans `Mods`, une seule copie, pas désactivé (`.lovelyignore`, `Mods\lovely\blacklist.txt`), version | remonté s'il est rangé trop bas, copies en trop déplacées hors de `Mods`, réactivation ; installation depuis l'archive *Source code (zip)* téléchargée par vous |
+| Copilote | toutes les copies (dossiers imbriqués, `.zip`), version, désactivation (`.lovelyignore`, `blacklist.txt`) | installation propre dans `Mods\BalatroStrategicCopilot`, anciennes copies **déplacées** dans `%AppData%\Balatro\BSC_anciennes_copies\`, réactivation (copie de sécurité de `blacklist.txt`) |
+| Lancement | journal `Mods\lovely\log\lovely-*.log` : Lovely démarré, dossier du jeu réellement lancé, dossier `Mods` utilisé, mode vanilla, Steamodded chargé, copilote prêt ou erreur, plantage | — (diagnostic précis) |
+
+`DIAGNOSTIC_COPILOT.bat` fait les mêmes vérifications **sans rien modifier** (à lancer après avoir
+lancé le jeu une fois). Paramètres utiles de `outils\installer_copilot.ps1` : `-DossierJeu`,
+`-DiagnosticSeul`, `-SansLancement`.
+
+Les sections suivantes décrivent la même chose à la main.
+
 ## 1. Prérequis
 
 | Composant | Où le trouver | Remarque |
@@ -53,7 +80,7 @@ dossier du jeu.
 
 1. Fermer le jeu.
 2. Supprimer toute ancienne copie du mod dans `%AppData%\Balatro\Mods\` (dossier ou `.zip`).
-3. Ouvrir l'archive `BalatroStrategicCopilot-1.0.2.zip` (ou le zip téléchargé depuis GitHub) et
+3. Ouvrir l'archive `BalatroStrategicCopilot-1.0.3.zip` (ou le zip téléchargé depuis GitHub) et
    **glisser le dossier `BalatroStrategicCopilot` qu'elle contient** dans `%AppData%\Balatro\Mods\`.
 4. Vérifier que ce fichier existe **exactement** à cet endroit :
    ```
@@ -70,23 +97,24 @@ dossier du jeu.
        LISEZMOI.txt
        src\core\ src\engine\ src\game\ src\io\ src\learning\ src\model\ src\ui\
    ```
-5. Lancer le jeu : un bandeau vert « Balatro Strategic Copilot 1.0.2 actif » s'affiche en haut de
+5. Lancer le jeu : un bandeau vert « Balatro Strategic Copilot 1.0.3 actif » s'affiche en haut de
    l'écran pendant l'intro puis 15 secondes au menu principal. Dans *Mods*, « Balatro Strategic
    Copilot » apparaît. En partie, le résumé compact s'affiche en haut à droite ; `C` ouvre le
    panneau complet.
 
 ### Pièges vérifiés sur le chargeur de Steamodded
 
-Vérifié en exécutant le vrai chargeur de Steamodded `1.0.0~BETA-0509c` sur chaque disposition
-(`tools/smods_loader_check.lua`, voir TESTS.md) :
+Vérifié en exécutant les vrais chargeurs de Steamodded `1.0.0~BETA-0509c` (mai 2025) et
+`26.1009.0` (récent) sur chaque disposition (`tools/smods_loader_check.lua`, voir TESTS.md) :
 
 | Disposition dans `Mods` | Résultat |
 |---|---|
 | `Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json` | ✔ chargé (disposition recommandée) |
-| un dossier intermédiaire : `Mods\BalatroStrategicCopilot-1.0.2\BalatroStrategicCopilot\…json` ou dépôt GitHub entier `Mods\balatro-strategic-copilot-…\BalatroStrategicCopilot\…json` | ✔ chargé (toléré) |
+| un dossier intermédiaire : `Mods\BalatroStrategicCopilot-1.0.3\BalatroStrategicCopilot\…json` ou dépôt GitHub entier `Mods\balatro-strategic-copilot-…\BalatroStrategicCopilot\…json` | ✔ chargé (toléré) |
 | **deux** dossiers intermédiaires, par exemple après « Extraire tout » de Windows dans un dossier déjà créé : `Mods\X\X\BalatroStrategicCopilot\…json` | ✘ **ignoré sans aucun message** : Steamodded ne cherche pas plus profond |
 | **archive `.zip` déposée telle quelle** dans `Mods` | ✘ **ignorée sans aucun message** avec ce Steamodded (les versions récentes de Steamodded savent monter un zip, pas celle-ci) : il faut l'extraire |
-| deux copies du mod | une seule est chargée, l'autre provoque l'erreur `dupe` (bouton *Mods* signalé) : n'en garder qu'une |
+| deux copies du mod | Steamodded ancien : une seule est chargée, l'autre provoque l'erreur `dupe`. Steamodded récent : il **désactive durablement** une copie en écrivant le nom de son dossier dans `Mods\lovely\blacklist.txt` ; si c'est `BalatroStrategicCopilot`, le mod reste désactivé même après le ménage. N'en garder qu'une et la réactiver (l'installateur le fait) |
+| `BalatroStrategicCopilot` listé dans `Mods\lovely\blacklist.txt` (mod désactivé depuis le menu *Mods* d'un Steamodded récent) | ✘ chargé **désactivé** : aucun bandeau ; le réactiver dans le menu *Mods* ou retirer la ligne |
 
 Dans tous les cas « ignoré », **aucun bandeau** n'apparaît : c'est le signe que le mod n'a pas été
 trouvé. Pour voir où se trouvent les copies du mod, coller dans PowerShell :

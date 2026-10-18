@@ -1,5 +1,26 @@
 # Historique des versions
 
+## 1.0.3 — 2026-10-18
+
+### Ajouté
+* **Installateur-diagnostic Windows** livré à la racine de l'archive : `INSTALLER_COPILOT.bat`
+  (vérifie et répare) et `DIAGNOSTIC_COPILOT.bat` (vérifie seulement). Il suit toute la chaîne de
+  chargement : dossier du jeu trouvé via Steam (bibliothèques sur d'autres disques comprises),
+  options de lancement `--vanilla`, Lovely (`winmm.dll` absent après une réinstallation du jeu,
+  ancien `version.dll`/`dwmapi.dll`), Steamodded (absent, rangé trop bas, en double, désactivé),
+  copilote (copies multiples, zip, désactivation), puis lance le jeu et lit le journal de Lovely
+  pour dire ce qui s'est réellement chargé. Rapport sur le Bureau. Aucun téléchargement, aucune
+  suppression : les anciennes copies sont déplacées, les fichiers modifiés sont sauvegardés.
+* `tools/smods_loader_check.lua` exécute aussi le chargeur des Steamodded **récents**
+  (`src/preflight/loader.lua`).
+* Tests de l'installateur : 9 scénarios, 53 vérifications (`tests/installer/test_installer.ps1`),
+  compatibilité Windows PowerShell 5.1 vérifiée par analyse statique.
+
+### Corrigé (découvert en exécutant le chargeur récent)
+* Un Steamodded récent désactive durablement un mod présent en deux exemplaires en écrivant le
+  nom de son dossier dans `Mods\lovely\blacklist.txt` : le copilote pouvait rester désactivé
+  même après suppression du doublon. L'installateur le détecte et le réactive ; documenté.
+
 ## 1.0.2 — 2026-10-13
 
 ### Corrigé
