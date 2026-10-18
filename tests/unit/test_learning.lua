@@ -95,11 +95,18 @@ function S.defeat_is_not_a_bad_decision(T)
         },
         lost_to = 'bl_wall', end_reason = 'lost',
     })
+    run.blinds[3].key = 'bl_wall'; run.blinds[3].boss = true
     local p = LE.new_profile(0)
     LE.process_run(p, run)
     local rv = RV.build(run, p)
     T.eq(#rv.mistakes, 0, 'no mistake invented from the outcome')
-    T.eq(#rv.bad_luck, 1, 'loss attributed to probable bad luck')
+    -- every seed is playable: never "bad luck", the review names the margin and the boss
+    T.eq(#rv.bad_luck, 0, 'no loss attributed to luck')
+    local keys = {}
+    for _, c in ipairs(rv.causes) do keys[c.key] = c.text end
+    T.ok(keys.margin and keys.margin:find('85', 1, true), 'a 15 % risk on a decisive blind is a cause')
+    T.ok(keys.boss and keys.boss:find('marge', 1, true), 'The Wall: what it demands')
+    T.ok(#rv.tips >= 1)
     T.eq(rv.result, 'loss')
 end
 
@@ -188,6 +195,38 @@ function S.profile_migration_v1(T)
         growth = { n = 0, sum_log = 0, sum_log2 = 0 }, jokers = {}, decisions = { followed = { n = 0, ok = 0 }, deviated = { n = 0, ok = 0 }, by_danger = {} } }
     local new = LE.migrations[1](old)
     T.eq(new.schema, 2); T.ok(new.calibration.hand); T.ok(new.unknown_jokers); T.eq(new.runs, 5)
+end
+
+-- The review finds where the build fell behind (power, multipliers, idle money, levels) and
+-- the causes feed the plan of the next runs.
+function S.review_finds_the_causes_of_a_loss(T)
+    local _, LE = env()
+    local RV = BSCopilot.require('learning/review')
+    local run = make_run('cause', { { 0.95, true }, { 0.9, true }, { 0.4, false } }, { lost_to = 'bl_wall', end_reason = 'lost' })
+    run.blinds[#run.blinds].boss = true
+    run.blinds[#run.blinds].key = 'bl_wall'
+    run.blinds[#run.blinds].chips = 20000
+    run.blinds[#run.blinds].score = 9000
+    run.power = { { ante = 1, median = 400 }, { ante = 2, median = 300 } }
+    run.blinds[#run.blinds].ante = 2
+    run.builds = {
+        { ante = 2, round = 5, dollars = 48, cap = 25, xmult = 0, xmult_target = 1, gap_xmult = true, main_hand = 'Pair', main_level = 2 },
+        { ante = 2, round = 6, dollars = 52, cap = 25, xmult = 0, xmult_target = 1, gap_xmult = true, main_hand = 'Pair', main_level = 2 },
+    }
+    local p = LE.new_profile(0)
+    local rv = RV.build(run, p)
+    local keys = {}
+    for _, c in ipairs(rv.causes) do keys[c.key] = c.text end
+    T.ok(keys.deficit and keys.deficit:find('55', 1, true), keys.deficit)
+    T.ok(keys.power_drop, 'power stopped covering the boss')
+    T.ok(keys.xmult, 'no multiplier')
+    T.ok(keys.idle_money and keys.idle_money:find('52', 1, true), 'money left idle')
+    -- lessons: the plan weighs multipliers more after such losses (bounded)
+    T.eq(LE.lesson_weight(p, 'xmult'), 1)
+    LE.add_lessons(p, rv.lessons, run.id)
+    T.ok(not LE.add_lessons(p, rv.lessons, run.id), 'one run counted once')
+    T.eq(LE.lesson_weight(p, 'xmult'), 1.5)
+    T.eq(LE.lesson_weight(p, 'levels'), 1)
 end
 
 return S

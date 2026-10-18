@@ -18,22 +18,57 @@ local H = BSC.require('model/hands')
 local PE = BSC.require('engine/poker_eval')
 local Score = BSC.require('engine/score')
 local PR = BSC.require('engine/probability')
+local EF = BSC.require('model/effects_db')
 
 local HA = {}
 
 local function noop() end
 
--- rough ordering of cards when several could fill the same role
-local function card_value(c)
-    local v = (c.nominal or 0) + (c.bonus or 0) + (c.perma_bonus or 0)
-    v = v + 6 * ((c.mult or 0) + (c.perma_mult or 0))
-    if (c.x_mult or 1) > 1 then v = v + 40 * (c.x_mult - 1) end
-    if c.edition == 'e_polychrome' then v = v + 30 elseif c.edition == 'e_holo' then v = v + 25 elseif c.edition == 'e_foil' then v = v + 15 end
-    if c.seal == 'Red' then v = v + 15 elseif c.seal == 'Gold' then v = v + 5 end
-    if c.debuff then v = v - 50 end
+-- rough ordering of cards when several could fill the same role (model/effects_db.lua: a
+-- Steel or Gold card is worth keeping, a Purple seal worth discarding)
+local card_value = EF.card_value
+HA.card_value = card_value
+
+-- What an action is worth BESIDES the blind, in $: money the played cards earn (Gold seal,
+-- Lucky), cards kept in hand when the round ends (Gold card $3, Blue seal planet), a Glass card
+-- that may break, a Purple seal discarded (tarot). Used only to separate actions with the same
+-- chances (e.g. which cards go with a winning pair).
+HA.SIDE = { blue_seal = 3, purple_seal = 3, glass_card = 6, big = 5, close = 0.03 }
+
+-- Two options with nearly the same chances (within HA.SIDE.close) but a large difference in
+-- what they cost besides (HA.SIDE.big $, e.g. The Ox: money set to $0): the cheaper one wins.
+local function side_decides(pa, pb, sa, sb)
+    return math.abs(pa - pb) <= HA.SIDE.close and math.abs((sa or 0) - (sb or 0)) >= HA.SIDE.big
+end
+function HA.side_value(cards, hand, kind, p_end, prob)
+    local v = 0
+    local set = {}
+    for _, c in ipairs(cards or {}) do set[c] = true end
+    if kind == 'discard' then
+        for _, c in ipairs(cards or {}) do
+            if not c.debuff then
+                if c.seal == 'Purple' then v = v + HA.SIDE.purple_seal end
+                -- discarded: no longer held at the end of the round
+                v = v - 0.5 * (c.h_dollars or 0) - ((c.seal == 'Blue') and 0.5 * HA.SIDE.blue_seal or 0)
+            end
+        end
+        return v
+    end
+    for _, c in ipairs(cards or {}) do
+        if c.enh == 'm_glass' and not c.debuff then
+            v = v - HA.SIDE.glass_card * math.min(1, (prob or 1) / (c.glass_odds or EF.ENHANCEMENTS.m_glass.break_odds))
+        end
+    end
+    -- the round probably ends with this play: what stays in hand pays
+    if (p_end or 0) > 0 then
+        for _, c in ipairs(hand or {}) do
+            if not set[c] and not c.debuff and not c.face_down then
+                v = v + p_end * ((c.h_dollars or 0) + ((c.seal == 'Blue') and HA.SIDE.blue_seal or 0))
+            end
+        end
+    end
     return v
 end
-HA.card_value = card_value
 
 local function by_value_desc(a, b)
     local va, vb = card_value(a), card_value(b)
@@ -592,6 +627,7 @@ function HA.analyse_hidden(state, opts, task, P, hand, visible, hidden, forced)
         end
     end
     table.sort(res.plays, function(a, b)
+        if side_decides(a.p_win, b.p_win, a.side, b.side) then return a.side > b.side end
         if math.abs(a.p_win - b.p_win) > 1e-9 then return a.p_win > b.p_win end
         -- same chances: do not play hidden cards blind without need (a random card can change
         -- the hand type, which some bosses punish)
@@ -702,14 +738,21 @@ function HA.analyse(state, opts, task)
             local entry = { cards = cards, uids = {}, hand = r.hand, mean = r.mean, min = r.min, max = r.max,
                 p_win = (remaining > 0) and r.p_at_least(remaining) or 1, method = r.method, exact = r.exact,
                 complete = r.complete, dollars = r.dollars, debuffed_hand = r.debuffed_hand, n = #cards }
+            entry.side = (r.dollars or 0) + HA.side_value(cards, hand, 'play', entry.p_win, P.prob_normal)
+            -- The Ox: playing the most played hand sets the money to $0
+            if P.boss == 'bl_ox' and P.targets and P.targets.most_played_hand == r.hand then entry.side = entry.side - (P.dollars or 0) end
             for i, c in ipairs(cards) do entry.uids[i] = c.uid end
             res.plays[#res.plays + 1] = entry
         end
     end
     table.sort(res.plays, function(a, b)
         if math.abs(a.p_win - b.p_win) > 1e-9 then return a.p_win > b.p_win end
+        -- a sure win: the extra score is useless, what the play costs or earns besides is not
+        if a.p_win >= 1 - 1e-12 and math.abs(a.side - b.side) > 0.01 then return a.side > b.side end
         if a.mean ~= b.mean then return a.mean > b.mean end
-        return a.n > b.n
+        if math.abs(a.side - b.side) > 0.01 then return a.side > b.side end
+        if a.n ~= b.n then return a.n > b.n end
+        return key_of(a.cards) < key_of(b.cards)
     end)
     res.best_play = res.plays[1]
     res.coverage = P.coverage
@@ -731,16 +774,21 @@ function HA.analyse(state, opts, task)
     table.sort(by_mean, function(a, b) return a.mean > b.mean end)
     local added = {}
     local function add_play(p)
-        if p and not added[p] then added[p] = true; candidates[#candidates + 1] = { type = 'play', cards = p.cards, ref = p } end
+        if p and not added[p] then added[p] = true; candidates[#candidates + 1] = { type = 'play', cards = p.cards, ref = p, side = p.side } end
     end
     for i = 1, math.min(opts.max_play_candidates or 3, #res.plays) do add_play(res.plays[i]) end
     for i = 1, math.min(2, #by_mean) do add_play(by_mean[i]) end
+    -- The Ox: also try the best play that keeps the money
+    if P.boss == 'bl_ox' and P.targets and P.targets.most_played_hand then
+        for _, p in ipairs(by_mean) do if p.hand ~= P.targets.most_played_hand then add_play(p); break end end
+    end
     if d > 0 then
         local ds = {}
         for _, t in ipairs(res.discards) do ds[#ds + 1] = t end
         table.sort(ds, function(a, b) return (a.p_complete or 0) > (b.p_complete or 0) end)
         for i = 1, math.min(opts.max_discard_candidates or 5, #ds) do
-            candidates[#candidates + 1] = { type = 'discard', cards = ds[i].discard, ref = ds[i] }
+            candidates[#candidates + 1] = { type = 'discard', cards = ds[i].discard, ref = ds[i],
+                side = HA.side_value(ds[i].discard, hand, 'discard') }
         end
     end
 
@@ -755,25 +803,42 @@ function HA.analyse(state, opts, task)
     else
         local n = opts.rollouts or 64
         local seed = opts.seed or 'round'
-        for _, cand in ipairs(candidates) do
-            local wins, used = 0, 0
-            for i = 1, n do
+        local function simulate(cand, from, count)
+            for i = from, from + count - 1 do
                 check()
                 local rng = R.new(seed .. ':' .. i) -- common random numbers across candidates
                 local ok, hands_used = HA.rollout(P, cand, hand, deck, h, d, remaining, rng, ctx)
-                if ok then wins = wins + 1; used = used + (hands_used or 0) end
+                cand.n = (cand.n or 0) + 1
+                if ok then cand.wins = (cand.wins or 0) + 1; cand.used = (cand.used or 0) + (hands_used or 0) end
             end
-            local p, lo, hi = PR.wilson(wins, n)
-            cand.p_clear, cand.lo, cand.hi, cand.n = p, lo, hi, n
+            local wins = cand.wins or 0
+            local p, lo, hi = PR.wilson(wins, cand.n)
+            cand.p_clear, cand.lo, cand.hi = p, lo, hi
             -- hands needed when winning: fewer hands left unused = less money ($1 per hand left)
-            cand.hands_used = wins > 0 and used / wins or math.huge
-            if cand.ref then cand.ref.p_clear = p; cand.ref.p_lo = lo; cand.ref.p_hi = hi; cand.ref.sim_n = n end
+            cand.hands_used = wins > 0 and cand.used / wins or math.huge
+            if cand.ref then cand.ref.p_clear = p; cand.ref.p_lo = lo; cand.ref.p_hi = hi; cand.ref.sim_n = cand.n end
         end
+        for _, cand in ipairs(candidates) do simulate(cand, 1, n) end
+        -- second pass: the best options are often within a few rollouts of each other (all
+        -- near 100 %); more rollouts for the closest ones, so that noise does not decide
+        table.sort(candidates, function(a, b) return a.p_clear > b.p_clear end)
+        local top = candidates[1] and candidates[1].p_clear or 0
+        local extra = opts.refine_rollouts or n
+        for i = 1, math.min(opts.refine_candidates or 3, #candidates) do
+            local c = candidates[i]
+            if extra > 0 and top - c.p_clear <= 0.1 and top > 0 and #candidates > 1 then simulate(c, n + 1, extra) end
+        end
+        -- a difference of one rollout or less is not a difference: decided by the hands used
+        local function tie(a, b) return math.abs(a.p_clear - b.p_clear) <= 1 / math.max(a.n or 1, b.n or 1) + 1e-9 end
         table.sort(candidates, function(a, b)
-            if math.abs(a.p_clear - b.p_clear) > 1e-9 then return a.p_clear > b.p_clear end
+            if side_decides(a.p_clear, b.p_clear, a.side, b.side) then return (a.side or 0) > (b.side or 0) end
+            if not tie(a, b) then return a.p_clear > b.p_clear end
             -- tie: win with fewer hands (more money), then prefer playing (keeps discards),
             -- then the higher immediate score, then fewer cards spent
             if math.abs(a.hands_used - b.hands_used) > 0.05 then return a.hands_used < b.hands_used end
+            local sa = a.side or 0
+            local sb = b.side or 0
+            if math.abs(sa - sb) > 0.01 then return sa > sb end
             if a.type ~= b.type then return a.type == 'play' end
             local ma, mb = (a.ref and a.ref.mean or 0), (b.ref and b.ref.mean or 0)
             if ma ~= mb then return ma > mb end

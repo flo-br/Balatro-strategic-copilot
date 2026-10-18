@@ -5,10 +5,11 @@ partie, calcule les scores exacts, les probabilités, évalue la boutique, conse
 défausses, et **apprend de vos parties**. **Il ne joue jamais à votre place** : il n'effectue
 aucune action (sélection, jeu, défausse, achat, vente, relance).
 
-> Statut : version 1.0.0. Développée et testée **hors du jeu** (aucune installation de Balatro
-> n'était disponible dans l'environnement de développement). Le code a été validé par
-> 174 tests automatisés, un environnement Balatro/Steamodded simulé et le vrai runtime LÖVE 11.5,
-> mais **pas encore dans Balatro réel**. Voir [Limites](docs/LIMITATIONS.md) et [Tests](docs/TESTS.md).
+> Statut : version 1.0.7. Développée **hors du jeu** (aucune installation de Balatro n'était
+> disponible dans l'environnement de développement), puis essayée par l'utilisateur dans le vrai
+> jeu (mode copier-coller). Validée par des tests automatisés, un environnement Balatro/Steamodded
+> simulé, le vrai runtime LÖVE 11.5 et des parties complètes simulées ([entraînement](docs/TRAINING.md)).
+> Voir [Limites](docs/LIMITATIONS.md) et [Tests](docs/TESTS.md).
 
 ![Panneau en phase de main](docs/img/overlay_hand.png)
 
@@ -24,7 +25,9 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 | Synergies | Contribution **mesurée** de chaque joker, ordre optimal des jokers, adéquation d'un joker au build |
 | Blindes | Prochaine blinde et boss simulés avec leurs effets (malus de couleur, The Needle, The Water, The Psychic…), conseil pour passer une blinde |
 | Risque | Pondérations qui dépendent continûment du danger (survie quand la situation est critique, investissement quand elle est confortable) |
-| Apprentissage | Journal local des parties, calibration validée des probabilités, croissance de puissance, contributions des jokers, bilan après chaque partie |
+| Effets | Améliorations, éditions, sceaux et autocollants des jokers affichés et pris en compte (garder l'acier et l'or en main, défausser le sceau violet, jamais vendre un éternel…) |
+| Plan de partie | Leçons des meilleurs joueurs ([sources](docs/PRO_LESSONS.md)) : main principale, ×Mult attendus par ante, argent au-delà des intérêts réinvesti, boss à préparer |
+| Apprentissage | Journal local des parties, calibration validée des probabilités, croissance de puissance, contributions des jokers, bilan après chaque partie qui cherche **pourquoi** le build n'a pas suffi (jamais « malchance »), causes retenues pour les parties suivantes |
 | Compatibilité | Détection des mods, éléments inconnus signalés comme « partiel », contrôle croisé avec le jeu, dégradation contrôlée |
 
 ## Installation rapide (Windows)
@@ -32,7 +35,7 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 **Méthode sans programme (recommandée, 1.0.4+)** — ni Lovely, ni Steamodded, ni script, ni DLL ;
 fonctionne aussi sur un PC protégé (contrôle parental, antivirus strict) :
 
-1. Extraire l'archive `BalatroStrategicCopilot-1.0.6.zip`.
+1. Extraire l'archive `BalatroStrategicCopilot-1.0.7.zip`.
 2. Copier le **contenu** du dossier `COPIER_DANS_AppData_Balatro` (`main.lua` + `Mods`) dans
    `%AppData%\Balatro\` (touche Windows + R, `%AppData%\Balatro`).
 3. Lancer Balatro : bandeau vert « … actif — touche C : panneau (mode autonome, sans Steamodded) ».
@@ -44,7 +47,7 @@ Balatro tourne sur LÖVE 11, qui lit `main.lua` d'abord dans le dossier de sauve
 **Avec Lovely + Steamodded** : copier le dossier `BalatroStrategicCopilot` dans
 `%AppData%\Balatro\Mods\` (de sorte que `Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json`
 existe ; une archive `.zip` déposée telle quelle est ignorée par les anciens Steamodded). L'archive
-`BalatroStrategicCopilot-1.0.6-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
+`BalatroStrategicCopilot-1.0.7-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
 répare toute la chaîne (dossier du jeu, Lovely, Steamodded, copilote) puis confirme que tout s'est
 chargé. Un **bandeau vert « actif »** s'affiche au lancement ; **aucun bandeau = mod non trouvé**
 ([pièges vérifiés](docs/INSTALL.md)).
@@ -110,6 +113,8 @@ Explications détaillées : [docs/PERCENTAGES.md](docs/PERCENTAGES.md).
 
 ![Death : la carte qui devient et le modèle, panneau sous les consommables](docs/img/overlay_death.png)
 
+![Effets des cartes en main et autocollants des jokers](docs/img/overlay_effects.png)
+
 ![Panneau en boutique](docs/img/overlay_shop.png)
 
 ![Panneau au choix de la blinde](docs/img/overlay_blind.png)
@@ -127,6 +132,8 @@ elles montrent le rendu du mod, pas l'apparence du jeu.*
 * [Installation / désinstallation / mise à jour](docs/INSTALL.md)
 * [Pourcentages et notes affichés](docs/PERCENTAGES.md)
 * [Méthodes mathématiques et limites des estimations](docs/MATHS.md)
+* [Leçons des meilleurs joueurs appliquées](docs/PRO_LESSONS.md) ([recherche sourcée complète](docs/PRO_LESSONS_SOURCES.md))
+* [Entraînement sur des parties simulées](docs/TRAINING.md)
 * [Système d'apprentissage, export, réinitialisation](docs/LEARNING.md)
 * [Tests et résultats](docs/TESTS.md)
 * [Limites connues](docs/LIMITATIONS.md)

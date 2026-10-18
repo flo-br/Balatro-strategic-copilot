@@ -93,6 +93,12 @@ function S.reroll_estimate(T)
     T.ok(r.reroll and r.reroll.n > 0)
     T.ok(r.reroll.p_improve >= 0 and r.reroll.p_improve <= 1)
     T.eq(r.reroll.method, 'monte_carlo')
+    -- full slots of weak jokers: a reroll can still find a better one (measured as a replacement)
+    local weak = {}
+    for _ = 1, 5 do weak[#weak + 1] = F.joker('j_credit_card') end
+    local s2 = shop_state(F, C, { jokers = weak, items = { joker_item(F, 'j_credit_card', 1) }, dollars = 60 })
+    local r2 = SH.analyse(s2, { n = 16 })
+    T.ok(r2.reroll.p_improve > 0.2, 'full slots: rerolls are not worthless ' .. r2.reroll.p_improve)
 end
 
 function S.note_weights_follow_danger(T)
@@ -125,6 +131,48 @@ function S.boosters_valued_by_content(T)
     T.ok(by.arc.note > by.std.note, 'Arcana above Standard')
     T.ok(by.mega.note >= by.buf.note - 5, 'Mega Buffoon: 2 jokers among 4')
     T.ok(by.buf.note >= 52, 'a Buffoon pack is worth buying with free slots')
+end
+
+-- Playing cards are worth their modifiers; Judgement with full slots is measured as a swap.
+function S.cards_and_judgement_with_full_slots(T)
+    local F, C, SH = env()
+    local poly, plain = C.parse('Ks'), C.parse('Kh')
+    poly.edition = 'e_polychrome'; C.set_enhancement(poly, 'm_steel')
+    local s = shop_state(F, C, { dollars = 10, items = {
+        { uid = 'poly', set = 'Default', key = 'c_base', name = 'K', cost = 4, card = poly },
+        { uid = 'plain', set = 'Default', key = 'c_base', name = 'K', cost = 4, card = plain } } })
+    local r = SH.analyse(s, { n = 16 })
+    local by = {}
+    for _, o in ipairs(r.options) do by[o.uid] = o end
+    T.ok(by.poly.note > by.plain.note + 10, 'steel polychrome card above a plain one')
+    T.ok(by.plain.note < 50, 'a plain card dilutes the deck')
+    local jokers = {}
+    for _ = 1, 5 do jokers[#jokers + 1] = F.joker('j_credit_card') end
+    local s2 = shop_state(F, C, { jokers = jokers, dollars = 10, items = { { uid = 'jg', set = 'Tarot', key = 'c_judgement', name = 'Judgement', cost = 3 } } })
+    local r2 = SH.analyse(s2, { n = 16 })
+    local o = r2.options[1]
+    T.ok(o.swap and o.swap.worth, 'Credit Cards are worth replacing by a random joker')
+    T.eq(o.swap.sell.key, 'j_credit_card')
+    T.ok(r2.slot_swaps and r2.slot_swaps.any)
+end
+
+-- Hex / Ankh destroy the other jokers: measured on the boards they leave, never a fixed value.
+function S.destructive_spectrals_are_measured(T)
+    local F, C, SH = env()
+    local jokers = { F.joker('j_duo'), F.joker('j_joker'), F.joker('j_abstract'), F.joker('j_greedy_joker') }
+    local s = shop_state(F, C, { jokers = jokers, dollars = 10, items = {
+        { uid = 'hex', set = 'Spectral', key = 'c_hex', name = 'Hex', cost = 4 },
+        { uid = 'ankh', set = 'Spectral', key = 'c_ankh', name = 'Ankh', cost = 4 } } })
+    local r = SH.analyse(s, { n = 16 })
+    for _, o in ipairs(r.options) do
+        T.ok(o.note < 50, o.name .. ' on a 4-joker board: ' .. o.note)
+        T.ok(o.risks[1] and o.risks[1]:find('détruit', 1, true), o.name)
+    end
+    -- a single joker carries the run: Hex (Polychrome on it) is welcome
+    local s1 = shop_state(F, C, { jokers = { F.joker('j_duo') }, dollars = 10, items = {
+        { uid = 'hex', set = 'Spectral', key = 'c_hex', name = 'Hex', cost = 4 } } })
+    local r1 = SH.analyse(s1, { n = 16 })
+    T.ok(r1.options[1].note > 50, 'Hex on a lone joker: ' .. r1.options[1].note)
 end
 
 return S

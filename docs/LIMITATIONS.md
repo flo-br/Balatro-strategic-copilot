@@ -30,6 +30,13 @@
   plus peuvent être proposées).
 * La zone des consommables est lue dans `G.consumeables` pour y placer le panneau en dessous ;
   la position observée en jeu reste à confirmer.
+* Plan de partie et leçons des meilleurs joueurs (docs/PRO_LESSONS.md) : règles de pratique,
+  réglées sur des parties **simulées** (docs/TRAINING.md), pas sur des parties réelles. Le
+  simulateur n'est pas le vrai jeu : ses résultats servent à comparer des versions du copilote.
+* Autocollants : le nombre de manches restantes d'un joker périssable est lu dans
+  `ability.perish_tally` s'il existe (non vérifié dans des sources) ; sinon 5 manches sont supposées.
+* Préparation explicite d'un boss connu (garder Justice / Chariot, Director's Cut) : seulement à
+  travers la probabilité de battre le boss.
 
 ## Mode autonome (sans Lovely ni Steamodded)
 

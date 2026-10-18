@@ -22,13 +22,17 @@ antivirus strict, PC restreint) qui bloquent .bat, PowerShell ou winmm.dll.
 
 3. Lancer Balatro normalement (par Steam)
    Un bandeau vert apparaît en haut de l'écran :
-     « Balatro Strategic Copilot 1.0.6 actif - touche C : panneau (mode autonome, sans Steamodded) »
+     « Balatro Strategic Copilot 1.0.7 actif - touche C : panneau (mode autonome, sans Steamodded) »
    En partie : la ligne « À FAIRE » (en haut à droite) et une étiquette au-dessus de ce qu'il
    faut toucher indiquent UNE action à faire maintenant : JOUER / DÉFAUSSER, À PRENDRE,
    À VENDRE, RELANCER, BLINDE SUIVANTE, PASSER, UTILISER (+ CIBLE). Faites-la : l'étape
    suivante apparaît. Pour un tarot qui demande des cartes (ex. Death), chaque carte à
    sélectionner porte son étiquette : DEVIENT (gauche) et MODÈLE (droite), À DÉTRUIRE, CIBLE.
    Des numéros 1, 2, 3 sous les jokers = l'ordre à corriger (glissez-les).
+   Le panneau montre aussi les effets des cartes (acier, or, verre, chance, brillant, holo,
+   poly, sceaux) et des jokers (éternel, périssable, location), et en boutique le plan de partie
+   (main principale, multiplicateurs ×Mult attendus, ce qui manque). Après une partie, le bilan
+   explique pourquoi le build n'a pas suffi et ce qu'il faut faire autrement.
    Touche C = panneau complet, V = détails, B = étiquettes.
 
 Si rien n'apparaît

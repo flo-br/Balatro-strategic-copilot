@@ -17,7 +17,8 @@ local DEFAULTS = {
     compute = { budget_ms = 4, rollouts = 64, max_branches = 48, samples = 160, poll_interval = 0.15, shop_samples = 120 },
     advice = { buy_note = 56, sell_note = 60, sell_max_contribution = 0.03, order_min_gain = 0.01, luchador_below = 0.80,
         booster_note = 52, strong_note = 75, save_from_ante = 2, interest_weight = 3, safe_next = 0.85, safe_boss = 0.70,
-        reroll_once = true, reroll_once_max_loss = 1 },
+        reroll_once = true, reroll_once_max_loss = 1, rich_reserve = 10,
+        replace_note = 60, danger_rerolls = 2, excess_note = 54, excess_reserve = 5, idle_reserve = 20, first_jokers = 3 },
     learning = { enabled = true, max_runs_kept = 300, min_samples_calibration = 30 },
     log = { level = 'info', file = true, max_file_kb = 512 },
 }

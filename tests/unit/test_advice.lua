@@ -92,8 +92,11 @@ function S.planets_are_used_unless_observatory(T)
 end
 
 function S.money_tarots(T)
-    local st = A().shop_step(state({ dollars = 14, consumables = { { uid = 'h', key = 'c_hermit', set = 'Tarot', name = 'The Hermit' } } }), shop_result({}))
-    T.eq(st.action, 'use'); T.ok(st.why:find('14', 1, true), st.why)
+    -- The Hermit doubles the money up to +$20: used from $20 (top players)
+    local st = A().shop_step(state({ dollars = 24, consumables = { { uid = 'h', key = 'c_hermit', set = 'Tarot', name = 'The Hermit' } } }), shop_result({}))
+    T.eq(st.action, 'use'); T.ok(st.why:find('20', 1, true), st.why)
+    st = A().shop_step(state({ dollars = 14, rerolls = 1, consumables = { { uid = 'h', key = 'c_hermit', set = 'Tarot', name = 'The Hermit' } } }), shop_result({}))
+    T.eq(st.action, 'next_round', 'kept until $20')
     st = A().shop_step(state({ dollars = 2, consumables = { { uid = 'h', key = 'c_hermit', set = 'Tarot', name = 'The Hermit' } } }), shop_result({}))
     T.eq(st.action, 'next_round', 'not worth with 2 $')
 end
@@ -275,25 +278,29 @@ end
 function S.interest_savings_from_ante_2(T)
     local opts = { { kind = 'joker', uid = 'j', name = 'Greedy Joker', cost = 5, note = 66, interest_loss = 1 } }
     -- ante 2, safe, 20 $: buying would leave 15 $ < 25 $ -> keep the money
-    local st = A().shop_step(state({ dollars = 20, ante = 2 }), shop_result({ options = opts }))
+    local three = { { uid = 'a' }, { uid = 'b' }, { uid = 'c' } } -- the first jokers are already there
+    local st = A().shop_step(state({ dollars = 20, ante = 2, jokers = three }), shop_result({ options = opts }))
     T.eq(st.action, 'next_round'); T.ok(st.why:find('intérêts', 1, true) and st.why:find('Greedy Joker', 1, true), st.why)
+    -- with no joker yet, the first one comes before the savings (top players: any joker beats none)
+    T.eq(A().shop_step(state({ dollars = 20, ante = 2 }), shop_result({ options = opts })).action, 'buy')
     -- 32 $: the purchase only spends the excess above 25 $
-    T.eq(A().shop_step(state({ dollars = 32, ante = 2 }), shop_result({ options = opts })).action, 'buy')
+    T.eq(A().shop_step(state({ dollars = 32, ante = 2, jokers = three }), shop_result({ options = opts })).action, 'buy')
     -- a strong item is bought anyway
     opts[1].note = 80
-    T.eq(A().shop_step(state({ dollars = 20, ante = 2 }), shop_result({ options = opts })).action, 'buy')
+    T.eq(A().shop_step(state({ dollars = 20, ante = 2, jokers = three }), shop_result({ options = opts })).action, 'buy')
     -- danger: power first, the savings wait
     opts[1].note = 66
     local res = shop_result({ options = opts }); res.base.p_boss = 0.4
-    T.eq(A().shop_step(state({ dollars = 20, ante = 2 }), res).action, 'buy')
+    T.eq(A().shop_step(state({ dollars = 20, ante = 2, jokers = three }), res).action, 'buy')
 end
 
 function S.interest_weighs_in_ante_1(T)
     -- ante 1: each $ of interest lost raises the bar (56 + 3 per $)
     local opts = { { kind = 'joker', uid = 'j', name = 'Joker', cost = 4, note = 60, interest_loss = 2 } }
-    T.ok(A().shop_step(state({ dollars = 12 }), shop_result({ options = opts })).action ~= 'buy', '60 < 56 + 2 x 3')
+    local three = { { uid = 'a' }, { uid = 'b' }, { uid = 'c' } }
+    T.ok(A().shop_step(state({ dollars = 12, jokers = three }), shop_result({ options = opts })).action ~= 'buy', '60 < 56 + 2 x 3')
     opts[1].interest_loss = 1
-    T.eq(A().shop_step(state({ dollars = 12 }), shop_result({ options = opts })).action, 'buy')
+    T.eq(A().shop_step(state({ dollars = 12, jokers = three }), shop_result({ options = opts })).action, 'buy')
 end
 
 function S.one_reroll_before_leaving(T)
@@ -305,6 +312,101 @@ function S.one_reroll_before_leaving(T)
     T.eq(A().shop_step(state({ dollars = 31, ante = 3 }), res).action, 'reroll', 'excess money above 25 $')
     st = A().shop_step(state({ dollars = 2, free_rerolls = 1, rerolls = 3 }), res)
     T.eq(st.action, 'reroll'); T.ok(st.why:find('gratuite', 1, true), st.why)
+end
+
+-- Joker stickers: an Eternal joker is never sold; an expired Perishable one is sold.
+function S.stickers_eternal_and_perishable(T)
+    local lu = { uid = 'lu', key = 'j_luchador', name = 'Luchador', eternal = true }
+    local s0 = state({ phase = 'hand', jokers = { lu }, blind = { boss = true } })
+    local r = { recommendation = { type = 'play', ref = { cards = {} } }, round = { p_clear = 0.3 } }
+    T.ok(A().hand_step(s0, r).action ~= 'sell', 'eternal Luchador kept')
+    local res = shop_result({ sells = { { uid = 'e', name = 'Mystic Summit', sell = 3, note = 70, contribution = 0 } } })
+    local st = A().shop_step(state({ jokers = { { uid = 'e', name = 'Mystic Summit', eternal = true } }, rerolls = 1 }), res)
+    T.eq(st.action, 'next_round', 'eternal: never advised for sale')
+    local per = { uid = 'p', name = 'Gros Michel', perishable = true, perish_tally = 0, debuff = true, sell_cost = 2 }
+    st = A().shop_step(state({ jokers = { per } }), shop_result({}))
+    T.eq(st.action, 'sell'); T.eq(st.targets[1], 'p'); T.ok(st.why:find('périssable', 1, true), st.why)
+end
+
+-- Judgement with every joker slot taken: sell the weakest joker first, only when a random new
+-- joker is likely better (measured by the shop analysis: r.slot_swaps).
+function S.judgement_with_full_slots(T)
+    local jokers = {}
+    for i = 1, 5 do jokers[i] = { uid = 'j' .. i, key = 'j_joker', name = 'J' .. i } end
+    local cons = { { uid = 'jg', key = 'c_judgement', set = 'Tarot', name = 'Judgement' } }
+    local res = shop_result({}); res.slot_swaps = { any = { sell = jokers[3], k = 3, ratio = 1.2, p_better = 0.7, worth = true } }
+    local st = A().shop_step(state({ jokers = jokers, consumables = cons }), res)
+    T.eq(st.action, 'sell'); T.eq(st.targets[1], 'j3'); T.ok(st.text:find('Judgement', 1, true), st.text)
+    -- once a slot is free: use it
+    local four = { jokers[1], jokers[2], jokers[4], jokers[5] }
+    st = A().shop_step(state({ jokers = four, consumables = cons }), shop_result({}))
+    T.eq(st.action, 'use'); T.eq(st.targets[1], 'jg')
+    -- not worth it: keep the jokers
+    res.slot_swaps.any.worth = false
+    T.ok(A().shop_step(state({ jokers = jokers, consumables = cons, rerolls = 1 }), res).action == 'next_round')
+    -- taken from a pack with full slots: sell first
+    local pr = { options = { { kind = 'tarot', key = 'c_judgement', uid = 'jp', name = 'Judgement', note = 62,
+        swap = { sell = jokers[2], p_better = 0.6, worth = true } } } }
+    st = A().pack_step(state({ jokers = jokers }), pr)
+    T.eq(st.action, 'sell'); T.eq(st.targets[1], 'j2')
+end
+
+-- Lessons from top players (docs/PRO_LESSONS.md): falling behind -> scoring before interest;
+-- last ante and The Ox -> no saving; Verdant Leaf -> sell the joker that scores least;
+-- money above the cap -> rerolls while a multiplier is missing (one per shop in antes 1-3).
+function S.pro_money_rules(T)
+    local opts = { { kind = 'joker', uid = 'j', name = 'Joker', cost = 5, note = 66, interest_loss = 1 } }
+    local res = shop_result({ options = opts })
+    T.eq(A().shop_step(state({ dollars = 20, ante = 3 }), res).action, 'next_round', 'saving for interest')
+    res.plan = { falling_behind = true, gaps = { power = true } }
+    T.eq(A().shop_step(state({ dollars = 20, ante = 3 }), res).action, 'buy', 'falling behind: buy power')
+    local s8 = state({ dollars = 20, ante = 8 }); s8.run.win_ante = 8
+    T.eq(A().shop_step(s8, shop_result({ options = opts })).action, 'buy', 'last ante: money into score')
+    local sox = state({ dollars = 20, ante = 6 }); sox.upcoming = { { slot = 'Boss', boss = true, key = 'bl_ox', state = 'Select' } }
+    T.eq(A().shop_step(sox, shop_result({ options = opts })).action, 'buy', 'The Ox next: spend before')
+end
+
+function S.rich_rerolls_and_verdant_leaf(T)
+    local res = shop_result({ reroll = { cost = 5, worth = false, p_improve = 0.4 } })
+    res.plan = { gaps = { xmult = 1 } }
+    local st = A().shop_step(state({ dollars = 50, ante = 5, rerolls = 2 }), res)
+    T.eq(st.action, 'reroll'); T.ok(st.why:find('plafond', 1, true), st.why)
+    T.eq(A().shop_step(state({ dollars = 50, ante = 2, rerolls = 1 }), res).action, 'next_round', 'antes 1-3: one reroll per shop')
+    res.plan = { gaps = {} }
+    T.eq(A().shop_step(state({ dollars = 40, ante = 5, rerolls = 2 }), res).action, 'next_round', 'no gap: keep the money')
+    -- far above the cap, the money is idle: reroll for something better
+    T.eq(A().shop_step(state({ dollars = 60, ante = 5, rerolls = 2 }), res).action, 'reroll')
+    local jokers = { { uid = 'x', key = 'j_cavendish', name = 'Cavendish', sell_cost = 2 }, { uid = 'g', key = 'j_golden', name = 'Golden Joker', sell_cost = 3 },
+        { uid = 'e', key = 'j_egg', name = 'Egg', eternal = true, sell_cost = 1 } }
+    local hand = { card('h1', 13, 'Spades', { debuff = true }), card('h2', 5, 'Hearts', { debuff = true }) }
+    local s0 = state({ phase = 'hand', jokers = jokers, hand = hand, blind = { boss = true, key = 'bl_final_leaf' } })
+    local rr = { recommendation = { type = 'play', ref = { cards = {} } }, round = { p_clear = 0.2 } }
+    st = A().hand_step(s0, rr)
+    T.eq(st.action, 'sell'); T.eq(st.targets[1], 'g', 'the economy joker, not the multiplier, never the eternal one')
+    -- once sold, the cards are no longer debuffed: no second sale
+    for _, c in ipairs(hand) do c.debuff = false end
+    T.ok(A().hand_step(s0, rr).action ~= 'sell', 'one joker only')
+end
+
+-- Money above the interest cap earns nothing: a real improvement is bought from it.
+function S.excess_money_buys_improvements(T)
+    local three = { { uid = 'a' }, { uid = 'b' }, { uid = 'c' } }
+    local opts = { { kind = 'joker', uid = 'j', name = 'Joker', cost = 5, note = 55, interest_loss = 0 } }
+    T.eq(A().shop_step(state({ dollars = 20, ante = 4, jokers = three, rerolls = 1 }), shop_result({ options = opts })).action, 'next_round')
+    T.eq(A().shop_step(state({ dollars = 40, ante = 4, jokers = three }), shop_result({ options = opts })).action, 'buy', '40 - 5 > 25 + 5')
+end
+
+-- No churn: a replacement needs a clear gain; rerolls in danger have a budget.
+function S.no_churn_and_reroll_budget(T)
+    local jokers = { { uid = 'j1', name = 'Joker', sell_cost = 2 }, { uid = 'j2', name = 'Banner', sell_cost = 3 } }
+    local opts = { { kind = 'replace', uid = 'duo', name = 'The Duo', cost = 5, note = 57, replace_index = 2, replaces = 'Banner' } }
+    T.ok(A().shop_step(state({ dollars = 40, jokers = jokers, rerolls = 1 }), shop_result({ options = opts })).action ~= 'sell', '57: not worth a replacement')
+    opts[1].note = 64
+    T.eq(A().shop_step(state({ dollars = 40, jokers = jokers }), shop_result({ options = opts })).action, 'sell')
+    local res = shop_result({ reroll = { cost = 5, worth = false, p_improve = 0.4 } })
+    res.base.p_boss = 0.3; res.plan = { gaps = { power = true } }
+    T.eq(A().shop_step(state({ dollars = 20, ante = 5, rerolls = 1 }), res).action, 'reroll', 'danger: reroll')
+    T.eq(A().shop_step(state({ dollars = 20, ante = 5, rerolls = 2 }), res).action, 'next_round', 'budget of 2 rerolls')
 end
 
 return S

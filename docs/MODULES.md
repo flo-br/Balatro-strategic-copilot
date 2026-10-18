@@ -19,6 +19,7 @@ Tous les fichiers sont dans `BalatroStrategicCopilot/`. Seuls `game/state_reader
 | `src/model/jokers_db.lua` | logique des 150 jokers vanilla, étiquettes de synergie, économie, risques |
 | `src/model/blinds_db.lua` | blindes et boss, formule de taille vanilla |
 | `src/model/items_db.lua` | tarots, planètes, spectrales, bons, paquets (simulables ou heuristiques) |
+| `src/model/effects_db.lua` | améliorations, éditions, sceaux, autocollants des jokers : rôle (jouer, garder, défausser, prudence), valeur d'une carte |
 | `src/engine/poker_eval.lua` | **RulesEngine** : identification des mains (Four Fingers, Shortcut, Smeared, Wild, Pierre, Splash) |
 | `src/engine/score.lua` | **ScoreEvaluator** : pipeline de score complet, aléas énumérés / Monte-Carlo, couverture |
 | `src/engine/probability.lua` | **ProbabilityEngine** : hypergéométrique, inclusion-exclusion, Wilson |
@@ -28,11 +29,12 @@ Tous les fichiers sont dans `BalatroStrategicCopilot/`. Seuls `game/state_reader
 | `src/engine/strategy.lua` | **StrategyEngine** : puissance, P(blinde), perspectives de victoire, danger |
 | `src/engine/shop.lua` | **ShopAnalyzer** : options, notes, ventes, remplacements, relance |
 | `src/engine/outlook.lua` | choix de blinde : prochaine blinde, boss, passer ou jouer |
+| `src/engine/plan.lua` | plan de partie (leçons des meilleurs joueurs) : main principale, ×Mult attendus par ante, « en retard », manques, bonus de note par type de joker |
 | `src/engine/advice.lua` | **prochaine étape** : UNE action à faire maintenant (jouer, défausser, acheter, vendre, relancer, blinde suivante, utiliser, prendre ou passer un paquet, jouer ou passer une blinde) et numéros d'ordre des jokers |
 | `src/learning/recorder.lua` | journal brut des parties |
 | `src/learning/calibration.lua` | calibration et métriques (Brier, log-loss, ECE) |
 | `src/learning/learning.lua` | **LearningEngine** : profil appris |
-| `src/learning/review.lua` | bilan de partie |
+| `src/learning/review.lua` | bilan de partie : erreurs au moment de la décision et causes de la défaite (toute partie est jouable) |
 | `src/learning/runtime.lua` | liaison enregistreur / apprentissage / stockage, export, import, réinitialisation |
 | `src/io/persistence.lua` | **PersistenceManager** : JSON versionné A/B, sommes de contrôle, migrations, quarantaine |
 | `src/game/state_reader.lua` | **GameStateReader** : seul lecteur de `G` (connu / déduit / inconnu) |
@@ -56,3 +58,12 @@ d'instantané et de résultats. Points d'extension :
 * `jokers_db` : ajouter une entrée `def(clé, {...})` avec les fonctions de phase
   (`before`, `indiv`, `rep`, `held`, `main`, `other`) pour prendre en charge un joker moddé ;
 * `i18n.strings.<langue>` : ajouter une langue sans toucher à l'interface.
+
+Outils hors du mod (non chargés en jeu) :
+
+| Fichier | Rôle |
+|---|---|
+| `tools/trainer/rules.lua`, `sim.lua` | Balatro simplifié pour l'entraînement (docs/TRAINING.md) |
+| `tools/trainer/player.lua` | joueur qui suit exactement l'étape « À FAIRE » du copilote |
+| `tools/trainer/run.lua`, `report.lua` | parties simulées en série, rapport avec le bilan du mod |
+| `tools/love_harness/` | rendu réel du panneau avec LÖVE 11.5 sur un état simulé |

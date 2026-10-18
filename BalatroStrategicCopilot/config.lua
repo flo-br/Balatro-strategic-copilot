@@ -52,6 +52,13 @@ return {
         safe_boss = 0.70,        -- ... and the boss with at least 70 %
         reroll_once = true,      -- nothing worth buying: one reroll per shop before leaving
         reroll_once_max_loss = 1, -- ... if it costs at most 1 $ of interest (before the savings ante)
+        rich_reserve = 10,       -- money above the interest cap + this is rerolled to fill the plan's gaps (xMult, power)
+        replace_note = 60,       -- replacing a joker (sell + buy) needs a clear gain: no churn
+        danger_rerolls = 2,      -- at most this many rerolls per shop when the next blinds are in danger
+        excess_note = 54,        -- with money still above the cap after buying, any real improvement is bought
+        excess_reserve = 5,      -- ... keeping this much above the cap
+        idle_reserve = 20,       -- money above the cap + this is rerolled even without a gap (idle money)
+        first_jokers = 3,        -- antes 1-2: the first 3 jokers fill empty slots from excess_note, savings or not
     },
     learning = {
         enabled = true,

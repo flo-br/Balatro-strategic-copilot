@@ -61,6 +61,38 @@ function B.base_amount(ante, scaling)
     return amount
 end
 
+-- What each boss demands, and how top players prepare for it (docs/PRO_LESSONS.md §8)
+B.PREP = {
+    bl_wall = 'blinde ×4 : il faut une marge de puissance (multiplicateurs) avant d\'y arriver',
+    bl_final_vessel = 'blinde ×6 : seul un build à plusieurs ×Mult (ou qui grandit) passe, à préparer dès l\'ante 5',
+    bl_needle = 'une seule main : il faut pouvoir marquer tout le score en une main (×Mult, main bien montée)',
+    bl_psychic = '5 cartes obligatoires : prévoir une main à 5 cartes (Couleur, Suite, Full)',
+    bl_water = 'aucune défausse : un deck régulier (Hanged Man pour l\'affiner, une couleur dominante)',
+    bl_manacle = '−1 carte en main : un build qui ne dépend pas d\'une grosse main',
+    bl_eye = 'jamais deux fois la même main : avoir une 2e main utilisable',
+    bl_mouth = 'un seul type de main : rester sur la main principale',
+    bl_plant = 'figures affaiblies : ne pas dépendre que des figures',
+    bl_club = 'Trèfles affaiblis : ne pas dépendre d\'une seule couleur (ou Luchador / Chicot)',
+    bl_goad = 'Piques affaiblis : ne pas dépendre d\'une seule couleur (ou Luchador / Chicot)',
+    bl_window = 'Carreaux affaiblis : ne pas dépendre d\'une seule couleur (ou Luchador / Chicot)',
+    bl_head = 'Cœurs affaiblis : ne pas dépendre d\'une seule couleur (ou Luchador / Chicot)',
+    bl_pillar = 'cartes déjà jouées dans l\'ante affaiblies : garder de la marge pour le boss',
+    bl_flint = 'jetons et multi de base divisés par 2 : les ×Mult des jokers comptent encore plus',
+    bl_arm = 'baisse le niveau de la main jouée : marge sur la main principale',
+    bl_ox = 'jouer sa main la plus jouée met l\'argent à 0 : jouer une autre main si possible',
+    bl_hook = 'défausse 2 cartes au hasard à chaque main : préférer les mains courtes',
+    bl_tooth = '−1 $ par carte jouée',
+    bl_serpent = 'pioche toujours 3 cartes : jouer et défausser par petites quantités',
+    bl_house = 'première main face cachée',
+    bl_mark = 'figures face cachée',
+    bl_wheel = '1 carte sur 7 face cachée',
+    bl_fish = 'cartes face cachée après chaque main',
+    bl_final_leaf = 'toutes les cartes affaiblies jusqu\'à la vente d\'un joker : garder un joker à vendre',
+    bl_final_acorn = 'jokers retournés et mélangés : un build qui ne dépend pas de l\'ordre',
+    bl_final_heart = 'un joker désactivé à chaque main : ne pas dépendre d\'un seul joker',
+    bl_final_bell = 'une carte imposée dans chaque main',
+}
+
 function B.get(key) return B.BLINDS[key] end
 
 function B.size(key, ante, scaling, ante_scaling)

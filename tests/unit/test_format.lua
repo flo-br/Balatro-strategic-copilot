@@ -83,4 +83,20 @@ function S.english_translation_available(T)
     I.set_lang('fr')
 end
 
+-- The player sees which effects the copilot takes into account.
+function S.card_effects_are_shown(T)
+    local Fmt = BSCopilot.require('ui/format')
+    local C = BSCopilot.require('model/cards')
+    local steel, holo = C.parse('Ks'), C.parse('Ah')
+    C.set_enhancement(steel, 'm_steel'); holo.edition = 'e_holo'; holo.seal = 'Red'
+    local txt = text_of({ Fmt.cards_segments({ steel, holo }) })
+    T.ok(txt:find('acier', 1, true) and txt:find('holo', 1, true) and txt:find('sceau rouge', 1, true), txt)
+    local lines = Fmt.effects_lines({ hand_cards = { steel, holo, C.parse('2c') },
+        jokers = { { name = 'Joker', eternal = true }, { name = 'Gros Michel', perishable = true, perish_tally = 2 } } })
+    local all = text_of(lines)
+    T.ok(all:find('×1,5 multi tant qu', 1, true) and all:find('à garder en main', 1, true), all)
+    T.ok(all:find('éternel', 1, true) and all:find('2 manche', 1, true), all)
+    T.ok(not all:find('2♣', 1, true) and not all:find('2T', 1, true), 'plain cards not listed')
+end
+
 return S

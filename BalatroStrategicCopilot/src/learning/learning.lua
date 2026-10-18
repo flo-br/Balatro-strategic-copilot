@@ -185,6 +185,28 @@ function LE.process_run(profile, run, opts)
     return profile, true
 end
 
+-- Causes found by the post-run review of the last losses (learning/review.lua). When the same
+-- cause keeps coming back, the plan gives it more weight (bounded: x1 to x1.5).
+LE.LESSONS_KEPT = 10
+function LE.add_lessons(profile, keys, run_id)
+    profile.lessons = profile.lessons or { recent = {} }
+    local L = profile.lessons
+    for _, r in ipairs(L.recent) do if r.id == run_id then return false end end
+    L.recent[#L.recent + 1] = { id = run_id, keys = keys or {} }
+    while #L.recent > LE.LESSONS_KEPT do table.remove(L.recent, 1) end
+    return true
+end
+
+function LE.lesson_weight(profile, key)
+    local L = profile and profile.lessons
+    if not L or #L.recent == 0 then return 1 end
+    local n = 0
+    for _, r in ipairs(L.recent) do
+        for _, k in ipairs(r.keys) do if k == key then n = n + 1; break end end
+    end
+    return 1 + 0.5 * n / #L.recent
+end
+
 function LE.run_brier(run)
     local s, n = 0, 0
     for _, b in ipairs(run.blinds or {}) do

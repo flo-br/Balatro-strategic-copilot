@@ -12,6 +12,7 @@ local BSC = BSCopilot
 local I = BSC.require('core/i18n')
 local IT = BSC.require('model/items_db')
 local E = BSC.require('engine/economy')
+local EF = BSC.require('model/effects_db')
 
 local A = {}
 
@@ -30,6 +31,13 @@ A.DEFAULTS = {
     safe_boss = 0.70,              -- ... and the boss with at least 70 %
     reroll_once = true,            -- nothing worth buying: one reroll per shop before leaving
     reroll_once_max_loss = 1,      -- ... if it costs at most 1 $ of interest (before the savings ante)
+    rich_reserve = 10,             -- money above the interest cap + this: rerolled to fill the plan's gaps
+    replace_note = 60,             -- replacing a joker (sell + buy) needs a clear gain: no churn
+    danger_rerolls = 2,            -- rerolls per shop when the next blinds are in danger (a budget)
+    excess_note = 54,              -- with money left above the cap after buying, any real improvement is bought
+    excess_reserve = 5,            -- ... keeping this much above the cap
+    idle_reserve = 20,             -- money above the cap + this: rerolled even without a gap (idle money)
+    first_jokers = 3,              -- antes 1-2: the first jokers fill empty slots from excess_note, savings or not
 }
 
 local function settings(cfg)
@@ -44,12 +52,10 @@ local function T(k, ...) return I.T(k, ...) end
 local function dollars(state) return (state.econ and state.econ.dollars) or 0 end
 local function floor_money(state) return (state.econ and state.econ.bankrupt_at) or 0 end
 
-local function card_value(c)
-    local v = (c.nominal or 0) + (c.bonus or 0) + (c.perma_bonus or 0) + 6 * ((c.mult or 0) + (c.perma_mult or 0))
-    if (c.x_mult or 1) > 1 then v = v + 40 * (c.x_mult - 1) end
-    if c.enh then v = v + 5 end
-    return v
-end
+-- worth of a card with its enhancement, edition and seal (model/effects_db.lua)
+local card_value = EF.card_value
+-- sellable: an Eternal joker can never be sold
+local function sellable(j) return EF.can_sell(j) end
 
 local function uids(list)
     local out = {}
@@ -89,9 +95,6 @@ local function usefulness(c, st)
     local u = card_value(c)
     if c.id and st.rank[c.id] then u = u + 2 * (st.rank[c.id] - 4) end
     if st.dom_suit and c.suit == st.dom_suit then u = u + 6 end
-    if c.enh then u = u + 10 end
-    if c.edition then u = u + 12 end
-    if c.seal then u = u + 6 end
     return u
 end
 A.usefulness = usefulness
@@ -240,8 +243,6 @@ local function free_use(info, state)
     if info.free == 'consumables' then
         local room = (state.consumable_slots or 2) - (#(state.consumables or {}) - 1)
         if room >= 1 then return T('why_creates_cards') end
-    elseif info.free == 'joker_slot' then
-        if #(state.jokers or {}) < (state.joker_slots or 5) then return T('why_creates_joker') end
     elseif info.free == 'joker_edition' then
         for _, j in ipairs(state.jokers or {}) do if not j.edition then return T('why_wheel') end end
     end
@@ -279,7 +280,10 @@ function A.consumable_step(state, phase, ctx)
                     text = T('step_use', c.name or 'Black Hole'), why = T('why_black_hole'), cls = 'good' }
             end
             local info = IT.consumable(c.key)
-            if info and info.money == 'double' and dollars(state) >= 4 then
+            -- The Hermit doubles the money up to +$20: worth it from $20 (top players use it then
+            -- and spend after), or in the last ante
+            local last_ante = ((state.run and state.run.ante) or 1) >= ((state.run and state.run.win_ante) or 8)
+            if info and info.money == 'double' and (dollars(state) >= 20 or (last_ante and dollars(state) >= 4)) then
                 return { action = 'use', label = T('lbl_use'), targets = { c.uid },
                     text = T('step_use', c.name or c.key), why = T('why_hermit', math.min(20, dollars(state))), cls = 'good' }
             end
@@ -289,6 +293,20 @@ function A.consumable_step(state, phase, ctx)
                 if sv >= 3 then
                     return { action = 'use', label = T('lbl_use'), targets = { c.uid },
                         text = T('step_use', c.name or c.key), why = T('why_temperance', math.min(50, sv)), cls = 'good' }
+                end
+            end
+            -- creates a joker (Judgement, Wraith, The Soul): a free slot, or sell the weakest
+            -- joker first when a random new one is likely better (measured by the shop analysis)
+            if info and info.joker and (not info.money_to_zero or dollars(state) <= 10) then
+                if #(state.jokers or {}) < (state.joker_slots or 5) then
+                    return { action = 'use', label = T('lbl_use'), targets = { c.uid }, text = T('step_use', c.name or c.key),
+                        why = T('why_creates_joker'), cls = 'good' }
+                end
+                local sw = ctx.r and ctx.r.slot_swaps and ctx.r.slot_swaps[info.joker]
+                if sw and sw.worth and sw.sell and sellable(sw.sell) then
+                    return { action = 'sell', label = T('lbl_sell'), targets = { sw.sell.uid },
+                        text = T('step_sell_room', sw.sell.name or '?', c.name or c.key or '?'),
+                        why = T('why_make_room', c.name or c.key or '?', I.pct(sw.p_better or 0)), cls = 'mid' }
                 end
             end
             local why_free = free_use(info, state)
@@ -319,8 +337,27 @@ function A.hand_step(state, r, cfg)
     local disc = rec and rec.type == 'discard' and rec.cards or nil
     -- Luchador: selling it disables the boss effect for this round
     local blind = state.blind or {}
+    -- Verdant Leaf: every card is debuffed until a joker is sold: sell the one that scores least
+    local leaf_active = false
+    for _, c in ipairs(state.hand_cards or {}) do if c.debuff then leaf_active = true; break end end
+    -- (once a joker has been sold the cards are no longer debuffed: never sell a second one)
+    if blind.boss and blind.key == 'bl_final_leaf' and not blind.disabled and leaf_active then
+        local best, best_rank
+        local order = { econ = 1, utility = 2, unknown = 3, additive = 4, scaling = 5, retrigger = 6, xmult = 7 }
+        local PL = BSC.require('engine/plan')
+        for _, j in ipairs(state.jokers or {}) do
+            if sellable(j) then
+                local rank = (order[PL.joker_kind(BSC.require('model/jokers_db').get(j.key, j.name))] or 3) * 100 + (j.sell_cost or 0)
+                if not best or rank < best_rank then best, best_rank = j, rank end
+            end
+        end
+        if best then
+            return { action = 'sell', label = T('lbl_sell'), targets = { best.uid }, text = T('step_sell', best.name or '?'),
+                why = T('why_leaf'), cls = 'mid' }
+        end
+    end
     local lu = owned(state, 'j_luchador')
-    if lu and blind.boss and not blind.disabled and r.round and r.round.p_clear and r.round.p_clear < S.luchador_below then
+    if lu and sellable(lu) and blind.boss and not blind.disabled and r.round and r.round.p_clear and r.round.p_clear < S.luchador_below then
         return { action = 'sell', label = T('lbl_sell'), targets = { lu.uid }, text = T('step_sell', lu.name or 'Luchador'),
             why = T('why_luchador'), p = r.round.p_clear, p_text = T('p_blind_now'), cls = 'mid' }
     end
@@ -363,14 +400,35 @@ local function money_policy(state, r, S)
     local ante = (state.run and state.run.ante) or 1
     local b = r.base or {}
     local safe = (b.p_next or 0) >= S.safe_next and (b.p_boss or b.p_next or 0) >= S.safe_boss
+    -- falling behind: a typical hand below the ante's base chips (engine/plan.lua)
+    if r.plan and r.plan.falling_behind then safe = false end
     local cap = econ.no_interest and 0 or (econ.interest_cap or 25)
-    return { safe = safe, ante = ante, target = (safe and ante >= S.save_from_ante) and cap or 0 }
+    local target = (safe and ante >= S.save_from_ante) and cap or 0
+    -- last ante: interest no longer pays back, money goes into score (spend for reliability)
+    if ante >= ((state.run and state.run.win_ante) or 8) then target = 0 end
+    -- The Ox comes next: playing the most played hand will set the money to $0 anyway
+    for _, u in ipairs(state.upcoming or {}) do
+        if u.boss and u.key == 'bl_ox' and u.state ~= 'Defeated' then target = 0 end
+    end
+    return { safe = safe, ante = ante, target = target, cap = cap }
 end
 
-local function required_note(o, money, pol, S)
+local function required_note(o, money, pol, S, state)
     local base = (o.kind == 'booster') and S.booster_note or S.buy_note
+    local cost = o.cost or 0
+    -- selling a joker to replace it loses its sale value and its growth: a clear gain only
+    if o.kind == 'replace' then return math.max(S.replace_note, base) end
+    -- money above the interest cap earns nothing: once the purchase still leaves the cap (and a
+    -- little more), any real improvement is worth it (top players: "don't get rich")
+    if pol.cap and money - cost >= math.max(pol.target, pol.cap) + S.excess_reserve then
+        return math.min(base, S.excess_note)
+    end
+    -- antes 1-2: any scoring joker beats an empty slot (top players)
+    if o.kind == 'joker' and pol.ante <= 2 and #(state and state.jokers or {}) < S.first_jokers then
+        return math.min(base, S.excess_note)
+    end
     if not pol.safe or (o.note or 0) >= S.strong_note then return base end
-    if pol.target > 0 and money - (o.cost or 0) < pol.target then return S.strong_note end
+    if pol.target > 0 and money - cost < pol.target then return S.strong_note end
     return base + S.interest_weight * (o.interest_loss or 0)
 end
 
@@ -385,11 +443,11 @@ function A.shop_step(state, r, cfg, partial)
     if not r or partial or not r.options then return nil end
     local money, floor = dollars(state), floor_money(state)
     -- 1. consumables worth using now (planets, money tarots)
-    local use = A.consumable_step(state, 'shop')
+    local use = A.consumable_step(state, 'shop', { r = r })
     if use then return use end
     -- 2. Invisible Joker ready: selling it duplicates a random joker
     for _, j in ipairs(state.jokers or {}) do
-        if j.key == 'j_invisible' and not j.debuff then
+        if j.key == 'j_invisible' and not j.debuff and sellable(j) then
             local ab = j.ability or {}
             local need = (type(ab.extra) == 'number' and ab.extra) or 2
             if type(ab.invis_rounds) == 'number' and ab.invis_rounds >= need and #(state.jokers or {}) >= 2 then
@@ -398,17 +456,25 @@ function A.shop_step(state, r, cfg, partial)
             end
         end
     end
+    -- 2b. a perishable joker that has expired does nothing any more: its sale is free money
+    for _, j in ipairs(state.jokers or {}) do
+        if j.perishable and sellable(j) and (EF.perish_left(j) or 1) <= 0 then
+            return { action = 'sell', label = T('lbl_sell'), targets = { j.uid }, text = T('step_sell', j.name or '?'),
+                why = T('why_perished'), cls = 'mid' }
+        end
+    end
     -- 3. the best purchase worth making (replacement first needs a sale)
     local pol = money_policy(state, r, S)
     local best, saved
     for _, o in ipairs(r.options) do
-        local base = (o.kind == 'booster') and S.booster_note or S.buy_note
+        local base = math.min((o.kind == 'booster') and S.booster_note or S.buy_note, S.excess_note)
+        if o.kind == 'replace' then base = S.replace_note end
         if (o.note or 0) >= base and not o.blocked then
             -- o.cost of a replacement is already net of the sale of the replaced joker
             local cost = o.cost or 0
             local old = (o.kind ~= 'replace') or (state.jokers and state.jokers[o.replace_index])
             if old and money - cost >= floor then
-                if (o.note or 0) >= required_note(o, money, pol, S) then best = o; break end
+                if (o.note or 0) >= required_note(o, money, pol, S, state) then best = o; break end
                 saved = saved or o
             end
         end
@@ -434,6 +500,9 @@ function A.shop_step(state, r, cfg, partial)
     end
     -- 4. a joker that brings (almost) nothing: its sale is pure money
     local s = r.sells and r.sells[1]
+    if s and s.uid then
+        for _, j in ipairs(state.jokers or {}) do if j.uid == s.uid and not sellable(j) then s = nil; break end end
+    end
     if s and (s.note or 0) >= S.sell_note and (s.contribution or 1) <= S.sell_max_contribution and (s.sell or 0) > 0 then
         return { action = 'sell', label = T('lbl_sell'), targets = { s.uid }, text = T('step_sell', s.name or '?'),
             why = T('why_useless', math.floor(math.max(0, s.contribution or 0) * 100 + 0.5), s.sell or 0), cls = 'mid', note = s.note }
@@ -450,6 +519,26 @@ function A.shop_step(state, r, cfg, partial)
     local keep = math.max(floor, pol.target)
     if rr and rr.worth and money - rcost >= floor and money - rcost >= pol.target then
         return reroll(T('why_reroll', I.pct(rr.p_improve or 0)), rr.p_improve)
+    end
+    -- money far above the interest cap is worth nothing kept: while the plan misses a multiplier
+    -- or power (engine/plan.lua), reroll to find it; in danger, survival first
+    local plan = r.plan
+    if plan and plan.gaps then
+        local cap = econ.no_interest and 0 or (econ.interest_cap or 25)
+        -- antes 1-3: one reroll per shop at most (top players), unless rerolls are cheap (Chaos)
+        local chaos = false
+        for _, j in ipairs(state.jokers or {}) do if j.key == 'j_chaos' or j.key == 'j_flash' then chaos = true end end
+        local early_cap = pol.ante <= 3 and not chaos and rerolls_done(econ) >= 1
+        if not early_cap and (plan.gaps.xmult or plan.gaps.power) and money - rcost >= math.max(keep, cap) + S.rich_reserve then
+            return reroll(T('why_reroll_rich', money - cap, plan.gaps.xmult and T('gap_xmult') or T('gap_power')), rr and rr.p_improve)
+        end
+        if plan.gaps.power and not pol.safe and rerolls_done(econ) < S.danger_rerolls and money - rcost >= floor + 10 then
+            return reroll(T('why_reroll_danger'), rr and rr.p_improve)
+        end
+        -- idle money far above the cap: look for any improvement
+        if not early_cap and money - rcost >= math.max(keep, cap) + S.idle_reserve and (not rr or (rr.p_improve or 0) >= 0.2) then
+            return reroll(T('why_reroll_rich', money - cap, T('gap_better')), rr and rr.p_improve)
+        end
     end
     if S.reroll_once and not saved and rerolls_done(econ) == 0 and money - rcost >= keep
         and (pol.target > 0 or E.interest_loss(money, rcost, econ) <= S.reroll_once_max_loss)
@@ -470,6 +559,12 @@ function A.pack_step(state, r, cfg, partial)
     if not r or partial or not r.options then return nil end
     local best = r.options[1]
     if best and (best.note or 0) >= math.min(S.buy_note, 50) and not best.blocked then
+        -- a card that creates a joker, taken from the pack with every slot used: sell first
+        if best.swap and best.swap.sell and sellable(best.swap.sell) and #(state.jokers or {}) >= (state.joker_slots or 5) then
+            return { action = 'sell', label = T('lbl_sell'), targets = { best.swap.sell.uid },
+                text = T('step_sell_room', best.swap.sell.name or '?', best.name or '?'),
+                why = T('why_make_room', best.name or '?', I.pct(best.swap.p_better or 0)), cls = 'mid' }
+        end
         if best.kind == 'replace' then
             local old = state.jokers and state.jokers[best.replace_index]
             if old then

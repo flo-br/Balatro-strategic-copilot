@@ -33,4 +33,12 @@ function S.joker_income(T)
     T.eq(total, 4 + 4)
 end
 
+-- Rental sticker: $3 at the end of every round.
+function S.rental_costs_money(T)
+    local E = BSCopilot.require('engine/economy')
+    local F = dofile(T.REPO_ROOT .. '/tests/fixtures/states.lua')
+    local s = F.state({ jokers = { F.joker('j_golden'), F.joker('j_joker', nil, { rental = true }) } })
+    T.eq(E.joker_income(s), 4 - 3)
+end
+
 return S

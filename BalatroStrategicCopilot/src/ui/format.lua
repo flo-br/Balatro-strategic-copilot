@@ -7,6 +7,7 @@ local BSC = BSCopilot
 local U = BSC.require('core/util')
 local I = BSC.require('core/i18n')
 local C = BSC.require('model/cards')
+local EF = BSC.require('model/effects_db')
 
 local F = {}
 local T = I.T
@@ -58,6 +59,8 @@ function F.cards_segments(cards)
     end
     for i, c in ipairs(visible) do
         segs[#segs + 1] = { t = F.card_label(c), c = c.suit or 'text' }
+        local mods = F.modifiers_text(c)
+        if mods ~= '' then segs[#segs + 1] = { t = '(' .. mods .. ')', c = 'dim' } end
         if i < #visible then segs[#segs + 1] = { t = ' ', c = 'text' } end
     end
     if hidden > 0 then
@@ -66,6 +69,17 @@ function F.cards_segments(cards)
         segs[#segs + 1] = { t = (#visible > 0 and ' + ' or '') .. txt, c = 'mid' }
     end
     return segs
+end
+
+-- Short names of a card's modifiers ("acier, holo"), as the player reads them in the game.
+function F.modifiers_text(c)
+    local names = I.T('mod_short')
+    local out = {}
+    for _, k in ipairs(EF.modifiers(c)) do
+        -- a Stone card is already labelled "Pierre"
+        if k ~= 'm_stone' then out[#out + 1] = (type(names) == 'table' and names[k]) or k end
+    end
+    return table.concat(out, ', ')
 end
 
 function F.cards_text(cards)
@@ -134,6 +148,48 @@ function F.target_text(t)
     return I.hand_name(t.name)
 end
 
+-- Cards in hand whose modifiers change what to do with them (keep, discard, play with care),
+-- and the jokers' stickers: shows the player what the copilot takes into account.
+function F.effects_lines(state, max)
+    local lines = {}
+    local desc, hint = I.T('mod_desc'), I.T('role_hint')
+    local listed = {}
+    for _, c in ipairs((state and state.hand_cards) or {}) do
+        local mods = EF.modifiers(c)
+        if #mods > 0 then listed[#listed + 1] = { c = c, mods = mods } end
+    end
+    if #listed > 0 then
+        lines[#lines + 1] = line(seg(T('effects_title'), 'title'))
+        for i = 1, math.min(max or 4, #listed) do
+            local e = listed[i]
+            local parts = {}
+            for _, k in ipairs(e.mods) do parts[#parts + 1] = (type(desc) == 'table' and desc[k]) or k end
+            local l = line(seg('  ', 'text'))
+            append(l, F.cards_segments({ e.c }))
+            l[#l + 1] = seg(' : ' .. table.concat(parts, ' ; '), 'dim')
+            local role = EF.role(e.c)
+            if role ~= 'play' and type(hint) == 'table' and hint[role] then l[#l + 1] = seg(' → ' .. hint[role], 'accent') end
+            lines[#lines + 1] = l
+        end
+    end
+    local st = {}
+    for _, j in ipairs((state and state.jokers) or {}) do
+        local ks = EF.stickers(j)
+        if #ks > 0 then
+            local names = I.T('mod_short')
+            local parts = {}
+            for _, k in ipairs(ks) do
+                local t = (type(names) == 'table' and names[k]) or k
+                if k == 'perishable' then t = t .. ' : ' .. T('perish_left', EF.perish_left(j)) end
+                parts[#parts + 1] = t
+            end
+            st[#st + 1] = (j.name or '?') .. ' (' .. table.concat(parts, ', ') .. ')'
+        end
+    end
+    if #st > 0 then lines[#lines + 1] = line(seg(T('jokers_stickers') .. table.concat(st, ' · '), 'dim')) end
+    return lines
+end
+
 -- Hand phase panel ----------------------------------------------------------------------
 function F.hand_panel(state, r, detail)
     local lines = {}
@@ -153,6 +209,7 @@ function F.hand_panel(state, r, detail)
         lines[#lines + 1] = line(seg(T('confidence', T('conf_' .. conf)) .. ' — ' .. F.method_text(r.round.method, r.round.n), 'dim'))
     end
     -- (the recommendation itself is the "À FAIRE" step line, engine/advice.lua)
+    append(lines, F.effects_lines(state, detail and 8 or 4))
     -- alternatives
     if detail and r.candidates and #r.candidates > 1 then
         lines[#lines + 1] = line(seg(T('alternatives'), 'title'))

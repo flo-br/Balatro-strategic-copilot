@@ -176,7 +176,7 @@ function Rec:on_state(prev, s, results)
     if s.phase == 'game_over' then
         if self.current_blind then
             run.lost_to = self.current_blind.key
-            close_blind(self, false)
+            close_blind(self, false, s.blind and s.blind.chips_scored or (prev and prev.blind and prev.blind.chips_scored))
         end
         finished = finalize(self, run.won and 'won_then_lost' or 'lost')
     end
@@ -196,6 +196,20 @@ function Rec:on_analysis(phase, result, s)
         else
             last.median = med
         end
+        self.dirty = true
+    end
+    -- the build at each shop: what the post-run review compares with the plan (engine/plan.lua)
+    if phase == 'shop' and result.plan and s and s.run then
+        local pl = result.plan
+        local main = pl.main_hand and s.hands and s.hands[pl.main_hand]
+        local entry = { ante = s.run.ante, round = s.run.round, dollars = s.econ and s.econ.dollars,
+            cap = s.econ and s.econ.interest_cap, xmult = pl.xmult, xmult_target = pl.xmult_target,
+            gap_xmult = pl.gaps and pl.gaps.xmult and true or nil, gap_power = pl.gaps and pl.gaps.power and true or nil,
+            main_hand = pl.main_hand, main_level = main and main.level, jokers = #(s.jokers or {}),
+            slots = s.joker_slots, p_boss = result.base and result.base.p_boss, p_win = result.base and result.base.p_win }
+        self.run.builds = self.run.builds or {}
+        local lb = self.run.builds[#self.run.builds]
+        if lb and lb.round == entry.round then self.run.builds[#self.run.builds] = entry else self.run.builds[#self.run.builds + 1] = entry end
         self.dirty = true
     end
 end
@@ -313,7 +327,13 @@ function Rec:on_event(ev, ctx)
         end
     elseif ev.kind == 'reroll_shop' then
         local sr = results.shop
-        if sr and sr.reroll then d.followed = sr.reroll.worth and true or false; d.danger = sr.danger end
+        if sr then
+            -- followed = the "À FAIRE" step was RELANCER (free, worth it, once, money to spare)
+            local okA, A = pcall(BSC.require, 'engine/advice')
+            local st = okA and A.step('shop', s, sr, BSC.config) or nil
+            d.followed = (st and st.action == 'reroll') or (sr.reroll and sr.reroll.worth) or false
+            d.danger = sr.danger
+        end
     elseif ev.kind == 'skip_blind' then
         local bs = results.blind_select
         if bs and bs.skip then d.followed = bs.skip.recommended and true or false; d.danger = bs.danger end

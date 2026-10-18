@@ -159,8 +159,8 @@ section `advice`) :
 
 | Phase | Ordre de priorité |
 |---|---|
-| Main | 1. vendre Luchador si boss actif et victoire < 80 % ; 2. utiliser une planète (sauf avec Observatory : la garder donne ×1,5), Black Hole, The Hermit (≥ 4 $), Temperance (≥ 3 $ de revente), un tarot d'amélioration ou de couleur sur les cartes qui vont jouer ; 3. jouer / défausser selon la simulation de manche |
-| Boutique | 1. consommables comme ci-dessus (+ ceux qui créent des cartes quand il y a la place : High Priestess, Emperor, Judgement, Wheel of Fortune) ; 2. vendre Invisible Joker quand il est prêt ; 3. meilleur achat abordable dont la note atteint le **seuil exigé** (ci-dessous) — remplacement : vendre d'abord le joker remplacé ; consommables pleins : vendre d'abord le plus faible ; 4. vendre un joker qui apporte ≤ 3 % du score (note de vente ≥ 60) ; 5. relancer : gratuite, ou rentable, ou **une fois par boutique** (ci-dessous) ; 6. blinde suivante |
+| Main | 1. Verdant Leaf : vendre le joker qui marque le moins (économie d'abord, jamais un éternel) ; 2. vendre Luchador (s'il n'est pas éternel) si boss actif et victoire < 80 % ; 3. utiliser une planète (sauf avec Observatory : la garder donne ×1,5), Black Hole, The Hermit (≥ 20 $, ou dernière ante), Temperance (≥ 3 $ de revente), Judgement / Wraith (≤ 10 $) / The Soul s'il y a la place, un tarot d'amélioration ou de couleur sur les cartes qui vont jouer ; 4. jouer / défausser selon la simulation de manche |
+| Boutique | 1. consommables comme ci-dessus (+ ceux qui créent des cartes quand il y a la place : High Priestess, Emperor, Wheel of Fortune ; Judgement / Wraith / The Soul avec les jokers pleins : vendre d'abord le joker le plus faible si un joker aléatoire a ≥ 50 % de chances d'être meilleur et un gain moyen ≥ 5 %, mesuré comme un remplacement) ; 2. vendre Invisible Joker quand il est prêt, un joker périssable expiré ; 3. meilleur achat abordable dont la note atteint le **seuil exigé** (ci-dessous) — remplacement : vendre d'abord le joker remplacé ; consommables pleins : vendre d'abord le plus faible ; 4. vendre un joker qui apporte ≤ 3 % du score (note de vente ≥ 60) ; 5. relancer : gratuite, ou rentable, ou **une fois par boutique** (ci-dessous) ; 6. blinde suivante |
 | Paquet | prendre la meilleure carte (note ≥ 50) — tarot ou spectrale : avec ses cartes cibles (dans la main du paquet) — sinon passer |
 | Choix de blinde | passer seulement si le tag vaut plus que la blinde **et la boutique** perdues et que la blinde d'après reste ≥ 95 % (§9), sinon jouer ; un boss se joue toujours. Seul le choix **définitif** est affiché (pas pendant que l'analyse se termine) |
 
@@ -173,15 +173,53 @@ base compte) :
   achat qui fait passer sous 25 $ exige une note ≥ 75 ;
 * ante 1 : chaque dollar d'intérêts perdu relève le seuil de 3 points ;
 * un objet noté ≥ 75 est toujours acheté (s'il est abordable) ;
-* relance : gratuite → toujours ; rentable (§7) → si elle respecte l'épargne ; sinon **une seule
-  relance par boutique** avant de partir, si elle respecte l'épargne (ante 1 : au plus 1 $
-  d'intérêts perdu) et si la meilleure boutique a ≥ 15 % de chances. Le nombre de relances déjà
-  faites se déduit du prix (+1 $ par relance ; prix de départ du tag D6 lu s'il existe).
+* **l'argent au-delà du plafond ne rapporte rien** : si l'achat laisse encore 25 $ + 5 $, tout
+  objet noté ≥ 54 est acheté ; antes 1-2 : les 3 premiers jokers sont pris dès 54, épargne ou non
+  (« n'importe quel joker vaut mieux qu'un emplacement vide ») ;
+* **remplacer un joker** (vendre puis acheter) exige une note ≥ 60 : on perd sa valeur de revente
+  et sa progression, pas de va-et-vient pour un gain minime ;
+* « en retard » (une main typique, estimée sans défausse, sous 0,5 × la mise de base de l'ante,
+  `engine/plan.lua`, seuil calibré sur les parties simulées) : la suite
+  n'est pas sûre, l'épargne est levée ; dernière ante et boss The Ox à venir : pas d'épargne ;
+* relance : gratuite → toujours ; rentable (§7) → si elle respecte l'épargne ; argent ≥ plafond +
+  10 $ et un ×Mult ou de la puissance manque au plan → relancer ; blindes à venir en danger → au
+  plus 2 relances par boutique en gardant 10 $ ; argent ≥ plafond + 20 $ → relancer
+  pour trouver mieux ; aux antes 1-3, une seule relance par boutique (sauf Chaos the Clown / Flash
+  Card) ; sinon **une seule relance par boutique** avant de partir, si elle respecte l'épargne
+  (ante 1 : au plus 1 $ d'intérêts perdu) et si la meilleure boutique a ≥ 15 % de chances. Le
+  nombre de relances déjà faites se déduit du prix (+1 $ par relance ; prix de départ du tag D6 lu
+  s'il existe).
 Tous ces seuils sont dans `config.lua` (section `advice`).
 
+**Plan de partie** (`engine/plan.lua`, leçons des meilleurs joueurs, [PRO_LESSONS.md](PRO_LESSONS.md)) :
+* sources de ×Mult : jokers ×Mult (et Blueprint / Brainstorm), jokers Polychrome, 3 cartes
+  Acier / Verre ou plus ; attendues : 0, 0, 0, 1, 1, 2, 2, 3 aux antes 1 à 8, recherchées une ante
+  à l'avance ;
+* main principale : la plus jouée (à égalité, la plus haute en niveau) ;
+* bonus de note (composante « potentiel ») : ×Mult `0,1 + 0,07·(ante − 2)`, +0,3 quand il en manque
+  (×1 à ×1,5 selon les défaites passées) ; jokers qui grandissent +0,2 avant l'ante 6 ; jokers
+  additifs −0,25 à partir de l'ante 6, +0,2 aux antes 1-2 tant qu'il y a moins de 2 jokers de score ;
+  économie +0,15 aux antes 1-2, −0,2 à partir de l'ante 6 ; planète de la main principale +0,2 ;
+* remplacement : bonus du nouveau joker moins celui du joker remplacé.
+
+**Valeur d'une main au-delà de la blinde** (`HA.side_value`, en $) : argent gagné en jouant (sceau
+or, chance), cartes Or (+3 $) et sceaux bleus (planète ≈ 3 $) gardés en main si la manche se termine,
+carte de verre jouée (−6 $ × 1/4), sceau violet défaussé (tarot ≈ 3 $). Elle départage deux options
+de mêmes chances (une main gagnée d'avance n'utilise pas ses cartes Or comme accompagnement), et
+l'emporte quand les chances diffèrent de moins de 3 points mais la valeur de plus de 5 $ (The Ox :
+jouer la main la plus jouée met l'argent à 0).
+
+**Précision des simulations de manche** : chaque option reçoit 64 simulations ; les 3 meilleures
+(à moins de 10 points de la meilleure) en reçoivent 64 de plus ; un écart d'une simulation ou moins
+n'est pas un écart : les mains utilisées départagent.
+
+**Valeur d'une carte** (`model/effects_db.lua`, `EF.card_value`, sert à ranger les cartes à
+garder, défausser, copier) : jetons de la carte + bonus + 6 × multi (carte chance : multi ÷ 5 et
+3 × gain ÷ 15) + 40 × (×Mult − 1) + 60 × (×Mult tenu − 1) (acier) + 4 × argent tenu (or) + 12 si
+joker (wild) + édition (brillant 15, holo 25, poly 30) + sceau (or 8, rouge 15, bleu 10, violet −15).
+
 **Cibles des tarots et spectrales** (heuristique explicable ; « utilité » d'une carte = valeur
-de score + 2 × (exemplaires de son rang dans le deck − 4) + 6 si couleur dominante du deck + 10
-amélioration + 12 édition + 6 sceau) :
+ci-dessus + 2 × (exemplaires de son rang dans le deck − 4) + 6 si couleur dominante du deck) :
 
 | Effet | Cartes indiquées |
 |---|---|

@@ -103,6 +103,10 @@ function RT.finish_run(run)
     end
     if RT.store then RT.store:delete(RT.ACTIVE) end
     RT.last_review = RV.build(run, RT.profile_data)
+    -- the causes of a loss feed the plan of the next runs (engine/plan.lua)
+    if not run.won and cfg().enabled ~= false and RT.last_review.lessons and #RT.last_review.lessons > 0 then
+        if LE.add_lessons(RT.profile_data, RT.last_review.lessons, run.id) then save(RT.PROFILE, LE.SCHEMA, RT.profile_data) end
+    end
     L.info('learning', 'run %s finished (%s, ante %s)', run.id, tostring(run.end_reason), tostring(run.final_ante))
     return RT.last_review
 end

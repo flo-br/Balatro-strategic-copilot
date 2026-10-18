@@ -38,10 +38,18 @@ résumés restent dans le profil.
 
 * **Pas de certitude après quelques parties** : toutes les estimations sont rétrécies vers
   un a priori ; 3 défaites à 90 % ne transforment pas 90 % en 0 % (testé).
-* **Une défaite n'est pas une mauvaise décision** : le bilan ne qualifie une décision
+* **Une défaite n'est pas forcément une mauvaise décision** : le bilan ne qualifie une décision
   d'« erreur probable » qu'en comparant ses estimations à celles de la meilleure option **au
-  moment de la décision** ; une blinde perdue malgré une forte probabilité est signalée comme
-  « malchance probable » (testé).
+  moment de la décision** (testé).
+* **Mais toute partie est jouable** (1.0.7) : le bilan ne conclut jamais par « malchance ». Il
+  cherche pourquoi le build n'a pas suffi, à partir de la trajectoire de la partie (puissance
+  estimée à chaque boutique, plan, argent, planètes) et de la liste de vérification des meilleurs
+  joueurs ([PRO_LESSONS.md](PRO_LESSONS.md)) : ante où une main typique est passée sous la mise de
+  base, ×Mult manquants, argent dormant, planètes dispersées, trop peu de jokers, boss non préparé,
+  marge trop faible (une blinde perdue à 85 % = 15 % de risque accepté). Ces causes visent aussi
+  le plan du copilote lui-même, pas seulement le joueur.
+* **Leçons retenues** : les causes des 10 dernières défaites sont gardées dans le profil ; quand la
+  même revient, le plan lui donne plus de poids (×1 à ×1,5 : par exemple, l'urgence des ×Mult).
 * **Un succès ne valide pas une stratégie** : les taux sont affichés avec leur intervalle ; la
   comparaison « parties anciennes / récentes » n'est déclarée significative que si les
   intervalles ne se recouvrent pas, et seulement à partir de 20 parties.

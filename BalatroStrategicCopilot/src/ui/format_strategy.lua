@@ -81,6 +81,29 @@ function FS.option_detail(o)
     return out
 end
 
+-- Plan lines: main hand and its level, multipliers present / expected, what is missing.
+function FS.plan_lines(plan, state)
+    local out = {}
+    if not plan then return out end
+    local parts = {}
+    if plan.main_hand then
+        local h = state and state.hands and state.hands[plan.main_hand]
+        parts[#parts + 1] = T('plan_main', I.hand_name(plan.main_hand), h and h.level or 1)
+    end
+    parts[#parts + 1] = T('plan_xmult', plan.xmult or 0, plan.xmult_target or 0)
+    local l = line(seg(T('plan_title'), 'title'), seg(table.concat(parts, ' · '), 'text'))
+    out[#out + 1] = l
+    local gaps = {}
+    local g = plan.gaps or {}
+    if g.scoring then gaps[#gaps + 1] = T('plan_gap_scoring') end
+    if g.xmult then gaps[#gaps + 1] = T('plan_gap_xmult') end
+    if plan.falling_behind then gaps[#gaps + 1] = T('plan_gap_behind', U.fmt_num(plan.base_chips or 0)) end
+    if g.scaling then gaps[#gaps + 1] = T('plan_gap_scaling') end
+    if g.economy then gaps[#gaps + 1] = T('plan_gap_economy') end
+    if #gaps > 0 then out[#out + 1] = line(seg('  ' .. T('plan_missing') .. table.concat(gaps, ', '), 'mid')) end
+    return out
+end
+
 function FS.shop_panel(state, r, detail)
     local lines = {}
     if not r or not r.base then lines[#lines + 1] = line(seg(T('computing'), 'dim')); return lines end
@@ -95,6 +118,12 @@ function FS.shop_panel(state, r, detail)
     lines[#lines + 1] = line(seg(T('build_power', U.fmt_num(b.median or b.mean or 0)) .. ' (médiane, simulation)', 'chips'))
     local pt, pc = posture(r.danger)
     if pt then lines[#lines + 1] = line(seg('Situation ' .. pt, pc)) end
+    -- the run's plan (engine/plan.lua): what the shop should bring
+    for _, l in ipairs(FS.plan_lines(r.plan, state)) do lines[#lines + 1] = l end
+    -- the ante's boss is known from the start of the ante: what it demands
+    local BL = BSC.require('model/blinds_db')
+    local prep = r.boss and r.boss.key and BL.PREP[r.boss.key]
+    if prep then lines[#lines + 1] = line(seg(T('boss_prep', tostring(r.boss.name or r.boss.key)), 'title'), seg(prep, 'mid')) end
     -- options
     local shown = 0
     for _, o in ipairs(r.options or {}) do

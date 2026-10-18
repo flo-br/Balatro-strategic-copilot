@@ -13,8 +13,8 @@ Aucune dépendance de test : `tests/testlib.lua` fournit assertions, exécution 
 
 ```bash
 python3 tools/build.py                                    # paquet dist/…zip
-pwsh -NoProfile -File tests/installer/test_installer.ps1 -Zip dist/BalatroStrategicCopilot-1.0.6-installateur.zip [-Smods <sources Steamodded>]
-tests/standalone/run_love_standalone.sh dist/BalatroStrategicCopilot-1.0.6.zip [dossier]      # mode autonome, vrai LÖVE
+pwsh -NoProfile -File tests/installer/test_installer.ps1 -Zip dist/BalatroStrategicCopilot-1.0.7-installateur.zip [-Smods <sources Steamodded>]
+tests/standalone/run_love_standalone.sh dist/BalatroStrategicCopilot-1.0.7.zip [dossier]      # mode autonome, vrai LÖVE
 luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai chargeur Steamodded
 ```
 
@@ -27,13 +27,14 @@ luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai
 | `unit/test_score_reference` | 36 | **tests de référence** : scores calculés à la main d'après les règles (voir ci-dessous) |
 | `unit/test_jokers` | 12 | 150 jokers présents ; jokers de rang, couleur, type de main, état, progression ; Loyalty Card ; argent ; Lucky Cat ; Bloodstone ; **fuzzing** des 150 jokers sur 40 mains aléatoires |
 | `unit/test_probability` | 4 | hypergéométrique, inclusion-exclusion, « au moins r groupes » **comparés à l'énumération brute** ; Wilson |
-| `unit/test_hand_advisor` | 9 | 218 jeux, défausse de couleur exacte, cas impossibles/faciles, monotonie en nombre de mains, carte imposée, The Psychic, carte cachée inutile quand la paire visible gagne, **toutes les cartes cachées (The House)** : conseil non vide, positions interchangeables, même conseil quelle que soit l'identité réelle des cartes, quintes Four Fingers |
-| `unit/test_advice` | 27 | **prochaine étape** : achat du meilleur objet abordable, remplacement (vendre d'abord), consommables pleins (faire de la place), vente d'un joker inutile seulement, relance puis blinde suivante, attente de l'analyse complète, planètes (sauf Observatory), tarots d'argent, jouer / défausser, tarot sur les cartes à jouer, Luchador contre un boss dangereux, Invisible Joker prêt, paquets (prendre / passer, cibles d'Arcana), passer ou jouer une blinde (boss toujours joué), numéros d'ordre seulement quand l'ordre est faux ; **1.0.6** : Death (DEVIENT à gauche, MODÈLE à droite, consigne de glissement), Strength, Hanged Man, sceaux, Magician, Chariot, consommables qui créent des cartes, Death pris dans un paquet, blinde : choix définitif seulement, paquets achetés dès 52/100, épargne des intérêts à partir de l'ante 2 (sauf objet fort ou danger), intérêts pesés à l'ante 1, une relance par boutique / relance gratuite |
-| `unit/test_economy`, `test_strategy`, `test_synergy`, `test_shop` | 22 | intérêts, puissance reproductible, bootstrap monotone, effets de boss, blindes futures, a priori de croissance, danger continu, **blindes rarement passées** (seul Investment avec une blinde suivante sûre), ordre des jokers, contributions, adéquation, classement boutique, remplacement, planètes, variantes, relance, poids selon le danger, **paquets évalués par leur contenu** |
+| `unit/test_hand_advisor` | 11 | **1.0.7** : cartes Or et sceau bleu gardées en main sur une main gagnante, valeur des cartes selon leurs effets (acier, or, violet, chance, verre) ; 218 jeux, défausse de couleur exacte, cas impossibles/faciles, monotonie en nombre de mains, carte imposée, The Psychic, carte cachée inutile quand la paire visible gagne, **toutes les cartes cachées (The House)** : conseil non vide, positions interchangeables, même conseil quelle que soit l'identité réelle des cartes, quintes Four Fingers |
+| `unit/test_advice` | 32 | **prochaine étape** : achat du meilleur objet abordable, remplacement (vendre d'abord), consommables pleins (faire de la place), vente d'un joker inutile seulement, relance puis blinde suivante, attente de l'analyse complète, planètes (sauf Observatory), tarots d'argent, jouer / défausser, tarot sur les cartes à jouer, Luchador contre un boss dangereux, Invisible Joker prêt, paquets (prendre / passer, cibles d'Arcana), passer ou jouer une blinde (boss toujours joué), numéros d'ordre seulement quand l'ordre est faux ; **1.0.6** : Death (DEVIENT à gauche, MODÈLE à droite, consigne de glissement), Strength, Hanged Man, sceaux, Magician, Chariot, consommables qui créent des cartes, Death pris dans un paquet, blinde : choix définitif seulement, paquets achetés dès 52/100, épargne des intérêts à partir de l'ante 2 (sauf objet fort ou danger), intérêts pesés à l'ante 1, une relance par boutique / relance gratuite ; **1.0.7** : éternel jamais vendu, périssable expiré vendu, Judgement avec jokers pleins (vendre d'abord le plus faible, en boutique et en paquet), règles des pros (en retard → acheter, dernière ante et The Ox → pas d'épargne, relances avec l'argent dormant, une seule relance aux antes 1-3), Verdant Leaf (une seule vente), excédent d'argent investi |
+| `unit/test_economy`, `test_strategy`, `test_synergy`, `test_shop` | 25 | intérêts, puissance reproductible, bootstrap monotone, effets de boss, blindes futures, a priori de croissance, danger continu, **blindes rarement passées** (seul Investment avec une blinde suivante sûre), ordre des jokers, contributions, adéquation, classement boutique, remplacement, planètes, variantes, relance, poids selon le danger, **paquets évalués par leur contenu** ; **1.0.7** : location −3 $/manche, cartes à jouer notées selon leurs effets, Judgement mesuré comme un remplacement, Hex / Ankh mesurés sur le plateau qu'ils laissent, relance utile même avec 5 jokers |
+| `unit/test_plan` | 4 | plan de partie : types de jokers, sources de ×Mult (Polychrome comprise), objectifs par ante, « en retard », bonus selon la phase, affichage en boutique |
 | `unit/test_persistence` | 8 | aller-retour, **écriture interrompue** (A/B), corruption détectée par somme de contrôle, migration avec sauvegarde, schéma futur jamais écrasé, export/import, rotation des logs, fichiers jamais exécutés |
-| `unit/test_learning` | 12 | **scénarios synthétiques à vérité connue** (voir ci-dessous) |
+| `unit/test_learning` | 13 | **scénarios synthétiques à vérité connue** (voir ci-dessous) ; **1.0.7** : bilan sans « malchance », causes d'une défaite (déficit, décrochage, ×Mult, argent dormant, boss, marge), causes retenues pour le plan |
 | `unit/test_recorder` | 3 | manche complète journalisée, fin de partie, abandon détecté |
-| `unit/test_format` | 6 | pourcentages, classes + symboles, méthode et confiance affichées, couverture partielle, panneau boutique, traduction anglaise |
+| `unit/test_format` | 7 | pourcentages, classes + symboles, méthode et confiance affichées, couverture partielle, panneau boutique, traduction anglaise, **effets des cartes et autocollants affichés** |
 | `integration/test_mod_load` | 8 | `main.lua` réellement chargé via un faux Steamodded : accroches, touches, onglet de config, **première recommandation réelle**, rendu, sélection notée exactement, `calculate` renvoie toujours `nil`, robustesse à un état cassé, **aucune action de jeu appelée** (fonctions piégées), rafraîchissement du panneau |
 | `integration/test_state_reader` | 6 | lecture complète, **ordre du deck non divulgué**, cartes face cachée masquées, améliorations/éditions/sceaux, jokers et boutique, erreurs confinées par section |
 | `integration/test_compat` | 5 | mods détectés, nombres Talisman, contrôle croisé avec le jeu, dégradation des scores « exacts », multiplicateur appris |
@@ -42,7 +43,7 @@ luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai
 | `integration/test_steps_ui` | 5 | étiquette sur le bouton « blinde suivante », bouton absent : étape gardée en texte et boutons vus écrits au journal, étiquette « passer » sur la colonne de la blinde en cours, numéros d'ordre sous les jokers puis disparition une fois l'ordre corrigé, **The House** toutes cartes cachées (plus de « Aucune analyse disponible ») |
 | `integration/test_full_flow` | 2 | partie complète (main → défaite → bilan → fichiers → **redémarrage avec profil conservé**), boutique de bout en bout avec badges |
 | `unit/test_performance` | 6 | mesures (ci-dessous) |
-| **Total** | **218** | |
+| **Total** | **234** | |
 
 ### Tests de référence (scores)
 
@@ -68,10 +69,11 @@ prédiction (journal + diagnostic de compatibilité).
 * prédicteur surconfiant (vérité = p/2, 1 500 observations) : calibration activée par la
   validation temporelle, Brier amélioré sur l'échantillon récent, `0,8 → ≈ 0,4`, monotone ;
 * prédicteur bien calibré : ECE < 0,05, carte quasi identité ;
-* défaite à p = 0,85 avec décisions conformes : **aucune erreur inventée**, malchance signalée ;
 * vraies erreurs (écart de note de 38, main à 50 % au lieu de 90 %, relances inutiles) :
   détectées même si la partie est gagnée ;
 * 2 succès : intervalle de confiance > 50 points, aucune tendance déclarée ;
+* défaite à p = 0,85 : **aucune erreur inventée et aucune « malchance »** : le bilan nomme la marge
+  trop faible et les exigences du boss ;
 * idempotence, croissance, contributions, multiplicateur inconnu à peine modifié par 1 observation ;
 * profil sauvegardé puis rechargé par une nouvelle instance (« redémarrage ») : statistiques intactes.
 
@@ -79,10 +81,10 @@ prédiction (journal + diagnostic de compatibilité).
 
 | Environnement | Résultat |
 |---|---|
-| LuaJIT 2.1.1703358377 | **218 réussis, 0 échec** |
-| Lua 5.1.5 | **218 réussis, 0 échec** |
+| LuaJIT 2.1.1703358377 | **234 réussis, 0 échec** |
+| Lua 5.1.5 | **234 réussis, 0 échec** |
 | Mode autonome sur le **vrai LÖVE 11.5**, exécutable fusionné comme `Balatro.exe` (ci-dessous) | **5 scénarios conformes** |
-| Installateur extrait de `…-1.0.6-installateur.zip`, PowerShell 7.4 (Linux) | **9 scénarios, 53 vérifications réussies** |
+| Installateur extrait de `…-1.0.7-installateur.zip`, PowerShell 7.4 (Linux) | **9 scénarios, 53 vérifications réussies** |
 | Installateur, analyse statique de compatibilité Windows PowerShell 5.1 (PSScriptAnalyzer 1.25, profil Windows 10 / PS 5.1) | **0 erreur de syntaxe, 0 incompatibilité** |
 
 ### Mode autonome sur le vrai LÖVE (`tests/standalone/run_love_standalone.sh`)
@@ -90,11 +92,11 @@ prédiction (journal + diagnostic de compatibilité).
 Le script construit un **exécutable fusionné** (binaire LÖVE 11.5 + archive d'un Balatro simulé
 contenant `conf.lua` et `main.lua`), exactement comme `Balatro.exe`, puis le lance sous Xvfb avec
 différents dossiers de sauvegarde (l'équivalent de `%AppData%\Balatro`) remplis depuis l'archive
-`BalatroStrategicCopilot-1.0.6.zip`. Résultats (2026-10-18) :
+`BalatroStrategicCopilot-1.0.7.zip`. Résultats (2026-10-18) :
 
 | Scénario | Résultat |
 |---|---|
-| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.0.6 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 230) ; panneau et badges « JOUER » affichés (capture) |
+| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.0.7 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 230) ; panneau et badges « JOUER » affichés (capture) |
 | mod seul, sans amorce | jeu normal, pas de copilote (témoin) |
 | amorce sans le dossier du mod | jeu normal jusqu'au bout ; bandeau rouge « dossier introuvable » ; erreur dans `amorce.log` |
 | Steamodded a déjà chargé le copilote | l'amorce se retire (« Steamodded gère déjà le copilote »), pas de double chargement |
@@ -165,12 +167,20 @@ car il faut LÖVE). La documentation 1.0.0/1.0.1 affirmait à tort qu'un zip dé
 fonctionnait : corrigé en 1.0.2. Le chargeur récent désactive durablement un mod en double via
 `blacklist.txt` : pris en charge par l'installateur en 1.0.3.
 
+### Parties complètes simulées (`tools/trainer`, 1.0.7)
+
+Le copilote joue seul des parties complètes dans un Balatro simplifié (voir
+[TRAINING.md](TRAINING.md)) : chaque décision est l'étape « À FAIRE » du mod. Résultats et
+défauts trouvés : TRAINING.md. Ce n'est pas le vrai jeu : ces parties servent à comparer des
+versions du copilote et à trouver ses faiblesses.
+
 ### Runtime LÖVE réel (harnais `tools/love_harness`)
 
 Exécuté avec **LÖVE 11.5** sous Xvfb : le vrai `love.graphics`, `love.filesystem` et
 `love.timer`, avec l'état de Balatro simulé. Scénarios main (ordre des jokers), boutique, choix
-de blinde, The House (cartes face cachée) et Death dans la zone des consommables (1.0.6 : cartes
-DEVIENT / MODÈLE étiquetées, consigne de glissement, panneau placé sous la zone) : accroches
+de blinde, The House (cartes face cachée), Death dans la zone des consommables (1.0.6 : cartes
+DEVIENT / MODÈLE étiquetées, consigne de glissement, panneau placé sous la zone) et effets (1.0.7 :
+cartes acier / or / holo / sceaux affichées avec leur rôle, jokers éternel et périssable) : accroches
 installées, analyses terminées (28–298 images), sauvegarde/rechargement réels dans le dossier de
 sauvegarde LÖVE, **0 erreur**. Captures : `docs/img/overlay_*.png`.
 

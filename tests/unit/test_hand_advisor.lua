@@ -151,4 +151,34 @@ function S.straight_target_four_fingers(T)
     T.ok(found and found.p_complete > 0 and found.p_complete <= 1)
 end
 
+-- Card effects (model/effects_db.lua): a winning hand does not spend the cards that pay while
+-- HELD (Gold card: $3 at the end of the round, Blue seal: a planet) as useless kickers.
+function S.held_effects_stay_in_hand(T)
+    local F, C, HA = env()
+    for _, mod in ipairs({ { enh = 'm_gold' }, { seal = 'Blue' } }) do
+        local hand = C.parse_list('Ah Ad 7c 9s 2h Qs 5d 3c')
+        if mod.enh then C.set_enhancement(hand[6], mod.enh) end
+        if mod.seal then hand[6].seal = mod.seal end
+        local s = F.state({ hand_cards = hand, deck = deck_without(C, hand), required = 60 })
+        local r = HA.analyse(s, { rollouts = 8 })
+        T.eq(r.recommendation.type, 'play')
+        for _, c in ipairs(r.recommendation.ref.cards) do T.ok(c ~= hand[6], 'Q held: ' .. tostring(mod.enh or mod.seal)) end
+    end
+end
+
+function S.effects_change_card_worth(T)
+    local _, C, HA = env()
+    local plain, steel, gold, purple, lucky = C.parse('Ks'), C.parse('Ks'), C.parse('Ks'), C.parse('Ks'), C.parse('Ks')
+    C.set_enhancement(steel, 'm_steel'); C.set_enhancement(gold, 'm_gold'); C.set_enhancement(lucky, 'm_lucky')
+    purple.seal = 'Purple'
+    T.ok(HA.card_value(steel) > HA.card_value(plain), 'steel kept before a plain card')
+    T.ok(HA.card_value(gold) > HA.card_value(plain), 'gold kept before a plain card')
+    T.ok(HA.card_value(purple) < HA.card_value(plain), 'purple seal discarded first (tarot)')
+    T.ok(HA.card_value(lucky) < HA.card_value(plain) + 40, 'lucky: +20 Mult only 1 time in 5')
+    -- discarding a Purple seal is worth a tarot; playing a Glass card risks breaking it
+    T.ok(HA.side_value({ purple }, { purple, plain }, 'discard') > 0)
+    local glass = C.parse('Ah'); C.set_enhancement(glass, 'm_glass')
+    T.ok(HA.side_value({ glass }, { glass }, 'play', 0, 1) < 0)
+end
+
 return S

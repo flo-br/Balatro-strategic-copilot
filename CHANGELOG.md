@@ -1,5 +1,70 @@
 # Historique des versions
 
+## 1.0.7 — 2026-10-19
+
+Retours de la partie de test : effets de cartes et de jokers mal pris en compte, Judgement avec
+les jokers pleins, jeu trop simple, défaites mises sur le compte du hasard.
+
+### Effets des cartes et des jokers
+* **Base des effets** (`model/effects_db.lua`) : améliorations (bonus, multi, joker, verre, acier,
+  pierre, or, chance), éditions (brillant, holographique, polychrome, négatif), sceaux (or, rouge,
+  bleu, violet) et autocollants des jokers (éternel, périssable, location), avec leur rôle :
+  à jouer, à garder en main, à défausser, à jouer seulement si nécessaire.
+* Le panneau montre les effets : les cartes sont suivies de leurs effets (« R♠(acier) ») et une
+  section « Effets des cartes en main » dit ce que fait chaque carte modifiée et quoi en faire ;
+  les autocollants des jokers sont affichés (périssable : manches restantes).
+* Pendant la main : les cartes **Or** et à **sceau bleu** ne sont plus jouées comme cartes
+  d'accompagnement d'une main déjà gagnante ; l'**acier** est gardé en main ; le **verre** n'est
+  joué que s'il sert ; le **sceau violet** est défaussé de préférence ; la **chance** n'est plus
+  surévaluée (+20 multi seulement 1 fois sur 5).
+* **The Ox** : le copilote joue une autre main que la plus jouée quand les chances sont presque les
+  mêmes (sinon l'argent tombe à 0), et dépense avant ce boss.
+* Autocollants : un joker **éternel** n'est jamais proposé à la vente (Luchador, Invisible Joker,
+  remplacement, Verdant Leaf) ; un **périssable** est compté selon ses manches restantes et vendu une
+  fois expiré ; la **location** coûte 3 $ par manche dans l'économie et la note.
+* Cartes à jouer (boutique, paquet Standard) notées selon leurs effets ; une carte sans effet dilue
+  le deck.
+
+### Judgement, Wraith, The Soul, Hex, Ankh
+* Avec les jokers pleins, Judgement (comme Wraith et The Soul) n'est plus conseillé sans plan : le
+  copilote mesure si un joker aléatoire a de bonnes chances d'être meilleur que le plus faible des
+  vôtres ; si oui, il indique **quel joker vendre d'abord** (À VENDRE), puis UTILISER.
+* Hex et Ankh (qui détruisent les autres jokers), Ectoplasm et Ouija (−1 taille de main) sont
+  mesurés sur le plateau qu'ils laissent ; avant, une valeur fixe positive les faisait prendre et
+  ils rasaient le plateau.
+
+### Jeu inspiré des meilleurs joueurs ([docs/PRO_LESSONS.md](docs/PRO_LESSONS.md))
+* Recherche sourcée (wiki officiel, guides, forums) : 140 règles, dont celles appliquées ici.
+* **Plan de partie** (`engine/plan.lua`, affiché en boutique) : main principale, multiplicateurs
+  ×Mult présents / attendus (0, 0, 0, 1, 1, 2, 2, 3 aux antes 1 à 8), ce qui manque ; les ×Mult
+  gagnent de la valeur avec les antes, les +Mult / +Jetons en perdent en fin de partie, les jokers
+  qui grandissent valent plus tôt, les planètes de la main principale aussi.
+* « En retard » quand une main typique ne marque plus la mise de base de l'ante : le score passe
+  avant les intérêts.
+* **Argent** : au-delà du plafond d'intérêts (25 $), l'argent ne rapporte rien ; il est dépensé dès
+  qu'un achat améliore le jeu, et relancé quand il manque un ×Mult ; dernière ante : tout devient
+  du score ; The Hermit utilisé à partir de 20 $.
+* Antes 1-2 : les premiers jokers de score passent avant l'épargne (un joker vaut mieux qu'un
+  emplacement vide).
+* Verdant Leaf : vendre le joker qui marque le moins pour lever l'effet.
+* Simulations de manche plus précises quand les meilleures options sont proches.
+
+### Bilan de partie : toute partie est jouable
+* Le bilan ne conclut plus jamais par « malchance ». Il cherche **pourquoi le build n'a pas suffi**
+  : ante où une main typique est passée sous la mise de base, pas d'amélioration à la fin de l'ante
+  2, trop peu de jokers à l'ante 3, ×Mult manquants, argent dormant, planètes dispersées, main
+  principale peu montée, exigences du boss perdu, marge trop faible avant une blinde décisive.
+* Les causes des dernières défaites sont retenues : quand une même cause revient, le plan lui donne
+  plus de poids aux parties suivantes.
+
+### Entraînement ([docs/TRAINING.md](docs/TRAINING.md))
+* `tools/trainer/` : un simulateur de parties complètes où **chaque décision est prise par le
+  moteur de conseils du copilote**, pour mesurer et corriger ses faiblesses (ce n'est pas le vrai
+  jeu ; simplifications documentées). Les défauts corrigés ci-dessus viennent de ces parties.
+* Sur les mêmes 40 parties simulées (deck rouge, mise blanche) : 1.0.6 gagne 6 parties (15 %),
+  atteint l'ante 8 dans 25 % des cas, ante moyenne 5,58 ; 1.0.7 gagne 11 parties (28 %), atteint
+  l'ante 8 dans 43 % des cas, ante moyenne 6,63. Mesure sur le simulateur, pas sur le vrai jeu.
+
 ## 1.0.6 — 2026-10-18
 
 Retours de la partie en mise basse (gagnée).

@@ -50,6 +50,11 @@ function E.joker_income(state)
             end
             if v ~= 0 then total = total + v; parts[#parts + 1] = { key = j.key, name = j.name, value = v } end
         end
+        -- rental sticker: $3 at the end of each round, even when debuffed
+        if j.rental then
+            total = total - 3
+            parts[#parts + 1] = { key = j.key, name = j.name, value = -3, rental = true }
+        end
     end
     return total, parts
 end

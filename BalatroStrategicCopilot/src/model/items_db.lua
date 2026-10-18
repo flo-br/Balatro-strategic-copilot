@@ -12,6 +12,8 @@ local IT = {}
 -- them): enhance / suit (from sim), rank_up (Strength), destroy (Hanged Man), copy (Death: the
 -- LEFT selected card becomes a copy of the RIGHT one), seal, edition (Aura), duplicate (Cryptid).
 -- free: usable without selection and without downside (advised when it helps).
+-- joker: creates a joker ('any' = shop rarities, 'rare', 'legendary'): needs a free joker slot,
+-- otherwise a joker must be sold first (engine/shop.lua SH.slot_swap decides whether it is worth).
 IT.TAROTS = {
     c_fool = { v = 3, desc = 'copie le dernier consommable' },
     c_magician = { v = 3, sim = { enhance = 'm_lucky', n = 2 }, ctx = { lucky = 2 } },
@@ -23,7 +25,7 @@ IT.TAROTS = {
     c_chariot = { v = 3, sim = { enhance = 'm_steel', n = 1 }, ctx = { deck_steel = 2, held = 1.5 } },
     c_justice = { v = 3, sim = { enhance = 'm_glass', n = 1 }, ctx = { glass = 2 } },
     c_hermit = { v = 0, money = 'double' },
-    c_wheel_of_fortune = { v = 3, desc = '1/4 : édition sur un joker', free = 'joker_edition' },
+    c_wheel_of_fortune = { v = 1, desc = '1/4 : édition sur un joker (ne vaut pas son prix)', free = 'joker_edition' },
     c_strength = { v = 3, desc = '+1 rang à 2 cartes', target = { kind = 'rank_up', n = 2 } },
     c_hanged_man = { v = 3, desc = 'détruit 2 cartes (affinage)', target = { kind = 'destroy', n = 2 } },
     c_death = { v = 3, desc = 'copie une carte', target = { kind = 'copy', n = 2 } },
@@ -34,21 +36,24 @@ IT.TAROTS = {
     c_moon = { v = 3, sim = { suit = 'Clubs', n = 3 } },
     c_sun = { v = 3, sim = { suit = 'Hearts', n = 3 } },
     c_world = { v = 3, sim = { suit = 'Spades', n = 3 } },
-    c_judgement = { v = 5, desc = 'joker aléatoire', free = 'joker_slot' },
+    c_judgement = { v = 5, desc = 'joker aléatoire', free = 'joker_slot', joker = 'any' },
 }
 
 IT.SPECTRALS = {
     c_familiar = { v = 3 }, c_grim = { v = 3 }, c_incantation = { v = 3 },
     c_talisman = { v = 4, desc = 'sceau or', target = { kind = 'seal', seal = 'Gold', n = 1 } },
     c_aura = { v = 5, desc = 'édition sur une carte', target = { kind = 'edition', n = 1 } },
-    c_wraith = { v = 6, desc = 'joker rare, argent à 0' }, c_sigil = { v = 4, ctx = { flush = 2 } },
-    c_ouija = { v = 3, desc = 'une seule valeur, -1 taille de main' }, c_ectoplasm = { v = 7, desc = 'joker négatif, -1 taille de main' },
-    c_immolate = { v = 6 }, c_ankh = { v = 5 }, c_hex = { v = 6 },
+    c_wraith = { v = 6, desc = 'joker rare, argent à 0', joker = 'rare', money_to_zero = true }, c_sigil = { v = 4, ctx = { flush = 2 } },
+    c_ouija = { v = 3, desc = 'une seule valeur, -1 taille de main', hand_size = -1 },
+    c_ectoplasm = { v = 7, desc = 'joker négatif, -1 taille de main', hand_size = -1 },
+    c_immolate = { v = 6 },
+    c_ankh = { v = 5, desc = 'copie un joker au hasard, détruit les autres', destroys = 'jokers' },
+    c_hex = { v = 6, desc = 'Polychrome sur un joker au hasard, détruit les autres', destroys = 'jokers' },
     c_deja_vu = { v = 4, desc = 'sceau rouge', target = { kind = 'seal', seal = 'Red', n = 1 } },
     c_trance = { v = 3, desc = 'sceau bleu', target = { kind = 'seal', seal = 'Blue', n = 1 } },
     c_medium = { v = 3, desc = 'sceau violet', target = { kind = 'seal', seal = 'Purple', n = 1 } },
     c_cryptid = { v = 5, desc = '2 copies d\'une carte', target = { kind = 'duplicate', n = 1 } },
-    c_soul = { v = 15, desc = 'joker légendaire' },
+    c_soul = { v = 15, desc = 'joker légendaire', joker = 'legendary' },
     c_black_hole = { v = 8, sim = { level_all = 1 } },
 }
 

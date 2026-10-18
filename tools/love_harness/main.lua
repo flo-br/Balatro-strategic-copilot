@@ -43,6 +43,13 @@ function love.load()
         opts.hand = { 'Ah', '9s', '7c', '2h', 'Kh', '5d', '3c', 'Qd' }
         opts.jokers = { FG.joker('j_joker', 'Joker', { mult = 4 }) }
     end
+    if scenario == 'effects' then
+        -- cards with modifiers and jokers with stickers: what the copilot shows about them
+        opts.hand = { 'Ks', 'Kh', 'Qs', 'Ah', '9d', '7c', '4h', '2s' }
+        opts.jokers = { FG.joker('j_joker', 'Joker', { mult = 4, eternal = true }),
+            FG.joker('j_gros_michel', 'Gros Michel', { extra = { odds = 6, mult = 15 }, perishable = true, perish_tally = 2 }) }
+        opts.required = 600
+    end
     -- keep the real love.* but install the simulated G / SMODS / Game
     local real_love = love
     FG.install(opts)
@@ -52,6 +59,14 @@ function love.load()
     if G.shop_jokers then for i, c in ipairs(G.shop_jokers.cards) do c.T = { x = 8 + i * 2.2, y = 4, w = 1.4, h = 1.9 }; c.VT = c.T end end
     for i, c in ipairs(G.jokers.cards) do c.T = { x = 6 + i * 1.8, y = 0.6, w = 1.4, h = 1.9 }; c.VT = c.T end
     G.TILESIZE = 20; G.TILESCALE = 2.3; G.ROOM = { T = { x = 1, y = 0.5, w = 30, h = 17 } }
+    if scenario == 'effects' then
+        local function enh(c, key, ab) c.config.center = { key = key, set = 'Enhanced' }; c.ability.set = 'Enhanced'; for k, v in pairs(ab) do c.ability[k] = v end end
+        enh(G.hand.cards[1], 'm_steel', { h_x_mult = 1.5 })
+        enh(G.hand.cards[3], 'm_gold', { h_dollars = 3 })
+        G.hand.cards[4].edition = { holo = true, type = 'holo' }
+        G.hand.cards[5].seal = 'Blue'
+        G.hand.cards[6].seal = 'Purple'
+    end
     if scenario == 'death' then
         local death = { sort_id = 9001, ability = { set = 'Tarot', name = 'Death' }, config = { center = { key = 'c_death', set = 'Tarot' } },
             sell_cost = 1, cost = 3, facing = 'front', T = { x = 24.6, y = 0.6, w = 1.4, h = 1.9 } }
