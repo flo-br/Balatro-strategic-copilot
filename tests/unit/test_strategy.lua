@@ -106,4 +106,25 @@ function S.danger_is_continuous(T)
     T.near(ST.danger(1, 1), 0, 1e-12)
 end
 
+-- Top players almost never skip: skipping loses the reward AND the shop that follows; only a
+-- tag worth more than both (e.g. Investment) with a safe following blind is skipped.
+function S.skips_are_rare(T)
+    local F, C = env()
+    local O = BSCopilot.require('engine/outlook')
+    local strong = { F.joker('j_joker'), F.joker('j_cavendish'), F.joker('j_duo'), F.joker('j_baron') }
+    local function skip_for(tag, jokers)
+        local s = base_state(F, C, { jokers = jokers })
+        s.run.ante = 1
+        s.blind_tags = { Small = tag, Big = 'tag_uncommon' }
+        return O.analyse(s, { samples = 24, rollouts = 16 }).skip
+    end
+    for _, tag in ipairs({ 'tag_uncommon', 'tag_rare', 'tag_negative', 'tag_polychrome', 'tag_voucher', 'tag_buffoon' }) do
+        local sk = skip_for(tag, strong)
+        T.no(sk.recommended, tag .. ' does not pay for the lost shop')
+        T.ok(sk.lost >= 15, 'the shop counts in what is lost')
+    end
+    T.ok(skip_for('tag_investment', strong).recommended, 'Investment tag with a safe next blind')
+    T.no(skip_for('tag_investment', {}).recommended, 'not without the means to win the next blind')
+end
+
 return S

@@ -432,9 +432,19 @@ local function step_lines(step, phase, partial)
         return out
     end
     local l = { seg(I.T('todo'), 'title'), seg(step.label .. ' ', step.cls or 'good'), seg('— ' .. (step.text or ''), 'text') }
-    local cards = step.cards or step.use_cards
-    if cards then for _, sg in ipairs(Fmt.cards_segments(cards)) do l[#l + 1] = sg end end
+    if step.use_cards then
+        -- cards to select for a tarot / spectral, with their role (Death: which one goes left)
+        for i, card in ipairs(step.use_cards) do
+            if i > 1 then l[#l + 1] = seg(' + ', 'text') end
+            for _, sg in ipairs(Fmt.cards_segments({ card })) do l[#l + 1] = sg end
+            local role = step.use_roles and step.use_roles[i]
+            if role then l[#l + 1] = seg(' (' .. role .. ')', 'dim') end
+        end
+    elseif step.cards then
+        for _, sg in ipairs(Fmt.cards_segments(step.cards)) do l[#l + 1] = sg end
+    end
     out[1] = l
+    if step.hint then out[#out + 1] = { seg('  ! ' .. step.hint, 'mid') } end
     local l2 = {}
     if step.hand and step.score then l2[#l2 + 1] = seg('  ' .. I.hand_name(step.hand) .. ' — ' .. Fmt.score_text(step.score) .. '  ', 'chips') end
     if step.target then l2[#l2 + 1] = seg('  ' .. Fmt.target_text(step.target) .. (step.p_complete and (' (' .. I.pct(step.p_complete) .. ')') or '') .. '  ', 'accent') end
@@ -512,6 +522,12 @@ function Ctl.ui_model()
         if #compact == 0 then for i = 1, math.min(#lines, 3) do compact[i] = lines[i] end end
         m.compact_lines = compact
     end
+    -- the game's consumable area (top right) must stay visible: the panel goes below it
+    local Gm = rawget(_G, 'G')
+    if Gm and type(Gm.consumeables) == 'table' then
+        local ax, ay, aw, ah = card_rect(Gm.consumeables)
+        if ax then m.avoid = { x = ax, y = ay, w = aw, h = ah } end
+    end
     local keys = c.keys or {}
     m.footer = I.T('keys_help', (keys.panel or 'c'):upper(), (keys.detail or 'v'):upper(), (keys.badges or 'b'):upper())
     -- badges: the step label above what to act on, order numbers under the jokers
@@ -532,7 +548,9 @@ function Ctl.ui_model()
         if step then
             local text = step.label .. ((step.note and (step.action == 'buy' or step.action == 'take')) and (' · ' .. step.note .. '/100') or '')
             for _, uid in ipairs(step.targets or {}) do on_uid(uid, text, step.cls or 'good', { strong = true }) end
-            for _, uid in ipairs(step.use_on or {}) do on_uid(uid, I.T('lbl_target'), 'accent', { strong = true }) end
+            for _, uid in ipairs(step.use_on or {}) do
+                on_uid(uid, (step.use_labels and step.use_labels[uid]) or I.T('lbl_target'), 'accent', { strong = true })
+            end
             if step.button then
                 local now = (love and love.timer and love.timer.getTime and love.timer.getTime()) or os.clock()
                 local okb, x, y, w, h = pcall(UT.button_rect, step.button, view_phase, now)

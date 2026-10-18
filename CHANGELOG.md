@@ -1,5 +1,40 @@
 # Historique des versions
 
+## 1.0.6 — 2026-10-18
+
+Retours de la partie en mise basse (gagnée).
+
+### Corrigé
+* **Tarots et spectrales qui demandent des cartes** : le copilote indique désormais les cartes à
+  sélectionner, chacune avec son étiquette. **Death** : DEVIENT (gauche) et MODÈLE (droite), et si
+  la carte qui devient est à droite, la consigne « glissez la carte DEVIENT à gauche de la carte
+  MODÈLE » ; Strength, Hanged Man (À DÉTRUIRE), Magician (Chance), Chariot (Acier), Empress,
+  Hierophant, Lovers, Justice, Devil, Tower, Star / Moon / Sun / World, Talisman, Déjà Vu, Trance,
+  Medium, Aura, Cryptid. Aussi pour les cartes prises dans un paquet Arcane ou Spectral.
+* **Choix de blinde** : seul le choix **définitif** est affiché (plus de « JOUER » qui devient
+  « PASSER » quand l'analyse se termine).
+* **Étiquette UTILISER cachée par le panneau** : le panneau se place sous la zone des
+  consommables ; les étiquettes sont dessinées par-dessus le panneau.
+* Le texte d'un paquet Méga Buffon ne peut plus annoncer une valeur au-dessus de 100/100.
+
+### Stratégie inspirée des meilleurs joueurs
+* **Blindes presque jamais passées** : passer coûte la récompense **et la boutique** qui suit
+  (10 $ jusqu'à l'ante 4, 8 $ ensuite) ; la blinde d'après doit rester ≥ 95 %. En pratique, seul
+  un tag Investment ou Economy (avec beaucoup d'argent) le justifie.
+* **Paquets achetés souvent** : valeur calculée sur leur contenu (Buffon : jokers simulés ;
+  Céleste : planètes des mains jouées ; Arcane / Spectral : cartes notées comme en boutique) et
+  seuil d'achat abaissé à 52/100.
+* **Intérêts** : à partir de l'ante 2, si la suite est sûre, le copilote garde 25 $ et ne dépense
+  que l'excédent (sauf objet noté ≥ 75) ; à l'ante 1, chaque dollar d'intérêts perdu relève le
+  seuil d'achat. En danger, la puissance passe d'abord.
+* **Une relance avant de quitter la boutique** (si elle respecte l'épargne), relance gratuite
+  toujours utilisée.
+* Consommables qui créent des cartes (High Priestess, Emperor, Judgement, Wheel of Fortune)
+  conseillés quand il y a la place.
+* Nouveaux réglages dans `config.lua`, section `advice` : `booster_note`, `strong_note`,
+  `save_from_ante`, `interest_weight`, `safe_next`, `safe_boss`, `reroll_once`,
+  `reroll_once_max_loss`.
+
 ## 1.0.5 — 2026-10-18
 
 Retours de la première phase de test.

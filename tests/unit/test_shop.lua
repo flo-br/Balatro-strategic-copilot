@@ -103,4 +103,28 @@ function S.note_weights_follow_danger(T)
     T.eq(SH.note({}, calm), 50)
 end
 
+-- Boosters valued by their content: Buffoon packs carry jokers measured by simulation, Arcana
+-- packs tarots scored like in the shop (but free), Standard packs stay low.
+function S.boosters_valued_by_content(T)
+    local F, C, SH = env()
+    local function pack(uid, kind, cost, size, choose)
+        return { uid = uid, set = 'Booster', key = 'p_' .. kind:lower(), name = kind .. ' Pack', kind = kind, cost = cost, pack_size = size, choose = choose }
+    end
+    local s = shop_state(F, C, { dollars = 12, boosters = { pack('buf', 'Buffoon', 4, 2, 1), pack('arc', 'Arcana', 4, 3, 1),
+        pack('std', 'Standard', 4, 3, 1), pack('mega', 'Buffoon', 8, 4, 2) } })
+    local r = SH.analyse(s, { n = 16 })
+    local by = {}
+    for _, o in ipairs(r.options) do by[o.uid] = o end
+    for _, o in ipairs(r.options) do
+        T.eq(o.kind, 'booster')
+        T.ok(o.note >= 0 and o.note <= 100)
+        local shown = tonumber(o.reasons[1]:match('~(%d+)/100'))
+        T.ok(shown and shown <= 100, o.reasons[1])
+    end
+    T.ok(by.buf.note > by.std.note, 'Buffoon above Standard')
+    T.ok(by.arc.note > by.std.note, 'Arcana above Standard')
+    T.ok(by.mega.note >= by.buf.note - 5, 'Mega Buffoon: 2 jokers among 4')
+    T.ok(by.buf.note >= 52, 'a Buffoon pack is worth buying with free slots')
+end
+
 return S

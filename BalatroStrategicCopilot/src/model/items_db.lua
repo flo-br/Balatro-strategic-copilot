@@ -8,21 +8,25 @@ local IT = {}
 
 -- sim kinds: level (planet), level_all (black hole), enhance(enh, n), suit(s, n), hands(+n),
 -- discards(+n), hand_size(+n), slot(+n), interest_cap(+n), ante(-1)
+-- target: cards the player must SELECT in hand before using the card (engine/advice.lua picks
+-- them): enhance / suit (from sim), rank_up (Strength), destroy (Hanged Man), copy (Death: the
+-- LEFT selected card becomes a copy of the RIGHT one), seal, edition (Aura), duplicate (Cryptid).
+-- free: usable without selection and without downside (advised when it helps).
 IT.TAROTS = {
     c_fool = { v = 3, desc = 'copie le dernier consommable' },
     c_magician = { v = 3, sim = { enhance = 'm_lucky', n = 2 }, ctx = { lucky = 2 } },
-    c_high_priestess = { v = 5, desc = '2 planètes' },
+    c_high_priestess = { v = 5, desc = '2 planètes', free = 'consumables' },
     c_empress = { v = 4, sim = { enhance = 'm_mult', n = 2 } },
-    c_emperor = { v = 5, desc = '2 tarots' },
+    c_emperor = { v = 5, desc = '2 tarots', free = 'consumables' },
     c_heirophant = { v = 3, sim = { enhance = 'm_bonus', n = 2 } },
     c_lovers = { v = 3, sim = { enhance = 'm_wild', n = 1 }, ctx = { flush = 1.5 } },
     c_chariot = { v = 3, sim = { enhance = 'm_steel', n = 1 }, ctx = { deck_steel = 2, held = 1.5 } },
     c_justice = { v = 3, sim = { enhance = 'm_glass', n = 1 }, ctx = { glass = 2 } },
     c_hermit = { v = 0, money = 'double' },
-    c_wheel_of_fortune = { v = 3, desc = '1/4 : édition sur un joker' },
-    c_strength = { v = 3, desc = '+1 rang à 2 cartes' },
-    c_hanged_man = { v = 3, desc = 'détruit 2 cartes (affinage)' },
-    c_death = { v = 3, desc = 'copie une carte' },
+    c_wheel_of_fortune = { v = 3, desc = '1/4 : édition sur un joker', free = 'joker_edition' },
+    c_strength = { v = 3, desc = '+1 rang à 2 cartes', target = { kind = 'rank_up', n = 2 } },
+    c_hanged_man = { v = 3, desc = 'détruit 2 cartes (affinage)', target = { kind = 'destroy', n = 2 } },
+    c_death = { v = 3, desc = 'copie une carte', target = { kind = 'copy', n = 2 } },
     c_temperance = { v = 0, money = 'sell_values' },
     c_devil = { v = 3, sim = { enhance = 'm_gold', n = 1 }, ctx = { gold = 2 } },
     c_tower = { v = 2, sim = { enhance = 'm_stone', n = 1 }, ctx = { deck_stone = 2 } },
@@ -30,16 +34,21 @@ IT.TAROTS = {
     c_moon = { v = 3, sim = { suit = 'Clubs', n = 3 } },
     c_sun = { v = 3, sim = { suit = 'Hearts', n = 3 } },
     c_world = { v = 3, sim = { suit = 'Spades', n = 3 } },
-    c_judgement = { v = 5, desc = 'joker aléatoire' },
+    c_judgement = { v = 5, desc = 'joker aléatoire', free = 'joker_slot' },
 }
 
 IT.SPECTRALS = {
     c_familiar = { v = 3 }, c_grim = { v = 3 }, c_incantation = { v = 3 },
-    c_talisman = { v = 4, desc = 'sceau or' }, c_aura = { v = 5, desc = 'édition sur une carte' },
+    c_talisman = { v = 4, desc = 'sceau or', target = { kind = 'seal', seal = 'Gold', n = 1 } },
+    c_aura = { v = 5, desc = 'édition sur une carte', target = { kind = 'edition', n = 1 } },
     c_wraith = { v = 6, desc = 'joker rare, argent à 0' }, c_sigil = { v = 4, ctx = { flush = 2 } },
     c_ouija = { v = 3, desc = 'une seule valeur, -1 taille de main' }, c_ectoplasm = { v = 7, desc = 'joker négatif, -1 taille de main' },
-    c_immolate = { v = 6 }, c_ankh = { v = 5 }, c_deja_vu = { v = 4, desc = 'sceau rouge' }, c_hex = { v = 6 },
-    c_trance = { v = 3 }, c_medium = { v = 3 }, c_cryptid = { v = 5 }, c_soul = { v = 15, desc = 'joker légendaire' },
+    c_immolate = { v = 6 }, c_ankh = { v = 5 }, c_hex = { v = 6 },
+    c_deja_vu = { v = 4, desc = 'sceau rouge', target = { kind = 'seal', seal = 'Red', n = 1 } },
+    c_trance = { v = 3, desc = 'sceau bleu', target = { kind = 'seal', seal = 'Blue', n = 1 } },
+    c_medium = { v = 3, desc = 'sceau violet', target = { kind = 'seal', seal = 'Purple', n = 1 } },
+    c_cryptid = { v = 5, desc = '2 copies d\'une carte', target = { kind = 'duplicate', n = 1 } },
+    c_soul = { v = 15, desc = 'joker légendaire' },
     c_black_hole = { v = 8, sim = { level_all = 1 } },
 }
 

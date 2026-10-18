@@ -149,7 +149,43 @@ function UI.draw(model)
     g.push('all')
     g.origin()
 
-    -- badges over cards
+    -- panel or compact box
+    local lines = model.panel_open and model.lines or model.compact_lines
+    if lines and #lines > 0 then
+        local pw = model.panel_open and math.max(300, math.floor(W * 0.27)) or math.max(240, math.floor(W * 0.2))
+        local pad = math.floor(base * 0.6)
+        local title_h = line_h
+        local body_h = measure_lines(lines, pw - 2 * pad, model.panel_open and font or small, line_h)
+        local ph = math.min(H - 20, title_h + body_h + 2 * pad + (model.footer and line_h or 0))
+        local px = (model.anchor == 'left') and 10 or (W - pw - 10)
+        local py = model.panel_open and math.floor(H * 0.12) or math.floor(H * 0.02)
+        -- never over the game's consumable area (its cards and their "Use" buttons)
+        local av = model.avoid
+        if av and px < av.x + av.w and px + pw > av.x and py < av.y + av.h + 8 then
+            py = math.floor(av.y + av.h + 8)
+            ph = math.min(ph, H - 10 - py)
+        elseif py + ph > H - 10 then
+            py = math.max(10, H - 10 - ph)
+        end
+        g.setColor(colour('bg'))
+        g.rectangle('fill', px, py, pw, ph, 8, 8)
+        g.setColor(colour('border'))
+        g.setLineWidth(1)
+        g.rectangle('line', px, py, pw, ph, 8, 8)
+        g.setScissor(px, py, pw, ph)
+        g.setFont(font)
+        g.setColor(colour('title'))
+        g.print(clean(model.title or I.T('title')), px + pad, py + pad)
+        draw_lines(lines, px + pad, py + pad + title_h, pw - 2 * pad, model.panel_open and font or small, line_h)
+        if model.footer and model.panel_open then
+            g.setFont(small)
+            g.setColor(colour('dim'))
+            g.print(clean(model.footer), px + pad, py + ph - pad - small:getHeight())
+        end
+        g.setScissor()
+    end
+
+    -- badges over cards (drawn after the panel: never hidden by it)
     if model.badges then
         for _, b in ipairs(model.badges) do
             -- strong = the step to do now (bigger, thicker frame); pos = 'below' for order numbers
@@ -175,35 +211,6 @@ function UI.draw(model)
             g.rectangle('line', bx, by, tw, th, 4, 4)
             g.print(text, bx + (b.strong and 7 or 5), by + (b.strong and 3 or 2))
         end
-    end
-
-    -- panel or compact box
-    local lines = model.panel_open and model.lines or model.compact_lines
-    if lines and #lines > 0 then
-        local pw = model.panel_open and math.max(300, math.floor(W * 0.27)) or math.max(240, math.floor(W * 0.2))
-        local pad = math.floor(base * 0.6)
-        local title_h = line_h
-        local body_h = measure_lines(lines, pw - 2 * pad, model.panel_open and font or small, line_h)
-        local ph = math.min(H - 20, title_h + body_h + 2 * pad + (model.footer and line_h or 0))
-        local px = (model.anchor == 'left') and 10 or (W - pw - 10)
-        local py = model.panel_open and math.floor(H * 0.12) or math.floor(H * 0.02)
-        if py + ph > H - 10 then py = math.max(10, H - 10 - ph) end
-        g.setColor(colour('bg'))
-        g.rectangle('fill', px, py, pw, ph, 8, 8)
-        g.setColor(colour('border'))
-        g.setLineWidth(1)
-        g.rectangle('line', px, py, pw, ph, 8, 8)
-        g.setScissor(px, py, pw, ph)
-        g.setFont(font)
-        g.setColor(colour('title'))
-        g.print(clean(model.title or I.T('title')), px + pad, py + pad)
-        draw_lines(lines, px + pad, py + pad + title_h, pw - 2 * pad, model.panel_open and font or small, line_h)
-        if model.footer and model.panel_open then
-            g.setFont(small)
-            g.setColor(colour('dim'))
-            g.print(clean(model.footer), px + pad, py + ph - pad - small:getHeight())
-        end
-        g.setScissor()
     end
 
     -- alerts (toasts), top centre

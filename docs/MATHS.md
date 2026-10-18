@@ -138,6 +138,19 @@ simulation ; l'espérance de la meilleure note sur 2 emplacements est estimée p
 comparée à la meilleure option actuelle et au coût. Un joker moddé du pool reçoit une note
 neutre (50) et n'est jamais inventé.
 
+**Paquets (boosters)**, évalués par leur **contenu** : espérance de la meilleure carte parmi les
+`k` cartes montrées (tirage sans remise, bootstrap 400), plus la moitié de l'avance de la
+2e meilleure quand on en choisit 2, puis `note = 50 + (valeur − 10·coût − 50)·fiabilité` :
+* Buffon : les 10 jokers tirés ci-dessus (mêmes notes simulées que pour la relance), fiabilité 0,9 ;
+* Céleste : `50 + 30·min(1, 1,5·part_de_la_main)` par main de base (Telescope : la main la plus
+  jouée seulement) ;
+* Arcane / Spectral : chaque carte notée comme la même carte en boutique, mais **gratuite**
+  (`note(économie = valeur/10, fiabilité 0,6)`, +1 $ si elle améliore le deck ; The Soul et
+  Black Hole exclus, trop rares) ;
+* Standard : 46 (cartes à jouer, rarement utiles sans plan précis).
+Fiabilité 0,7 hors Buffon. Ordre de grandeur (ante 1, deck de départ) : Buffon 60–83, Arcane
+55–58, Céleste 55–56, Standard 45–46.
+
 ## 8. Prochaine étape (« À FAIRE »)
 
 Une seule action est proposée ; après chaque action du joueur l'état change, tout est recalculé et
@@ -147,15 +160,46 @@ section `advice`) :
 | Phase | Ordre de priorité |
 |---|---|
 | Main | 1. vendre Luchador si boss actif et victoire < 80 % ; 2. utiliser une planète (sauf avec Observatory : la garder donne ×1,5), Black Hole, The Hermit (≥ 4 $), Temperance (≥ 3 $ de revente), un tarot d'amélioration ou de couleur sur les cartes qui vont jouer ; 3. jouer / défausser selon la simulation de manche |
-| Boutique | 1. consommables comme ci-dessus ; 2. vendre Invisible Joker quand il est prêt ; 3. meilleur achat de note ≥ 56/100 abordable (remplacement : vendre d'abord le joker remplacé ; consommables pleins : vendre d'abord le plus faible) ; 4. vendre un joker qui apporte ≤ 3 % du score (note de vente ≥ 60) ; 5. relancer si rentable ; 6. blinde suivante |
-| Paquet | prendre la meilleure carte (note ≥ 50) — tarot d'Arcana : avec ses cartes cibles — sinon passer |
-| Choix de blinde | passer si le conseil « passer » est favorable (tag > gains perdus et blinde d'après ≥ 85 %), sinon jouer ; un boss se joue toujours |
+| Boutique | 1. consommables comme ci-dessus (+ ceux qui créent des cartes quand il y a la place : High Priestess, Emperor, Judgement, Wheel of Fortune) ; 2. vendre Invisible Joker quand il est prêt ; 3. meilleur achat abordable dont la note atteint le **seuil exigé** (ci-dessous) — remplacement : vendre d'abord le joker remplacé ; consommables pleins : vendre d'abord le plus faible ; 4. vendre un joker qui apporte ≤ 3 % du score (note de vente ≥ 60) ; 5. relancer : gratuite, ou rentable, ou **une fois par boutique** (ci-dessous) ; 6. blinde suivante |
+| Paquet | prendre la meilleure carte (note ≥ 50) — tarot ou spectrale : avec ses cartes cibles (dans la main du paquet) — sinon passer |
+| Choix de blinde | passer seulement si le tag vaut plus que la blinde **et la boutique** perdues et que la blinde d'après reste ≥ 95 % (§9), sinon jouer ; un boss se joue toujours. Seul le choix **définitif** est affiché (pas pendant que l'analyse se termine) |
 
-**Cibles des tarots** (heuristique explicable) : améliorations qui comptent au score (Mult,
-Bonus, Verre, Chance, Joker) → les meilleures cartes de la main recommandée ; Acier / Or (effets
-en main) → la meilleure carte gardée en main ; changement de couleur → seulement vers la couleur
-la plus présente en main (≥ 2), sur les cartes d'autres couleurs ; Tour (Pierre) : laissé au
-joueur.
+**Discipline d'argent inspirée des meilleurs joueurs** (seulement quand la suite est « sûre » :
+prochaine blinde ≥ 85 % et boss ≥ 70 % ; sinon la puissance passe d'abord et seul le seuil de
+base compte) :
+* seuil de base : 56/100, **52/100 pour un paquet** (les meilleurs joueurs en achètent très
+  souvent) ;
+* à partir de l'ante 2 : garder le plafond d'intérêts (25 $) et ne dépenser que l'excédent ; un
+  achat qui fait passer sous 25 $ exige une note ≥ 75 ;
+* ante 1 : chaque dollar d'intérêts perdu relève le seuil de 3 points ;
+* un objet noté ≥ 75 est toujours acheté (s'il est abordable) ;
+* relance : gratuite → toujours ; rentable (§7) → si elle respecte l'épargne ; sinon **une seule
+  relance par boutique** avant de partir, si elle respecte l'épargne (ante 1 : au plus 1 $
+  d'intérêts perdu) et si la meilleure boutique a ≥ 15 % de chances. Le nombre de relances déjà
+  faites se déduit du prix (+1 $ par relance ; prix de départ du tag D6 lu s'il existe).
+Tous ces seuils sont dans `config.lua` (section `advice`).
+
+**Cibles des tarots et spectrales** (heuristique explicable ; « utilité » d'une carte = valeur
+de score + 2 × (exemplaires de son rang dans le deck − 4) + 6 si couleur dominante du deck + 10
+amélioration + 12 édition + 6 sceau) :
+
+| Effet | Cartes indiquées |
+|---|---|
+| Mult, Bonus, Verre, Chance (comptent au jeu) | les meilleures cartes de la main recommandée (sinon de la main), jamais une carte défaussée |
+| Acier (effet en main) | la carte de plus haut rang gardée en main |
+| Or | la carte gardée la moins utile |
+| Pierre (Tower) | la carte la moins utile (pas proposé pendant une main) |
+| Joker / Wild (Lovers) | la meilleure carte d'une couleur non dominante |
+| Couleur (Star, Moon, Sun, World) | vers la couleur dominante du deck : les cartes d'autres couleurs, les meilleures d'abord ; vers une autre couleur : seulement depuis un paquet, sur les cartes les moins utiles |
+| Strength (+1 rang) | les cartes dont le rang suivant est plus fréquent dans le deck |
+| Hanged Man (détruire) | les cartes simples les moins utiles, jamais sous 20 cartes |
+| **Death** (gauche devient droite) | MODÈLE = la carte la plus utile, DEVIENT = la moins utile (écart ≥ 6) ; si DEVIENT est à droite du MODÈLE, le copilote demande d'abord de la glisser à gauche |
+| Sceaux : Talisman (or), Déjà Vu (rouge), Trance (bleu), Medium (violet) | or : la meilleure carte jouée ; rouge : la meilleure carte (améliorée de préférence) ; bleu : la moins utile, à garder en main ; violet : la moins utile, à défausser |
+| Aura (édition) | la meilleure carte sans édition |
+| Cryptid (2 copies) | la meilleure carte |
+
+Chaque carte visée reçoit son étiquette (CIBLE, DEVIENT (gauche), MODÈLE (droite), À DÉTRUIRE).
+Pendant une main, un tarot n'est proposé que si la cible est clairement utile.
 
 **Ordre des jokers** : calculé aussi pendant une main (sur les meilleurs jeux de la main), affiché
 seulement si l'ordre actuel n'est pas le bon et que le bon ordre marque ≥ 1 % de plus ; chaque
@@ -168,8 +212,10 @@ ramenées vers 50 (fiabilité 0,5–0,6) :
 * valeurs en dollars des tarots, spectrales, bons non simulables, paquets (`model/items_db.lua`) ;
 * croissance future des jokers évolutifs (`GROWTH` dans `engine/shop.lua`) ;
 * valeurs des tags de blinde (`engine/outlook.lua`) et conseil de passer une blinde :
-  conseillé seulement si `valeur_tag > récompense perdue + 2 $` et si la blinde suivante reste
-  ≥ 85 % sans la boutique intermédiaire.
+  conseillé seulement si `valeur_tag > récompense perdue + 2 $ + valeur de la boutique perdue`
+  (10 $ jusqu'à l'ante 4, 8 $ ensuite) et si la blinde suivante reste ≥ 95 % sans la boutique
+  intermédiaire. Les meilleurs joueurs ne passent presque jamais de blinde : en pratique seuls
+  Investment (20 $) et Economy (avec beaucoup d'argent) le justifient.
 Les tarots qui améliorent ou changent la couleur de cartes sont **simulés** sur des cibles
 probables (les meilleures cartes non améliorées / les cartes de plus faible valeur), d'où la
 mention « simulation approchée ».

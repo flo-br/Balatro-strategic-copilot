@@ -10,7 +10,10 @@ local function state(o)
     o = o or {}
     return {
         phase = o.phase or 'shop',
-        econ = { dollars = o.dollars or 10, bankrupt_at = 0, reroll_cost = 5 },
+        -- o.rerolls: rerolls already paid in this shop (the price goes up by 1 $ each time)
+        econ = { dollars = o.dollars or 10, bankrupt_at = 0, reroll_cost = 5 + (o.rerolls or 0), base_reroll_cost = 5,
+            free_rerolls = o.free_rerolls or 0, interest_cap = 25 },
+        run = { ante = o.ante or 1 },
         jokers = o.jokers or {}, joker_slots = 5,
         consumables = o.consumables or {}, consumable_slots = o.consumable_slots or 2,
         vouchers = o.vouchers or {}, hand_cards = o.hand or {}, blind = o.blind or {},
@@ -52,7 +55,7 @@ function S.shop_replacement_sells_first(T)
 end
 
 function S.shop_full_consumables_make_room(T)
-    local cons = { { uid = 'c1', key = 'c_tower', set = 'Tarot', name = 'The Tower' }, { uid = 'c2', key = 'c_judgement', set = 'Tarot', name = 'Judgement' } }
+    local cons = { { uid = 'c1', key = 'c_tower', set = 'Tarot', name = 'The Tower' }, { uid = 'c2', key = 'c_strength', set = 'Tarot', name = 'Strength' } }
     local st = A().shop_step(state({ dollars = 10, consumables = cons }), shop_result({ options = {
         { kind = 'tarot', uid = 'emp', name = 'The Empress', cost = 3, note = 66 } } }))
     T.eq(st.action, 'sell'); T.eq(st.targets[1], 'c1', 'weakest consumable sold to make room')
@@ -63,7 +66,7 @@ function S.shop_sells_a_useless_joker_only(T)
     local st = A().shop_step(state(), res)
     T.eq(st.action, 'sell'); T.eq(st.targets[1], 'j1')
     res.sells[1].contribution = 0.12 -- brings 12 % of the score: keep it
-    st = A().shop_step(state(), res)
+    st = A().shop_step(state({ rerolls = 1 }), res)
     T.eq(st.action, 'next_round')
 end
 
@@ -84,7 +87,7 @@ function S.planets_are_used_unless_observatory(T)
     local cons = { { uid = 'p1', key = 'c_jupiter', set = 'Planet', name = 'Jupiter', hand_type = 'Flush' } }
     local st = A().shop_step(state({ consumables = cons }), shop_result({}))
     T.eq(st.action, 'use'); T.eq(st.label, 'UTILISER'); T.eq(st.targets[1], 'p1')
-    st = A().shop_step(state({ consumables = cons, vouchers = { v_observatory = true } }), shop_result({}))
+    st = A().shop_step(state({ consumables = cons, vouchers = { v_observatory = true }, rerolls = 1 }), shop_result({}))
     T.eq(st.action, 'next_round', 'kept: Observatory gives x1.5 while held')
 end
 
@@ -135,7 +138,7 @@ function S.invisible_joker_ready(T)
     local st = A().shop_step(state({ jokers = jokers }), shop_result({}))
     T.eq(st.action, 'sell'); T.eq(st.targets[1], 'inv')
     jokers[1].ability.invis_rounds = 1
-    T.eq(A().shop_step(state({ jokers = jokers }), shop_result({})).action, 'next_round')
+    T.eq(A().shop_step(state({ jokers = jokers, rerolls = 1 }), shop_result({})).action, 'next_round')
 end
 
 function S.pack_take_or_skip(T)
@@ -176,6 +179,132 @@ function S.order_marks_only_when_wrong(T)
     T.eq(A().order_marks(s, { order = { 1, 2 }, gain = 0 }), nil, 'already right')
     T.eq(A().order_marks(s, { order = { 2, 1 }, gain = 0.002 }), nil, 'negligible gain')
     T.eq(A().order_marks(s, nil), nil)
+end
+
+-- Targets of tarots / spectrals -------------------------------------------------------------
+local function deck_of(list)
+    local d = {}
+    for i, c in ipairs(list) do d[i] = c end
+    return d
+end
+
+function S.death_left_becomes_right(T)
+    -- model: the King of the main suit with an enhancement; victim: a lone 2 of another suit
+    local k = card('k', 13, 'Hearts', { enh = 'm_mult', mult = 4, pos_x = 1 })
+    local two = card('two', 2, 'Clubs', { pos_x = 5 })
+    local q = card('q', 12, 'Hearts', { pos_x = 3 })
+    local hand = { k, q, two }
+    local full = deck_of(hand)
+    for i = 1, 8 do full[#full + 1] = card('h' .. i, 9, 'Hearts') end
+    local s0 = state({ phase = 'hand', hand = hand, consumables = { { uid = 'death', key = 'c_death', set = 'Tarot', name = 'Death' } } })
+    s0.full_deck = full
+    local r = { remaining = 500, round = { p_clear = 0.6 }, recommendation = { type = 'play', ref = { cards = { k, q } } } }
+    local st = A().hand_step(s0, r)
+    T.eq(st.action, 'use'); T.eq(st.targets[1], 'death')
+    T.eq(st.use_on[1], 'two', 'the weak 2 is converted'); T.eq(st.use_on[2], 'k', 'into the enhanced King')
+    T.eq(st.use_labels.two, 'DEVIENT (gauche)'); T.eq(st.use_labels.k, 'MODÈLE (droite)')
+    T.ok(st.hint and st.hint:find('gauche', 1, true), 'the 2 is right of the King: drag it left first')
+    two.pos_x = 0
+    T.eq(A().hand_step(s0, r).hint, nil, 'already in the right order')
+end
+
+function S.strength_hanged_man_and_seals(T)
+    local A_ = A()
+    local IT = BSCopilot.require('model/items_db')
+    local hand = { card('a', 7, 'Spades'), card('b', 2, 'Clubs'), card('c', 13, 'Hearts', { enh = 'm_glass', x_mult = 2 }) }
+    local s0 = state({ hand = hand })
+    s0.full_deck = deck_of(hand)
+    for i = 1, 30 do s0.full_deck[#s0.full_deck + 1] = card('e' .. i, 8, 'Hearts') end -- many 8s
+    local t = A_.targets(IT.consumable('c_strength'), s0, hand, {})
+    T.eq(t.cards[1].uid, 'a', 'Strength: the 7 becomes an 8 (most common rank)')
+    t = A_.targets(IT.consumable('c_hanged_man'), s0, hand, {})
+    T.eq(#t.cards, 2); T.ok(t.cards[1].uid ~= 'c' and t.cards[2].uid ~= 'c', 'never destroys the glass King')
+    t = A_.targets(IT.consumable('c_deja_vu'), s0, hand, {})
+    T.eq(t.cards[1].uid, 'c', 'red seal (retrigger) on the best scoring card')
+    t = A_.targets(IT.consumable('c_medium'), s0, hand, {})
+    T.eq(t.cards[1].uid, 'b', 'purple seal on a card to discard')
+    local small = state({ hand = hand }); small.full_deck = deck_of(hand)
+    T.eq(A_.targets(IT.consumable('c_hanged_man'), small, hand, {}), nil, 'no thinning below 20 cards')
+end
+
+function S.magician_and_chariot_targets(T)
+    local A_ = A()
+    local IT = BSCopilot.require('model/items_db')
+    local a, b, c, d = card('a', 14, 'Spades'), card('b', 14, 'Hearts'), card('c', 13, 'Clubs'), card('d', 5, 'Spades')
+    local s0 = state({ hand = { a, b, c, d } }); s0.full_deck = { a, b, c, d }
+    local t = A_.targets(IT.consumable('c_magician'), s0, { a, b, c, d }, { play_cards = { a, b } })
+    T.eq(#t.cards, 2); T.ok((t.cards[1] == a or t.cards[1] == b) and (t.cards[2] == a or t.cards[2] == b), 'lucky on the played aces')
+    t = A_.targets(IT.consumable('c_chariot'), s0, { a, b, c, d }, { play_cards = { a, b } })
+    T.eq(t.cards[1], c, 'steel on the King that stays in hand')
+end
+
+function S.free_consumables(T)
+    local s0 = state({ consumables = { { uid = 'j', key = 'c_judgement', set = 'Tarot', name = 'Judgement' } }, rerolls = 1 })
+    local st = A().shop_step(s0, shop_result({}))
+    T.eq(st.action, 'use'); T.eq(st.targets[1], 'j')
+    s0.jokers = { {}, {}, {}, {}, {} }
+    T.eq(A().shop_step(s0, shop_result({})).action, 'next_round', 'no joker slot: keep it')
+end
+
+function S.pack_death_with_targets(T)
+    local k = card('k', 13, 'Hearts', { enh = 'm_mult', mult = 4 })
+    local two = card('two', 2, 'Clubs')
+    local s0 = state({ phase = 'pack', hand = { two, k } }); s0.full_deck = { two, k }
+    local res = { options = { { kind = 'tarot', key = 'c_death', uid = 'death', name = 'Death', note = 61 } } }
+    local st = A().pack_step(s0, res)
+    T.eq(st.action, 'take'); T.eq(st.label, 'À PRENDRE'); T.eq(st.targets[1], 'death')
+    T.eq(st.use_on[1], 'two'); T.eq(st.use_on[2], 'k')
+end
+
+function S.blind_waits_for_final_decision(T)
+    local r = { current = { name = 'Small Blind', chips = 300 }, p_current = { p = 0.97 } }
+    T.eq(A().step('blind_select', state({ phase = 'blind_select' }), r, nil, true), nil, 'partial: nothing shown yet')
+    T.ok(A().step('blind_select', state({ phase = 'blind_select' }), r, nil, false), 'final: shown')
+end
+
+-- Top players' money discipline (only while the next blinds are safe): interest first, boosters
+-- bought very often, one reroll per shop before leaving.
+function S.boosters_bought_from_a_lower_note(T)
+    local opts = { { kind = 'booster', uid = 'arc', name = 'Arcana Pack', cost = 4, note = 54, interest_loss = 0 } }
+    local st = A().shop_step(state({ dollars = 14 }), shop_result({ options = opts }))
+    T.eq(st.action, 'buy'); T.eq(st.targets[1], 'arc')
+    opts[1].kind = 'tarot'
+    T.ok(A().shop_step(state({ dollars = 14 }), shop_result({ options = opts })).action ~= 'buy', 'same note, not a booster: not bought')
+end
+
+function S.interest_savings_from_ante_2(T)
+    local opts = { { kind = 'joker', uid = 'j', name = 'Greedy Joker', cost = 5, note = 66, interest_loss = 1 } }
+    -- ante 2, safe, 20 $: buying would leave 15 $ < 25 $ -> keep the money
+    local st = A().shop_step(state({ dollars = 20, ante = 2 }), shop_result({ options = opts }))
+    T.eq(st.action, 'next_round'); T.ok(st.why:find('intérêts', 1, true) and st.why:find('Greedy Joker', 1, true), st.why)
+    -- 32 $: the purchase only spends the excess above 25 $
+    T.eq(A().shop_step(state({ dollars = 32, ante = 2 }), shop_result({ options = opts })).action, 'buy')
+    -- a strong item is bought anyway
+    opts[1].note = 80
+    T.eq(A().shop_step(state({ dollars = 20, ante = 2 }), shop_result({ options = opts })).action, 'buy')
+    -- danger: power first, the savings wait
+    opts[1].note = 66
+    local res = shop_result({ options = opts }); res.base.p_boss = 0.4
+    T.eq(A().shop_step(state({ dollars = 20, ante = 2 }), res).action, 'buy')
+end
+
+function S.interest_weighs_in_ante_1(T)
+    -- ante 1: each $ of interest lost raises the bar (56 + 3 per $)
+    local opts = { { kind = 'joker', uid = 'j', name = 'Joker', cost = 4, note = 60, interest_loss = 2 } }
+    T.ok(A().shop_step(state({ dollars = 12 }), shop_result({ options = opts })).action ~= 'buy', '60 < 56 + 2 x 3')
+    opts[1].interest_loss = 1
+    T.eq(A().shop_step(state({ dollars = 12 }), shop_result({ options = opts })).action, 'buy')
+end
+
+function S.one_reroll_before_leaving(T)
+    local res = shop_result({ reroll = { cost = 5, worth = false, p_improve = 0.4 } })
+    local st = A().shop_step(state({ dollars = 12 }), res)
+    T.eq(st.action, 'reroll'); T.ok(st.why:find('une relance', 1, true), st.why)
+    T.eq(A().shop_step(state({ dollars = 12, rerolls = 1 }), res).action, 'next_round', 'already rerolled once')
+    T.eq(A().shop_step(state({ dollars = 9, ante = 3 }), res).action, 'next_round', 'saving for interest')
+    T.eq(A().shop_step(state({ dollars = 31, ante = 3 }), res).action, 'reroll', 'excess money above 25 $')
+    st = A().shop_step(state({ dollars = 2, free_rerolls = 1, rerolls = 3 }), res)
+    T.eq(st.action, 'reroll'); T.ok(st.why:find('gratuite', 1, true), st.why)
 end
 
 return S

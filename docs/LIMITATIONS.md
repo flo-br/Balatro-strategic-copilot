@@ -20,8 +20,16 @@
   disponible). Si un bouton n'est pas trouvé, l'étape reste écrite dans le résumé et la liste des
   boutons réellement présents est écrite **une fois** dans `BSC\logs\bsc.log`
   (`button … not found … buttons seen`) : à envoyer pour corriger les noms.
-* Cibles des tarots, seuils d'achat et de vente, Luchador : heuristiques documentées
-  (docs/MATHS.md §8), réglables dans `config.lua` (section `advice`).
+* Cibles des tarots et spectrales, seuils d'achat et de vente, discipline d'intérêts, relance
+  unique, Luchador : heuristiques documentées (docs/MATHS.md §7–8), réglables dans `config.lua`
+  (section `advice`). Elles s'inspirent des habitudes des meilleurs joueurs mais **n'ont pas été
+  calibrées sur des parties réelles**.
+* Le nombre de relances déjà faites dans une boutique se déduit du prix de la relance (+1 $ à
+  chaque fois) ; avec le tag D6, le prix de départ est lu dans `round_resets.temp_reroll_cost`
+  s'il existe (champ non vérifié dans des sources ; sans lui, quelques relances bon marché de
+  plus peuvent être proposées).
+* La zone des consommables est lue dans `G.consumeables` pour y placer le panneau en dessous ;
+  la position observée en jeu reste à confirmer.
 
 ## Mode autonome (sans Lovely ni Steamodded)
 

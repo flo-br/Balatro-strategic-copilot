@@ -14,7 +14,7 @@ local O = {}
 -- Heuristic tag values in dollars-equivalent (documented in docs/MATHS.md).
 O.TAG_VALUES = {
     tag_uncommon = 5, tag_rare = 8, tag_negative = 10, tag_foil = 4, tag_holo = 5, tag_polychrome = 7,
-    tag_investment = 15, tag_voucher = 9, tag_boss = 3, tag_standard = 3, tag_charm = 6, tag_meteor = 6,
+    tag_investment = 20, tag_voucher = 9, tag_boss = 3, tag_standard = 3, tag_charm = 6, tag_meteor = 6,
     tag_buffoon = 7, tag_handy = 4, tag_garbage = 3, tag_ethereal = 5, tag_coupon = 6, tag_double = 4,
     tag_juggle = 2, tag_d_six = 4, tag_top_up = 5, tag_skip = 5, tag_orbital = 8, tag_economy = 0,
 }
@@ -68,7 +68,11 @@ function O.analyse(state, opts, task)
     if current and not current.boss then
         local tag = state.blind_tags and state.blind_tags[current.slot]
         local tag_v = tag and O.tag_value(tag, state) or 0
-        local lost = (current.reward or 3) + 2 -- reward + money for remaining hands (approx.)
+        -- what skipping loses: the blind's reward, the money for unused hands, and the SHOP that
+        -- follows it (top players almost never skip: a shop visit is worth a lot, more so early)
+        local ante = (state.run and state.run.ante) or 1
+        local shop_value = (ante <= 4) and 10 or 8
+        local lost = (current.reward or 3) + 2 + shop_value
         -- risk: the following blind is played without this round's shop and money
         local following
         for _, b in ipairs(state.upcoming or {}) do
@@ -76,8 +80,9 @@ function O.analyse(state, opts, task)
         end
         local p_follow = following and ST.p_clear_bootstrap(ps, following.chips, { seed = 'follow', B = 300 }) or 1
         if opts.calibrate then p_follow = opts.calibrate(p_follow) end
-        local ok = (tag_v - lost) > 0 and p_follow >= 0.85
-        res.skip = { tag = tag, tag_value = tag_v, lost = lost, p_following = p_follow, recommended = ok, method = 'heuristic' }
+        local ok = (tag_v - lost) > 0 and p_follow >= 0.95
+        res.skip = { tag = tag, tag_value = tag_v, lost = lost, shop_value = shop_value, p_following = p_follow,
+            recommended = ok, method = 'heuristic' }
     end
     check()
     res.contributions = SY.contributions(state, ps, task)

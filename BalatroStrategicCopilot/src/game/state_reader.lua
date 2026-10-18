@@ -73,8 +73,11 @@ function SR.read_playing_card(card, opts)
     opts = opts or {}
     local uid = get(function() return card.sort_id end, nil) or get(function() return card.unique_val end, nil) or tostring(card)
     local face_down = get(function() return card.facing == 'back' end, false)
+    -- horizontal position in its area (visible to the player): Death converts the LEFT
+    -- selected card into the RIGHT one, so the advice needs the order on screen
+    local pos_x = get(function() return card.T.x end, nil)
     if face_down and not opts.reveal then
-        return { uid = uid, face_down = true, id = 0, nominal = 0, unknown = true,
+        return { uid = uid, face_down = true, id = 0, nominal = 0, unknown = true, pos_x = pos_x,
             debuff = get(function() return card.debuff end, false) and true or false,
             forced = get(function() return card.ability.forced_selection end, false) and true or false }
     end
@@ -118,6 +121,7 @@ function SR.read_playing_card(card, opts)
     c.played_this_ante = ab.played_this_ante and true or false
     c.highlighted = card.highlighted and true or false
     c.face_down = face_down or nil
+    c.pos_x = pos_x
     return c
 end
 
@@ -320,6 +324,8 @@ function SR.snapshot(opts)
             reroll_cost = num(get(function() return GG.current_round.reroll_cost end, 5), 5),
             free_rerolls = num(get(function() return GG.current_round.free_rerolls end, 0), 0),
             base_reroll_cost = num(get(function() return GG.round_resets.reroll_cost end, 5), 5),
+            -- read only when the game has it (reroll start price set by the D6 tag)
+            temp_reroll_cost = get(function() return GG.round_resets.temp_reroll_cost end, nil),
             bankrupt_at = num(GG.bankrupt_at, 0),
             discount_percent = num(GG.discount_percent, 0),
             inflation = num(GG.inflation, 0),

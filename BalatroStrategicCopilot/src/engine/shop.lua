@@ -465,12 +465,15 @@ function SH.analyse(state, opts, task)
             end
         elseif it.set == 'Booster' then
             opt.kind = 'booster'
-            opt.method = 'heuristic'
-            local info = IT.BOOSTERS[it.kind or ''] or { v = 3 }
-            local v = info.v
-            if info.jokers and slots_free <= 0 then v = v * 0.4; opt.risks[#opt.risks + 1] = 'aucun emplacement de joker libre' end
-            if it.choose and it.pack_size then v = v * (0.7 + 0.15 * it.choose + 0.05 * it.pack_size) end
-            finish(opt, nil, { econ = U.clamp((v - cost) / 8, -1, 1), cost = cc * 0.6, reliability = 0.6 })
+            local value, method, why = SH.booster_value(state, it, ctx, res, w, task)
+            finish(opt, nil, { reliability = 1 })
+            local rel = (method == 'simulation') and 0.9 or 0.7
+            opt.note = math.floor(U.clamp(50 + (value - 10 * cc - 50) * rel, 0, 100) + 0.5)
+            opt.method = method
+            opt.reasons[#opt.reasons + 1] = why
+            if IT.BOOSTERS[it.kind or ''] and IT.BOOSTERS[it.kind].jokers and slots_free <= 0 then
+                opt.risks[#opt.risks + 1] = 'aucun emplacement de joker libre'
+            end
         elseif it.card then
             opt.kind = 'card'
             opt.method = 'heuristic'
@@ -534,12 +537,12 @@ function SH.joker_pool(state)
     return pool
 end
 
-function SH.reroll_value(state, ctx, res, w, task)
+-- Notes of jokers drawn from the real pool (rarity 70/25/5 %), measured by simulation; shared
+-- by the reroll value and Buffoon packs (computed once per analysis).
+function SH.joker_samples(state, ctx, res, w, task)
+    if ctx.joker_samples then return ctx.joker_samples end
     local check = (task and task.check) or noop
     local econ = state.econ or {}
-    local rates = econ.rates or { joker = 20, tarot = 4, planet = 4, spectral = 0 }
-    local total_rate = (rates.joker or 0) + (rates.tarot or 0) + (rates.planet or 0) + (rates.spectral or 0) + (rates.playing_card or 0)
-    local p_joker = total_rate > 0 and (rates.joker or 0) / total_rate or 0
     local pool = SH.joker_pool(state)
     local rng = R.new('reroll')
     local M = 10
@@ -574,6 +577,91 @@ function SH.reroll_value(state, ctx, res, w, task)
             values[#values + 1] = { key = key, name = DB.get(key).name, note = note }
         end
     end
+    ctx.joker_samples = values
+    return values
+end
+
+-- Expected best (and second best) of k draws without replacement among notes (bootstrap).
+function SH.expected_best(notes, k, seed)
+    if #notes == 0 then return 50, 50 end
+    k = math.max(1, math.min(k or 1, #notes))
+    local rng = R.new(seed or 'best')
+    local B = 400
+    local s1, s2 = 0, 0
+    for _ = 1, B do
+        local idx = {}
+        for i = 1, #notes do idx[i] = i end
+        local best, second = -1, -1
+        for d = 1, k do
+            local j = rng:int(d, #idx)
+            idx[d], idx[j] = idx[j], idx[d]
+            local v = notes[idx[d]]
+            if v > best then second = best; best = v elseif v > second then second = v end
+        end
+        s1 = s1 + best
+        s2 = s2 + math.max(second, 0)
+    end
+    return s1 / B, s2 / B
+end
+
+-- Booster packs valued by their CONTENT (top players buy them very often): expected best card
+-- among the cards shown, minus the cost (interest included). Buffoon: jokers measured by
+-- simulation; Celestial: planets of the hands you actually play; Arcana / Spectral / Standard:
+-- documented heuristic values.
+SH.BASE_HANDS = { 'High Card', 'Pair', 'Two Pair', 'Three of a Kind', 'Straight', 'Flush', 'Full House',
+    'Four of a Kind', 'Straight Flush' }
+function SH.booster_value(state, it, ctx, res, w, task)
+    local kind = it.kind or ''
+    local k = it.pack_size or ((kind == 'Buffoon') and 2 or 3)
+    local choose = it.choose or 1
+    local notes, method, why = {}, 'heuristic', nil
+    if kind == 'Buffoon' then
+        for _, v in ipairs(SH.joker_samples(state, ctx, res, w, task)) do notes[#notes + 1] = v.note end
+        method = 'simulation'
+    elseif kind == 'Celestial' then
+        local usage = res.base.usage or {}
+        local telescope = state.vouchers and state.vouchers.v_telescope
+        local top, top_u = nil, -1
+        for _, h in ipairs(SH.BASE_HANDS) do
+            local u = usage[h] or 0
+            notes[#notes + 1] = 50 + 30 * math.min(1, 1.5 * u)
+            if u > top_u then top, top_u = h, u end
+        end
+        if telescope and top then notes = { 50 + 30 * math.min(1, 1.5 * top_u) } ; k = 1 end
+    elseif kind == 'Arcana' or kind == 'Spectral' then
+        -- each card scored like the same card in the shop (heuristic econ value), but free:
+        -- the pack price is subtracted once, by the caller
+        local dollars = (state.econ and state.econ.dollars) or 0
+        local sell_values = 0
+        for _, j in ipairs(state.jokers or {}) do sell_values = sell_values + (j.sell_cost or 0) end
+        local list = (kind == 'Arcana') and IT.TAROTS or IT.SPECTRALS
+        for key, info in pairs(list) do
+            -- The Soul and Black Hole are too rare in packs to weigh like the others
+            if key ~= 'c_soul' and key ~= 'c_black_hole' then
+                local v = info.v or 3
+                if info.money == 'double' then v = math.min(dollars, 20) end
+                if info.money == 'sell_values' then v = math.min(sell_values, 50) end
+                if info.target or info.sim then v = v + 1 end
+                notes[#notes + 1] = SH.note({ econ = U.clamp(v / 10, -1, 1), reliability = 0.6 }, w)
+            end
+        end
+        table.sort(notes)
+    else
+        notes = { 46 }
+    end
+    local best, second = SH.expected_best(notes, k, 'booster:' .. kind)
+    local value = best
+    if choose >= 2 then value = math.min(100, value + 0.5 * math.max(0, second - 50)) end
+    why = string.format('meilleure carte attendue ~%d/100 (%d au choix)', math.floor(value + 0.5), k)
+    return value, method, why
+end
+
+function SH.reroll_value(state, ctx, res, w, task)
+    local econ = state.econ or {}
+    local rates = econ.rates or { joker = 20, tarot = 4, planet = 4, spectral = 0 }
+    local total_rate = (rates.joker or 0) + (rates.tarot or 0) + (rates.planet or 0) + (rates.spectral or 0) + (rates.playing_card or 0)
+    local p_joker = total_rate > 0 and (rates.joker or 0) / total_rate or 0
+    local values = SH.joker_samples(state, ctx, res, w, task)
     -- expected best note among 2 new slots (bootstrap), non-joker slots counted as average (50)
     local B = 400
     local brng = R.new('reroll_boot')

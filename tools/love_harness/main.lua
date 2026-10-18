@@ -37,6 +37,12 @@ function love.load()
         opts.shop = { FG.joker('j_duo', 'The Duo', { x_mult = 2, type = 'Pair' }, { rarity = 3, cost = 8 }),
                       FG.joker('j_credit_card', 'Credit Card', { extra = 20 }, { rarity = 1, cost = 1 }) }
     end
+    if scenario == 'death' then
+        -- Death in the consumable area (top right, where the game puts it): the copilot must name
+        -- the two cards and which one goes on the left; the panel must not cover the area
+        opts.hand = { 'Ah', '9s', '7c', '2h', 'Kh', '5d', '3c', 'Qd' }
+        opts.jokers = { FG.joker('j_joker', 'Joker', { mult = 4 }) }
+    end
     -- keep the real love.* but install the simulated G / SMODS / Game
     local real_love = love
     FG.install(opts)
@@ -46,6 +52,13 @@ function love.load()
     if G.shop_jokers then for i, c in ipairs(G.shop_jokers.cards) do c.T = { x = 8 + i * 2.2, y = 4, w = 1.4, h = 1.9 }; c.VT = c.T end end
     for i, c in ipairs(G.jokers.cards) do c.T = { x = 6 + i * 1.8, y = 0.6, w = 1.4, h = 1.9 }; c.VT = c.T end
     G.TILESIZE = 20; G.TILESCALE = 2.3; G.ROOM = { T = { x = 1, y = 0.5, w = 30, h = 17 } }
+    if scenario == 'death' then
+        local death = { sort_id = 9001, ability = { set = 'Tarot', name = 'Death' }, config = { center = { key = 'c_death', set = 'Tarot' } },
+            sell_cost = 1, cost = 3, facing = 'front', T = { x = 24.6, y = 0.6, w = 1.4, h = 1.9 } }
+        death.VT = death.T
+        G.consumeables.cards = { death }
+        G.consumeables.T = { x = 23.8, y = 0.4, w = 5.2, h = 2.4 }
+    end
     -- simulated game buttons, as UI trees (box.UIRoot.children, config.button / config.id)
     local function btn(fn, id, x, y, label) return { config = { button = fn, id = id }, T = { x = x, y = y, w = 3, h = 0.9 }, label = label, children = {} } end
     HARNESS_BUTTONS = {}
@@ -141,6 +154,12 @@ function love.draw()
         love.graphics.print(b.label, x + 8, y + 8)
     end
     if G.shop_jokers then for _, c in ipairs(G.shop_jokers.cards) do cardbox(c, tostring(c.ability.name)) end end
+    if G.consumeables.T then
+        local a = G.consumeables.T
+        love.graphics.setColor(0, 0, 0, 0.25)
+        love.graphics.rectangle('fill', (a.x + G.ROOM.T.x) * s, (a.y + G.ROOM.T.y) * s, a.w * s, a.h * s, 8, 8)
+    end
+    for _, c in ipairs(G.consumeables.cards) do cardbox(c, tostring(c.ability.name)) end
     for _, c in ipairs(G.jokers.cards) do cardbox(c, tostring(c.ability.name)) end
     Game.draw(G)
 end

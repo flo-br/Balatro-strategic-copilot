@@ -43,6 +43,15 @@ return {
         sell_max_contribution = 0.03, -- ...and only if it brings at most 3 % of the score
         order_min_gain = 0.01,   -- show the joker order numbers when the right order scores >= 1 % more
         luchador_below = 0.80,   -- advise selling Luchador against a boss below 80 % win chance
+        -- money discipline inspired by top players, applied only while the next blinds are safe
+        booster_note = 52,       -- boosters are bought from this score (top players buy them very often)
+        strong_note = 75,        -- an item this strong is bought even if it breaks the savings
+        save_from_ante = 2,      -- from this ante, keep the interest cap ($25) and spend only the excess
+        interest_weight = 3,     -- before that, each $ of interest lost raises the required score by 3
+        safe_next = 0.85,        -- "safe" = next blind won with at least 85 % ...
+        safe_boss = 0.70,        -- ... and the boss with at least 70 %
+        reroll_once = true,      -- nothing worth buying: one reroll per shop before leaving
+        reroll_once_max_loss = 1, -- ... if it costs at most 1 $ of interest (before the savings ante)
     },
     learning = {
         enabled = true,
