@@ -61,9 +61,28 @@ doubles paires, full, couleurs, suites, carte haute, variantes complétées à 5
 décision **réelle** proposée au joueur, elle, compare les 218 sous-ensembles exactement.
 Les compteurs des jokers évoluent d'une main simulée à l'autre (Green Joker, Ice Cream…).
 
-Limites : politique non optimale (une meilleure stratégie peut faire mieux), The Fish / The
-Wheel / The House supposés sans cartes cachées dans les simulations, Crimson Heart ignoré au-delà
-de la main courante, destruction des cartes de verre non simulée en cours de manche.
+Limites : politique non optimale (une meilleure stratégie peut faire mieux), Crimson Heart
+ignoré au-delà de la main courante, destruction des cartes de verre non simulée en cours de manche.
+
+### Cartes face cachée (The House, The Mark, The Wheel, The Fish)
+
+Le joueur ne voit ni la valeur ni la couleur d'une carte cachée, mais il sait **parmi quelles
+cartes** elles se trouvent : la vue du deck montre la pioche restante, donc les cartes cachées
+viennent de `deck complet − pioche − cartes visibles en main` (ce lot contient aussi la défausse :
+jamais d'information que le joueur n'a pas, et l'identité d'une carte cachée précise n'est jamais
+lue). Les positions cachées sont donc **interchangeables** : une action candidate est « ces cartes
+visibles + N cartes cachées ». Candidats : les meilleures mains visibles, `N = 1…5` cartes cachées
+jouées ou défaussées, et les meilleures mains visibles complétées de cartes cachées ; défausses
+ciblées sur les cartes visibles.
+* Valeur immédiate d'un jeu : moyenne sur 24 tirages des identités cachées (« ≈ x en moyenne »).
+* Probabilité de battre la blinde : fin de manche simulée en deux temps (16 parties pour tous les
+  candidats, puis 64 pour les 6 meilleurs), mêmes tirages pour tous les candidats. Seules les
+  cartes cachées utilisées par la première action reçoivent une identité ; celles qui restent en
+  main **restent inconnues** pour la suite simulée (la politique ne peut pas s'appuyer dessus et
+  tend à les défausser, comme le joueur) : estimation légèrement pessimiste si elles sont jouées
+  plus tard à l'aveugle.
+* À chances égales : moins de cartes cachées jouées (une carte au hasard peut changer le type de
+  main, ce que certains boss punissent).
 
 ## 4. Puissance du build et P(blinde) hors manche
 
@@ -119,7 +138,30 @@ simulation ; l'espérance de la meilleure note sur 2 emplacements est estimée p
 comparée à la meilleure option actuelle et au coût. Un joker moddé du pool reçoit une note
 neutre (50) et n'est jamais inventé.
 
-## 8. Heuristiques documentées
+## 8. Prochaine étape (« À FAIRE »)
+
+Une seule action est proposée ; après chaque action du joueur l'état change, tout est recalculé et
+l'étape suivante apparaît. Règles (`engine/advice.lua`, seuils réglables dans `config.lua`,
+section `advice`) :
+
+| Phase | Ordre de priorité |
+|---|---|
+| Main | 1. vendre Luchador si boss actif et victoire < 80 % ; 2. utiliser une planète (sauf avec Observatory : la garder donne ×1,5), Black Hole, The Hermit (≥ 4 $), Temperance (≥ 3 $ de revente), un tarot d'amélioration ou de couleur sur les cartes qui vont jouer ; 3. jouer / défausser selon la simulation de manche |
+| Boutique | 1. consommables comme ci-dessus ; 2. vendre Invisible Joker quand il est prêt ; 3. meilleur achat de note ≥ 56/100 abordable (remplacement : vendre d'abord le joker remplacé ; consommables pleins : vendre d'abord le plus faible) ; 4. vendre un joker qui apporte ≤ 3 % du score (note de vente ≥ 60) ; 5. relancer si rentable ; 6. blinde suivante |
+| Paquet | prendre la meilleure carte (note ≥ 50) — tarot d'Arcana : avec ses cartes cibles — sinon passer |
+| Choix de blinde | passer si le conseil « passer » est favorable (tag > gains perdus et blinde d'après ≥ 85 %), sinon jouer ; un boss se joue toujours |
+
+**Cibles des tarots** (heuristique explicable) : améliorations qui comptent au score (Mult,
+Bonus, Verre, Chance, Joker) → les meilleures cartes de la main recommandée ; Acier / Or (effets
+en main) → la meilleure carte gardée en main ; changement de couleur → seulement vers la couleur
+la plus présente en main (≥ 2), sur les cartes d'autres couleurs ; Tour (Pierre) : laissé au
+joueur.
+
+**Ordre des jokers** : calculé aussi pendant une main (sur les meilleurs jeux de la main), affiché
+seulement si l'ordre actuel n'est pas le bon et que le bon ordre marque ≥ 1 % de plus ; chaque
+ordre calculé est lié à la disposition exacte des jokers pour laquelle il a été calculé.
+
+## 9. Heuristiques documentées
 
 Utilisées seulement quand la simulation est impossible, toujours affichées « heuristique » et
 ramenées vers 50 (fiabilité 0,5–0,6) :

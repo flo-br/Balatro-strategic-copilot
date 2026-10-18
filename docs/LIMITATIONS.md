@@ -12,6 +12,17 @@
 * Les valeurs par défaut des jokers (`config` dans `jokers_db.lua`) ne servent qu'en repli ; en
   jeu, les valeurs réelles sont lues dans `card.ability`.
 
+## Étiquettes sur les boutons du jeu
+
+* Les boutons sont repérés par la fonction qu'ils déclenchent (`config.button`). Seul l'identifiant
+  `next_round_button` (bouton pour quitter la boutique) est vérifié dans des sources ; les noms
+  `reroll_shop`, `select_blind`, `skip_blind`, `skip_booster` ne le sont pas (code du jeu non
+  disponible). Si un bouton n'est pas trouvé, l'étape reste écrite dans le résumé et la liste des
+  boutons réellement présents est écrite **une fois** dans `BSC\logs\bsc.log`
+  (`button … not found … buttons seen`) : à envoyer pour corriger les noms.
+* Cibles des tarots, seuils d'achat et de vente, Luchador : heuristiques documentées
+  (docs/MATHS.md §8), réglables dans `config.lua` (section `advice`).
+
 ## Mode autonome (sans Lovely ni Steamodded)
 
 * Repose sur l'ordre de recherche de LÖVE 11 (dossier de sauvegarde avant le jeu pour `main.lua`,

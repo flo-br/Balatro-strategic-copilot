@@ -32,7 +32,7 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 **Méthode sans programme (recommandée, 1.0.4+)** — ni Lovely, ni Steamodded, ni script, ni DLL ;
 fonctionne aussi sur un PC protégé (contrôle parental, antivirus strict) :
 
-1. Extraire l'archive `BalatroStrategicCopilot-1.0.4.zip`.
+1. Extraire l'archive `BalatroStrategicCopilot-1.0.5.zip`.
 2. Copier le **contenu** du dossier `COPIER_DANS_AppData_Balatro` (`main.lua` + `Mods`) dans
    `%AppData%\Balatro\` (touche Windows + R, `%AppData%\Balatro`).
 3. Lancer Balatro : bandeau vert « … actif — touche C : panneau (mode autonome, sans Steamodded) ».
@@ -44,7 +44,7 @@ Balatro tourne sur LÖVE 11, qui lit `main.lua` d'abord dans le dossier de sauve
 **Avec Lovely + Steamodded** : copier le dossier `BalatroStrategicCopilot` dans
 `%AppData%\Balatro\Mods\` (de sorte que `Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json`
 existe ; une archive `.zip` déposée telle quelle est ignorée par les anciens Steamodded). L'archive
-`BalatroStrategicCopilot-1.0.4-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
+`BalatroStrategicCopilot-1.0.5-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
 répare toute la chaîne (dossier du jeu, Lovely, Steamodded, copilote) puis confirme que tout s'est
 chargé. Un **bandeau vert « actif »** s'affiche au lancement ; **aucun bandeau = mod non trouvé**
 ([pièges vérifiés](docs/INSTALL.md)).
@@ -60,6 +60,27 @@ les données apprises `%AppData%\Balatro\BSC\`). Détails dans [docs/INSTALL.md]
 | `C` | ouvrir / fermer le panneau stratégique |
 | `V` | afficher / masquer les alternatives et les détails |
 | `B` | afficher / masquer les badges sur les cartes |
+
+### Une étape à la fois (« À FAIRE »)
+
+Le copilote indique **une seule action à faire maintenant**, avec une étiquette au-dessus de ce
+qu'il faut toucher ; dès que vous l'avez faite, il recalcule et montre la suivante :
+
+| Étiquette | Où | Quand |
+|---|---|---|
+| **JOUER** / **DÉFAUSSER** | sur les cartes de la main | la meilleure action de la manche (aussi avec des cartes face cachée, ex. boss The House) |
+| **À PRENDRE** | sur l'objet de boutique ou la carte du paquet | le meilleur achat rentable (avec sa note /100) |
+| **À VENDRE** | sur un joker ou un consommable | pour remplacer un joker par un meilleur, faire de la place, gagner de l'argent avec un joker inutile, ou un effet de vente (Luchador contre un boss dangereux, Invisible Joker prêt) |
+| **RELANCER** | sur le bouton de relance | si une meilleure boutique est assez probable pour son prix |
+| **BLINDE SUIVANTE** | sur le bouton pour quitter la boutique | quand plus rien n'est rentable |
+| **JOUER** / **PASSER** | sur les boutons du choix de blinde | passer seulement si le tag vaut plus que la blinde et que la suivante reste sûre |
+| **UTILISER** + **CIBLE** | sur un consommable (+ les cartes visées) | planètes, argent (Hermit, Temperance), tarots sur les cartes qui vont jouer |
+| **PASSER** | sur le bouton du paquet | quand aucune carte du paquet n'améliore le jeu |
+| **1, 2, 3…** | sous les jokers | seulement quand l'ordre actuel n'est pas le bon (un ×Mult avant un +Mult) : glissez les jokers pour suivre les numéros |
+
+La ligne « À FAIRE » est aussi la première du résumé compact, avec la probabilité qui justifie le
+choix (visible par défaut ; `V` masque les détails et alternatives). Si l'étiquette d'un bouton
+n'apparaît pas, l'étape reste écrite dans le résumé (voir [docs/LIMITATIONS.md](docs/LIMITATIONS.md)).
 
 Panneau fermé, un résumé compact reste visible. Au menu principal, `C` affiche l'**historique** :
 dernier bilan de partie, taux de victoire avec intervalle, calibration et précision des scores.
@@ -80,9 +101,13 @@ Les options (badges, alertes, apprentissage, export, import, réinitialisation) 
 
 Explications détaillées : [docs/PERCENTAGES.md](docs/PERCENTAGES.md).
 
+![Étape en main : jouer, et ordre des jokers à corriger](docs/img/overlay_hand.png)
+
 ![Panneau en boutique](docs/img/overlay_shop.png)
 
 ![Panneau au choix de la blinde](docs/img/overlay_blind.png)
+
+![Boss The House : toutes les cartes face cachée](docs/img/overlay_house.png)
 
 *Captures produites avec le vrai runtime LÖVE 11.5 sur un état de jeu simulé (cartes factices) :
 elles montrent le rendu du mod, pas l'apparence du jeu.*

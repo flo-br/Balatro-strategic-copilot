@@ -93,15 +93,21 @@ function S.shop_phase_analysis(T)
     local r = Ctl.results.shop
     T.eq(r.options[1].key, 'j_duo')
     T.ok(r.reroll ~= nil)
-    -- badges are positioned over the shop cards
+    -- one step at a time: buy The Duo, label above that card only
     BSCopilot.config.ui.show_badges = true
+    local step = Ctl.step('shop')
+    T.eq(step.action, 'buy')
+    T.eq(step.targets[1], r.options[1].uid)
     local m = Ctl.ui_model()
-    T.ok(m.badges and #m.badges >= 2, 'badges on shop items')
+    local labels = {}
+    for _, b in ipairs(m.badges or {}) do labels[#labels + 1] = b.text end
+    T.ok(#labels >= 1 and labels[1]:find('À PRENDRE', 1, true), table.concat(labels, ' | '))
+    T.ok(m.lines[1][2].t:find('À PRENDRE', 1, true) and m.compact_lines[1][3].t:find('The Duo', 1, true), 'step first, also when the panel is closed')
     Ctl.toggle_badges()
     T.eq(Ctl.ui_model().badges, nil, 'badges hidden by the key')
     Ctl.toggle_badges()
     m = Ctl.ui_model()
-    T.ok(m.badges and #m.badges >= 2, 'badges on shop items')
+    T.ok(m.badges and #m.badges >= 1, 'badges back')
     FG.uninstall()
 end
 

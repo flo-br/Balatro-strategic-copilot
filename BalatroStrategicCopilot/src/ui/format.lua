@@ -51,9 +51,19 @@ end
 
 function F.cards_segments(cards)
     local segs = {}
-    for i, c in ipairs(cards or {}) do
+    local hidden = 0
+    local visible = {}
+    for _, c in ipairs(cards or {}) do
+        if c.face_down then hidden = hidden + 1 else visible[#visible + 1] = c end
+    end
+    for i, c in ipairs(visible) do
         segs[#segs + 1] = { t = F.card_label(c), c = c.suit or 'text' }
-        if i < #cards then segs[#segs + 1] = { t = ' ', c = 'text' } end
+        if i < #visible then segs[#segs + 1] = { t = ' ', c = 'text' } end
+    end
+    if hidden > 0 then
+        -- hidden positions are interchangeable (see engine/hand_advisor.lua)
+        local txt = (hidden == 1) and T('hidden_one') or T('hidden_n', hidden)
+        segs[#segs + 1] = { t = (#visible > 0 and ' + ' or '') .. txt, c = 'mid' }
     end
     return segs
 end
@@ -99,6 +109,7 @@ end
 
 function F.score_text(play)
     if not play then return T('not_available') end
+    if (play.hidden_n or 0) > 0 then return T('score_avg', U.fmt_num(play.mean)) end -- depends on the hidden cards
     if play.complete == false or not trust_exact() then return T('score_partial', U.fmt_num(play.mean)) end
     if play.min == play.max then return T('score_exact', U.fmt_num(play.mean)) end
     return T('score_range', U.fmt_num(play.mean), U.fmt_num(play.min), U.fmt_num(play.max))
@@ -136,42 +147,12 @@ function F.hand_panel(state, r, detail)
     end
     lines[#lines + 1] = line(seg(T('remaining', U.fmt_num(r.remaining)), 'text'))
     lines[#lines + 1] = line(seg(T('hands_discards', r.hands_left, r.discards_left), 'dim'))
-    -- headline probability
+    -- how reliable the probability shown on the step line is
     if r.round then
-        local cls = F.class_prob(r.round.p_clear)
         local conf = F.confidence(r.round.method, r.round.lo, r.round.hi, r.coverage and #r.coverage.unsupported == 0)
-        local ptxt = F.prob_text(r.round.p_clear, r.round.method, r.round.lo, r.round.hi)
-        if conf == 'low' and r.coverage and #r.coverage.unsupported > 0 then ptxt = '≈ ' .. ptxt end
-        lines[#lines + 1] = line(seg(F.mark(cls) .. ' ', cls), seg(T('win_blind', ptxt), cls))
         lines[#lines + 1] = line(seg(T('confidence', T('conf_' .. conf)) .. ' — ' .. F.method_text(r.round.method, r.round.n), 'dim'))
-    else
-        lines[#lines + 1] = line(seg(T('computing'), 'dim'))
     end
-    -- recommendation
-    local rec = r.recommendation
-    if rec and rec.type == 'play' and rec.ref then
-        local l = line(seg(T('rec_play_short') .. ' ', 'good'))
-        append(l, F.cards_segments(rec.ref.cards))
-        lines[#lines + 1] = l
-        lines[#lines + 1] = line(seg('  ' .. I.hand_name(rec.ref.hand or '?') .. ' — ' .. F.score_text(rec.ref), 'chips'))
-        if r.remaining > 0 then
-            lines[#lines + 1] = line(seg('  ' .. T('p_now', I.pct(rec.ref.p_win)), F.class_prob(rec.ref.p_win)))
-        end
-    elseif rec and rec.type == 'discard' then
-        local l = line(seg(T('rec_discard_short') .. ' ', 'mid'))
-        append(l, F.cards_segments(rec.cards))
-        lines[#lines + 1] = l
-        if rec.ref and rec.ref.target then
-            local txt = '  ' .. F.target_text(rec.ref.target)
-            if rec.ref.p_complete then txt = txt .. ' — ' .. T('p_complete', I.pct(rec.ref.p_complete)) end
-            lines[#lines + 1] = line(seg(txt, 'accent'))
-        end
-    elseif r.best_play then
-        local l = line(seg(T('rec_play_short') .. ' ', 'good'))
-        append(l, F.cards_segments(r.best_play.cards))
-        lines[#lines + 1] = l
-        lines[#lines + 1] = line(seg('  ' .. I.hand_name(r.best_play.hand or '?') .. ' — ' .. F.score_text(r.best_play), 'chips'))
-    end
+    -- (the recommendation itself is the "À FAIRE" step line, engine/advice.lua)
     -- alternatives
     if detail and r.candidates and #r.candidates > 1 then
         lines[#lines + 1] = line(seg(T('alternatives'), 'title'))

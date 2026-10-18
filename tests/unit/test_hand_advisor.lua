@@ -87,16 +87,47 @@ function S.forced_card_and_psychic_constraints(T)
     for _, p in ipairs(r.plays) do T.eq(#p.cards, 5) end
 end
 
-function S.face_down_cards_are_not_played(T)
+function S.face_down_cards_winning_visible_play(T)
     local F, C, HA = env()
     local hand = C.parse_list('Ah Ad 7c 2s')
     hand[4] = { uid = 'hidden', face_down = true, id = 0, nominal = 0, unknown = true }
     local s = F.state({ hand_cards = hand, deck = deck_without(C, hand), required = 50 })
     local r = HA.analyse(s, { rollouts = 4 })
-    for _, p in ipairs(r.plays) do
-        for _, c in ipairs(p.cards) do T.ok(not c.face_down) end
-    end
     T.eq(r.notes[1], 'hidden_cards')
+    local rec = r.recommendation
+    T.eq(rec.type, 'play')
+    local has = {}
+    for _, c in ipairs(rec.cards) do has[c.uid] = true end
+    T.ok(has[hand[1].uid] and has[hand[2].uid], 'the visible pair of aces wins: play it')
+    T.ok(not has.hidden, 'no need to play the hidden card blind')
+end
+
+-- The House: every card face down. Hidden positions are interchangeable; the advice is a
+-- number of hidden cards to play or discard, never based on the identity of a given card.
+function S.all_cards_face_down_still_advised(T)
+    local F, C, HA = env()
+    local real = C.parse_list('Ah Ad 7c 9s 2h Kh 5d 3c')
+    local hand = {}
+    for i, c in ipairs(real) do hand[i] = { uid = 'h' .. i, face_down = true, id = 0, nominal = 0, unknown = true } end
+    local deck = deck_without(C, real)
+    local full = {}
+    for _, c in ipairs(deck) do full[#full + 1] = c end
+    for _, c in ipairs(real) do full[#full + 1] = c end
+    local s = F.state({ hand_cards = hand, deck = deck, required = 300 })
+    s.full_deck = full
+    local r = HA.analyse(s, { rollouts = 24 })
+    T.ok(not r.empty, 'not empty anymore')
+    T.ok(r.recommendation and #r.recommendation.cards >= 1 and #r.recommendation.cards <= 5)
+    for _, c in ipairs(r.recommendation.cards) do T.ok(c.face_down, 'only hidden positions') end
+    T.eq(r.hidden.count, 8); T.eq(r.hidden.pool, 8, 'pool = full deck - draw pile')
+    -- same advice whatever the real identity of each hidden card (only the pool counts)
+    local shuffled = {}
+    for i = 1, 8 do shuffled[i] = { uid = 'x' .. i, face_down = true, id = 0, nominal = 0, unknown = true } end
+    local s2 = F.state({ hand_cards = shuffled, deck = deck, required = 300 })
+    s2.full_deck = full
+    local r2 = HA.analyse(s2, { rollouts = 24 })
+    T.eq(r2.recommendation.type, r.recommendation.type)
+    T.eq(#r2.recommendation.cards, #r.recommendation.cards)
 end
 
 function S.structural_candidates_cover_main_hands(T)

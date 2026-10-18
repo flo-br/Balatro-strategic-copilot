@@ -14,6 +14,9 @@ local Score = BSC.require('engine/score')
 local HA = BSC.require('engine/hand_advisor')
 local Fmt = BSC.require('ui/format')
 local EF = BSC.require('game/event_fallback')
+local Advice = BSC.require('engine/advice')
+local SY = BSC.require('engine/synergy')
+local UT = BSC.require('game/ui_targets')
 
 local Ctl = {}
 
@@ -35,6 +38,12 @@ Ctl.uid_cards = {}       -- uid -> game card object (for badge placement)
 
 local function cfg() return BSC.config or {} end
 
+local function jokers_sig(state)
+    local t = {}
+    for i, j in ipairs((state and state.jokers) or {}) do t[i] = tostring(j.uid) end
+    return table.concat(t, ',')
+end
+
 function Ctl.init()
     Ctl.sched = Sched.new()
     Sched.set_util(U)
@@ -46,9 +55,21 @@ function Ctl.init()
     Ctl.last_sig = nil
     Ctl.last_sel_sig = nil
     Ctl.register('hand', function(state, task, c2)
-        return HA.analyse(state, { rollouts = c2.compute.rollouts, max_branches = c2.compute.max_branches,
+        local res = HA.analyse(state, { rollouts = c2.compute.rollouts, max_branches = c2.compute.max_branches,
             samples = c2.compute.samples }, task)
-    end, Fmt.hand_panel, Fmt.hand_badges)
+        -- joker order on the plays of this hand (the order can be changed at any time)
+        local ok, ord = Sched.protected(function()
+            local plays = {}
+            for i = 1, math.min(6, #(res.plays or {})) do
+                local p = res.plays[i]
+                if (p.hidden_n or 0) == 0 then plays[#plays + 1] = { played = p.cards, held = HA.minus(state.hand_cards or {}, p.cards) } end
+            end
+            if #plays == 0 then return nil end
+            return SY.best_order(state, { plays = plays }, task)
+        end)
+        if ok then res.order = ord end
+        return res
+    end, Fmt.hand_panel, nil)
 end
 
 function Ctl.register(phase, analyzer, formatter, badger)
@@ -165,6 +186,7 @@ function Ctl.refresh(force)
         Ctl.sched:submit(phase, function(task)
             local t0 = U.now()
             local r = analyzer(s, task, c)
+            if type(r) == 'table' then r.jokers_sig = jokers_sig(s) end -- arrangement the order was computed for
             L.timing('analysis_' .. phase, U.now() - t0)
             return r
         end, function(res, err)
@@ -370,6 +392,71 @@ function Ctl.selection_lines()
     return { l, { seg(I.T('p_now', I.pct(r.p_win)), Fmt.class_prob(r.p_win)) } }
 end
 
+-- Next step (engine/advice.lua) and joker order marks ---------------------------------------
+
+function Ctl.step(phase)
+    local s = Ctl.state
+    if not s then return nil end
+    local result = Ctl.results[phase]
+    local key = tostring(phase) .. ':' .. tostring(Ctl.result_ver) .. ':' .. tostring(Ctl.version) .. ':' .. tostring(Ctl.partial[phase])
+    if Ctl.step_cache and Ctl.step_cache.key == key then return Ctl.step_cache.step end
+    local step, err = Advice.step(phase, s, result, cfg(), Ctl.partial[phase])
+    if err then L.warn('advice', '%s', tostring(err)) end
+    Ctl.step_cache = { key = key, step = step }
+    return step
+end
+
+-- the latest joker order computed by any analysis, valid while the jokers stay the same
+function Ctl.order_marks()
+    local s = Ctl.state
+    if not s then return nil end
+    local sig = jokers_sig(s)
+    for _, ph in ipairs({ 'hand', 'shop', 'blind_select' }) do
+        local r = Ctl.results[ph]
+        if r and r.order ~= nil and not Ctl.partial[ph] and r.jokers_sig == sig then
+            Ctl.order_info = { sig = sig, order = r.order, ver = Ctl.version }
+        end
+    end
+    local oi = Ctl.order_info
+    if not oi or oi.sig ~= sig then return nil end
+    return Advice.order_marks(s, oi.order, cfg())
+end
+
+local function step_lines(step, phase, partial)
+    local seg = function(t, c) return { t = t, c = c or 'text' } end
+    local out = {}
+    if not step then
+        if phase == 'hand' or phase == 'shop' or phase == 'pack' or phase == 'blind_select' then
+            out[1] = { seg(I.T('todo_wait'), 'dim') }
+        end
+        return out
+    end
+    local l = { seg(I.T('todo'), 'title'), seg(step.label .. ' ', step.cls or 'good'), seg('— ' .. (step.text or ''), 'text') }
+    local cards = step.cards or step.use_cards
+    if cards then for _, sg in ipairs(Fmt.cards_segments(cards)) do l[#l + 1] = sg end end
+    out[1] = l
+    local l2 = {}
+    if step.hand and step.score then l2[#l2 + 1] = seg('  ' .. I.hand_name(step.hand) .. ' — ' .. Fmt.score_text(step.score) .. '  ', 'chips') end
+    if step.target then l2[#l2 + 1] = seg('  ' .. Fmt.target_text(step.target) .. (step.p_complete and (' (' .. I.pct(step.p_complete) .. ')') or '') .. '  ', 'accent') end
+    if step.why then l2[#l2 + 1] = seg((#l2 == 0 and '  ' or '') .. step.why, 'dim') end
+    if #l2 > 0 then out[#out + 1] = l2 end
+    if step.p then
+        local cls = Fmt.class_prob(step.p)
+        out[#out + 1] = { seg('  ' .. Fmt.mark(cls) .. ' ' .. (step.p_text or '') .. ' : ' .. (step.approx and '≈ ' or '')
+            .. Fmt.prob_text(step.p, step.method, step.lo, step.hi), cls) }
+    end
+    return out
+end
+
+local function order_lines(om)
+    if not om then return {} end
+    local seg = function(t, c) return { t = t, c = c or 'text' } end
+    local parts = {}
+    for _, m in ipairs(om.marks) do parts[#parts + 1] = m.pos .. '. ' .. tostring(m.name) end
+    return { { seg(I.T('order_title', math.floor((om.gain or 0) * 100 + 0.5)), 'accent'), seg(table.concat(parts, '  >  '), 'text') },
+        { seg('  ' .. I.T('order_hint'), 'dim') } }
+end
+
 function Ctl.ui_model()
     local c = cfg()
     local phase = SR.phase()
@@ -409,32 +496,53 @@ function Ctl.ui_model()
     if sel and view_phase == 'hand' then
         for i = #sel, 1, -1 do table.insert(lines, 1, sel[i]) end
     end
+    -- the next step comes first, then the joker order when it should change
+    local step = Ctl.step(view_phase)
+    local om = Ctl.order_marks()
+    local head = step_lines(step, view_phase, Ctl.partial[view_phase])
+    for _, l in ipairs(order_lines(om)) do head[#head + 1] = l end
+    for i = #head, 1, -1 do table.insert(lines, 1, head[i]) end
     m.title = I.T('title') .. ' — ' .. I.T('phase_' .. view_phase)
     m.lines = lines
     if c.ui == nil or c.ui.show_compact ~= false then
+        -- panel closed: the step (and the joker order), plus the score of the player's selection
         local compact = {}
-        for i = 1, math.min(#lines, 3) do compact[i] = lines[i] end
-        if sel and view_phase == 'hand' then compact = { sel[1], sel[2] } ; for i = 3, math.min(#lines, 5) do compact[#compact + 1] = lines[i] end end
+        for i = 1, #head do compact[#compact + 1] = head[i] end
+        if sel and view_phase == 'hand' then for _, l in ipairs(sel) do compact[#compact + 1] = l end end
+        if #compact == 0 then for i = 1, math.min(#lines, 3) do compact[i] = lines[i] end end
         m.compact_lines = compact
     end
     local keys = c.keys or {}
     m.footer = I.T('keys_help', (keys.panel or 'c'):upper(), (keys.detail or 'v'):upper(), (keys.badges or 'b'):upper())
-    -- badges
+    -- badges: the step label above what to act on, order numbers under the jokers
     local show_badges = not (c.ui and c.ui.show_badges == false)
-    if show_badges and result and Ctl.badgers[view_phase] then
-        local wanted = Ctl.badgers[view_phase](result) or {}
-        if next(wanted) then
-            local cards = collect_cards()
-            m.badges = {}
-            for uid, b in pairs(wanted) do
-                local card = cards[tostring(uid)]
-                if card then
-                    local x, y, w, h = card_rect(card)
-                    if x then
-                        m.badges[#m.badges + 1] = { x = x, y = y, w = w, h = h, text = b.text, class = b.class }
-                    end
+    if show_badges then
+        local cards = collect_cards()
+        m.badges = {}
+        local function on_uid(uid, text, class, opts)
+            local card = cards[tostring(uid)]
+            if not card then return end
+            local x, y, w, h = card_rect(card)
+            if x then
+                local b = { x = x, y = y, w = w, h = h, text = text, class = class }
+                for k, v in pairs(opts or {}) do b[k] = v end
+                m.badges[#m.badges + 1] = b
+            end
+        end
+        if step then
+            local text = step.label .. ((step.note and (step.action == 'buy' or step.action == 'take')) and (' · ' .. step.note .. '/100') or '')
+            for _, uid in ipairs(step.targets or {}) do on_uid(uid, text, step.cls or 'good', { strong = true }) end
+            for _, uid in ipairs(step.use_on or {}) do on_uid(uid, I.T('lbl_target'), 'accent', { strong = true }) end
+            if step.button then
+                local now = (love and love.timer and love.timer.getTime and love.timer.getTime()) or os.clock()
+                local okb, x, y, w, h = pcall(UT.button_rect, step.button, view_phase, now)
+                if okb and x then
+                    m.badges[#m.badges + 1] = { x = x, y = y, w = w, h = h, text = step.label, class = step.cls or 'good', strong = true }
                 end
             end
+        end
+        if om then
+            for _, mk in ipairs(om.marks) do on_uid(mk.uid, tostring(mk.pos), mk.moved and 'mid' or 'good', { pos = 'below', strong = true }) end
         end
     end
     return m

@@ -9,7 +9,7 @@ Ouvrir `%AppData%\Balatro\BSC\amorce.log` après avoir lancé le jeu :
 | le fichier n'existe pas | Balatro n'a pas lu `%AppData%\Balatro\main.lua` | vérifier le nom exact (`main.lua`, pas `main.lua.txt` : Explorateur → *Affichage* → *Afficher* → *Extensions de noms de fichiers*) et l'emplacement (à côté des dossiers de profil `1`, `2`, `3`) ; si tout est juste, le jeu demande à LÖVE de lire son dossier de sauvegarde en dernier (`appendidentity`) et cette méthode ne peut pas marcher : le signaler |
 | `amorce lue` puis `main.lua d'origine exécuté`, puis `dossier introuvable` | le dossier du copilote manque | copier aussi le dossier `Mods` de `COPIER_DANS_AppData_Balatro` |
 | `ERREUR au démarrage : …` | erreur du copilote (bandeau rouge en jeu) | envoyer `amorce.log` et `BSC\logs\bsc.log` |
-| `copilote 1.0.4 : … actif` | tout fonctionne | en partie, touche `C` pour le panneau |
+| `copilote 1.0.x : … actif` | tout fonctionne | en partie, touche `C` pour le panneau |
 | `Steamodded gère déjà le copilote` | Lovely + Steamodded sont actifs et chargent le copilote | normal ; `main.lua` peut être supprimé |
 
 Pour revenir au jeu d'origine : supprimer `%AppData%\Balatro\main.lua`.

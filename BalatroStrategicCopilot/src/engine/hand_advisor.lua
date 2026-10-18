@@ -451,6 +451,210 @@ end
 
 -- Full analysis --------------------------------------------------------------------------
 -- opts: { rollouts = 64, max_play_candidates = 4, max_discard_candidates = 5, seed }
+-- Face-down cards in hand --------------------------------------------------------------------
+-- The House (first hand face down), The Mark (face cards), The Wheel (1 in 7), The Fish...
+-- The player sees neither the rank nor the suit of these cards, but knows which cards they can
+-- be: the deck view shows the draw pile, so hidden cards come from
+--     full deck - draw pile - visible cards in hand
+-- (this pool also holds the discard pile: nothing the player cannot know is used, and the
+-- identity of a given hidden card is never read). Hidden positions are therefore
+-- interchangeable: a candidate action is a set of VISIBLE cards plus a NUMBER of hidden cards,
+-- evaluated by Monte Carlo over the identities of the hidden cards, with common random numbers
+-- across candidates. In the simulated rest of the round, cards still hidden after the first
+-- action STAY unknown (no rank, no suit): the policy cannot build on them and tends to
+-- discard them, as the player would. Slightly pessimistic if they are later played blind
+-- (documented in docs/MATHS.md).
+function HA.hidden_pool(state, visible)
+    local skip = {}
+    for _, c in ipairs(state.deck or {}) do skip[tostring(c.uid)] = true end
+    for _, c in ipairs(visible or {}) do skip[tostring(c.uid)] = true end
+    local pool = {}
+    for _, c in ipairs(state.full_deck or {}) do
+        if not skip[tostring(c.uid)] then pool[#pool + 1] = c end
+    end
+    return pool
+end
+
+-- one possible identity for every hidden card (copies keep the hidden card's uid/position)
+local function assign_hidden(hidden, pool, rng)
+    local ids = rng:sample(pool, #hidden)
+    local map = {}
+    for i, hc in ipairs(hidden) do
+        local src = ids[i] or pool[((i - 1) % math.max(1, #pool)) + 1]
+        local c = C.copy(src or hc)
+        c.uid = hc.uid
+        c.face_down = nil
+        c.forced = hc.forced
+        if hc.debuff then c.debuff = true end
+        map[hc] = c
+    end
+    return map
+end
+
+local function concrete(cards, map)
+    local out = {}
+    for i, c in ipairs(cards) do out[i] = map[c] or c end
+    return out
+end
+
+function HA.analyse_hidden(state, opts, task, P, hand, visible, hidden, forced)
+    local check = (task and task.check) or noop
+    local deck = state.deck or {}
+    local round = state.round or {}
+    local h, d = round.hands_left or 1, round.discards_left or 0
+    local blind = state.blind or {}
+    local remaining = math.max(0, (blind.chips_required or 0) - (blind.chips_scored or 0))
+    local res = { remaining = remaining, hands_left = h, discards_left = d, plays = {}, discards = {}, notes = { 'hidden_cards' } }
+    local pool = HA.hidden_pool(state, visible)
+    if #pool < #hidden then
+        -- inconsistent counts (cards created/destroyed by other mods): widen with the draw pile
+        for _, c in ipairs(deck) do pool[#pool + 1] = c end
+    end
+    res.hidden = { count = #hidden, pool = #pool }
+    local min_cards = (P.boss == 'bl_psychic') and 5 or nil
+    local S = opts.hidden_samples or 24
+    local maps = {}
+    for i = 1, S do maps[i] = assign_hidden(hidden, pool, R.new('hidden:' .. i)) end
+
+    -- candidates: visible cards + the first k hidden positions (positions are interchangeable)
+    local cands = {}
+    local function hidden_pick(k) local t = {} for i = 1, k do t[i] = hidden[i] end return t end
+    local function add(kind, vis, k)
+        local cards = {}
+        for _, c in ipairs(vis) do cards[#cards + 1] = c end
+        for _, c in ipairs(hidden_pick(k)) do cards[#cards + 1] = c end
+        if #cards == 0 or #cards > 5 then return end
+        if kind == 'play' and forced then
+            local has = false
+            for _, c in ipairs(cards) do if c == forced then has = true end end
+            if not has then return end
+        end
+        if kind == 'play' and min_cards and #cards < min_cards and #hand >= min_cards then return end
+        cands[#cands + 1] = { type = kind, cards = in_hand_order(hand, cards), hidden_n = k, vis_n = #vis }
+    end
+    -- visible-only plays: exact immediate value with hidden held cards unknown (no effect)
+    local vis_plays = {}
+    if #visible > 0 then
+        for _, idx in ipairs(U.subsets(#visible, 1, math.min(5, #visible))) do
+            check()
+            local cards = {}
+            for i, k in ipairs(idx) do cards[i] = visible[k] end
+            local r = Score.evaluate_prepared(P, cards, minus(hand, cards), { max_branches = 16, samples = 48, seed = 'play' })
+            vis_plays[#vis_plays + 1] = { cards = cards, mean = r.mean or 0 }
+        end
+        table.sort(vis_plays, function(a, b) return a.mean > b.mean end)
+    end
+    for i = 1, math.min(4, #vis_plays) do add('play', vis_plays[i].cards, 0) end
+    for k = 1, math.min(5, #hidden) do add('play', {}, k) end
+    for i = 1, math.min(3, #vis_plays) do
+        for k = 1, math.min(#hidden, 5 - #vis_plays[i].cards) do add('play', vis_plays[i].cards, k) end
+    end
+    if d > 0 then
+        for k = 1, math.min(5, #hidden) do add('discard', {}, k) end
+        if #visible > 0 then
+            local ok, targets = pcall(HA.discard_targets, state, visible, deck, { rules = P.rules, forced = forced,
+                serpent = P.boss == 'bl_serpent' })
+            if ok and targets then
+                table.sort(targets, function(a, b) return (a.p_complete or 0) > (b.p_complete or 0) end)
+                for i = 1, math.min(3, #targets) do
+                    add('discard', targets[i].discard or {}, 0)
+                    cands[#cands].target = targets[i].target
+                    cands[#cands].p_complete = targets[i].p_complete
+                end
+            end
+        end
+    end
+    if #cands == 0 then res.empty = true; return res end
+
+    -- immediate value of plays, averaged over the possible identities of the hidden cards
+    for _, c in ipairs(cands) do
+        if c.type == 'play' then
+            local sum_p, sum_m, names = 0, 0, {}
+            for i = 1, S do
+                check()
+                local played = concrete(c.cards, maps[i])
+                local held = concrete(minus(hand, c.cards), maps[i])
+                local r = Score.evaluate_prepared(P, played, held, { max_branches = 16, samples = 48, seed = 'play' })
+                sum_p = sum_p + ((remaining > 0) and r.p_at_least(remaining) or 1)
+                sum_m = sum_m + (r.mean or 0)
+                if r.hand then names[r.hand] = (names[r.hand] or 0) + 1 end
+            end
+            local best_name, best_n = nil, 0
+            for n, k in pairs(names) do if k > best_n then best_name, best_n = n, k end end
+            local entry = { cards = c.cards, uids = {}, hand = best_name, hand_share = best_n / S, mean = sum_m / S,
+                p_win = sum_p / S, method = 'monte_carlo', exact = false, complete = true, n = #c.cards, hidden_n = c.hidden_n }
+            for i, cc in ipairs(c.cards) do entry.uids[i] = cc.uid end
+            c.ref = entry
+            res.plays[#res.plays + 1] = entry
+        else
+            c.ref = { discard = c.cards, target = c.target, p_complete = c.p_complete, hidden_n = c.hidden_n }
+            res.discards[#res.discards + 1] = c.ref
+        end
+    end
+    table.sort(res.plays, function(a, b)
+        if math.abs(a.p_win - b.p_win) > 1e-9 then return a.p_win > b.p_win end
+        -- same chances: do not play hidden cards blind without need (a random card can change
+        -- the hand type, which some bosses punish)
+        if (a.hidden_n or 0) ~= (b.hidden_n or 0) then return (a.hidden_n or 0) < (b.hidden_n or 0) end
+        if a.mean ~= b.mean then return a.mean > b.mean end
+        return a.n > b.n
+    end)
+    res.best_play = res.plays[1]
+    res.coverage = P.coverage
+
+    local wins_now = res.best_play and res.best_play.p_win >= 1 - 1e-12
+    if wins_now or (h <= 1 and d == 0) or not res.best_play and d == 0 then
+        local p = res.best_play and res.best_play.p_win or 0
+        res.round = { p_clear = p, method = 'monte_carlo', n = S, lo = p, hi = p }
+        res.recommendation = { type = 'play', ref = res.best_play, cards = res.best_play and res.best_play.cards, p_clear = p, method = 'monte_carlo', n = S }
+        return res
+    end
+
+    -- rest of the round, simulated for every candidate (same hidden identities per run)
+    local ctx = { state = state, forced = forced, serpent = P.boss == 'bl_serpent',
+        hand_size = round.hand_size or 8, play_opts = { forced = forced, min_cards = min_cards } }
+    local n = opts.rollouts or 64
+    local function run(c, from, to)
+        for i = from, to do
+            check()
+            local rng = R.new((opts.seed or 'round') .. ':hidden:' .. i)
+            local map = assign_hidden(hidden, pool, rng)
+            -- only the hidden cards used by the first action get an identity (they are revealed)
+            local acted = {}
+            for _, cc in ipairs(c.cards) do if map[cc] then acted[cc] = map[cc] end end
+            local hand_i = concrete(hand, acted)
+            local ok, hands_used = HA.rollout(P, { type = c.type, cards = concrete(c.cards, acted) }, hand_i, deck, h, d, remaining, rng, ctx)
+            c.runs = (c.runs or 0) + 1
+            if ok then c.wins = (c.wins or 0) + 1; c.used = (c.used or 0) + (hands_used or 0) end
+        end
+        local p, lo, hi = PR.wilson(c.wins or 0, c.runs)
+        c.p_clear, c.lo, c.hi, c.n = p, lo, hi, c.runs
+        c.hands_used = (c.wins or 0) > 0 and c.used / c.wins or math.huge
+        if c.ref then c.ref.p_clear = p; c.ref.p_lo = lo; c.ref.p_hi = hi; c.ref.sim_n = c.runs end
+    end
+    -- two stages: every candidate is screened, the most promising ones are refined
+    local n1 = math.min(n, 16)
+    for _, c in ipairs(cands) do run(c, 1, n1) end
+    if n > n1 then
+        table.sort(cands, function(a, b) return a.p_clear > b.p_clear end)
+        for k = 1, math.min(#cands, opts.hidden_refine or 6) do run(cands[k], n1 + 1, n) end
+    end
+    table.sort(cands, function(a, b)
+        if (a.n or 0) ~= (b.n or 0) then return (a.n or 0) > (b.n or 0) end -- refined ones first
+        if math.abs(a.p_clear - b.p_clear) > 1e-9 then return a.p_clear > b.p_clear end
+        if math.abs(a.hands_used - b.hands_used) > 0.05 then return a.hands_used < b.hands_used end
+        if a.type ~= b.type then return a.type == 'play' end
+        if (a.hidden_n or 0) ~= (b.hidden_n or 0) then return (a.hidden_n or 0) < (b.hidden_n or 0) end
+        return #a.cards < #b.cards
+    end)
+    local best = cands[1]
+    res.round = { p_clear = best.p_clear, method = 'monte_carlo', n = best.n, lo = best.lo, hi = best.hi }
+    res.recommendation = { type = best.type, ref = best.ref, cards = best.cards, p_clear = best.p_clear,
+        lo = best.lo, hi = best.hi, method = 'monte_carlo', n = best.n, hidden_n = best.hidden_n }
+    res.candidates = cands
+    return res
+end
+
 function HA.analyse(state, opts, task)
     opts = opts or {}
     local check = (task and task.check) or noop
@@ -469,7 +673,13 @@ function HA.analyse(state, opts, task)
         if not c.face_down then visible[#visible + 1] = c end
         if c.forced then forced = c end
     end
-    if #visible < #hand then res.notes[#res.notes + 1] = 'hidden_cards' end
+    if #visible < #hand then
+        local hidden = {}
+        for _, c in ipairs(hand) do if c.face_down then hidden[#hidden + 1] = c end end
+        local r = HA.analyse_hidden(state, opts, task, P, hand, visible, hidden, forced)
+        r.total_ms = (U.now() - t0) * 1000
+        return r
+    end
     local min_cards = (P.boss == 'bl_psychic') and 5 or nil
     if #visible == 0 then res.empty = true; return res end
 

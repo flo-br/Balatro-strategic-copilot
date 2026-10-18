@@ -59,7 +59,7 @@ end
 
 function FG.install(opts)
     opts = opts or {}
-    sort_id = 0
+    -- ids keep growing across installs: like the game's sort_id, they are never reused
     local calls = { draw = {}, keybinds = {}, logs = {} }
     FG.calls = calls
 

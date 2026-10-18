@@ -151,20 +151,29 @@ function UI.draw(model)
 
     -- badges over cards
     if model.badges then
-        g.setFont(small)
         for _, b in ipairs(model.badges) do
+            -- strong = the step to do now (bigger, thicker frame); pos = 'below' for order numbers
+            local f = b.strong and font or small
+            g.setFont(f)
             local text = clean(b.text)
-            local tw = small:getWidth(text) + 10
-            local th = small:getHeight() + 4
+            local tw = f:getWidth(text) + (b.strong and 14 or 10)
+            local th = f:getHeight() + (b.strong and 6 or 4)
             local bx = math.floor(b.x + b.w / 2 - tw / 2)
-            local by = math.floor(b.y - th - 2)
-            if by < 0 then by = math.floor(b.y + 2) end
+            local by
+            if b.pos == 'below' then
+                by = math.floor(b.y + b.h + 2)
+                if by + th > H then by = math.floor(b.y + b.h - th - 2) end
+            else
+                by = math.floor(b.y - th - 2)
+                if by < 0 then by = math.floor(b.y + 2) end
+            end
+            bx = math.max(2, math.min(bx, W - tw - 2))
             g.setColor(colour('badge_bg'))
             g.rectangle('fill', bx, by, tw, th, 4, 4)
             g.setColor(colour(b.class or 'text'))
-            g.setLineWidth(2)
+            g.setLineWidth(b.strong and 3 or 2)
             g.rectangle('line', bx, by, tw, th, 4, 4)
-            g.print(text, bx + 5, by + 2)
+            g.print(text, bx + (b.strong and 7 or 5), by + (b.strong and 3 or 2))
         end
     end
 

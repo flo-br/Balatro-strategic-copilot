@@ -38,11 +38,11 @@ function S.hand_panel_shows_method_and_confidence(T)
         recommendation = { type = 'play', ref = { cards = cards, hand = 'Pair', mean = 64, min = 64, max = 64, p_win = 0, complete = true } },
         plays = {}, notes = {} }
     local txt = text_of(Fmt.hand_panel({}, r, true))
-    T.ok(txt:find('Victoire blinde : 87 %%'), txt)
     T.ok(txt:find('simulation %(n=64%)'), 'method shown')
     T.ok(txt:find('Confiance du calcul'), 'confidence shown')
-    T.ok(txt:find('Paire'), 'hand name translated')
-    T.ok(txt:find('64 %(exact%)'), 'exact score labelled')
+    T.ok(not txt:find('JOUER'), 'the recommendation is the step line, not repeated')
+    T.eq(Fmt.score_text(r.recommendation.ref), '64 (exact)', 'exact score labelled')
+    T.eq(Fmt.score_text({ mean = 22, hidden_n = 5, complete = true }), '≈ 22 en moyenne', 'hidden cards: an average')
 end
 
 function S.partial_coverage_is_visible(T)
@@ -51,7 +51,10 @@ function S.partial_coverage_is_visible(T)
         round = { p_clear = 0.5, method = 'monte_carlo', n = 64, lo = 0.4, hi = 0.6 }, plays = {}, notes = {} }
     local txt = text_of(Fmt.hand_panel({}, r, false))
     T.ok(txt:find('Compatibilité partielle'), txt)
-    T.ok(txt:find('≈'), 'approximate marker on the probability')
+    T.ok(txt:find('limitée') or txt:find('faible'), 'confidence lowered')
+    local A = BSCopilot.require('engine/advice')
+    r.recommendation = { type = 'play', ref = { cards = {} } }
+    T.ok(A.hand_step({ jokers = {}, consumables = {}, blind = {} }, r).approx, 'approximate marker on the step probability')
 end
 
 function S.shop_panel_content(T)

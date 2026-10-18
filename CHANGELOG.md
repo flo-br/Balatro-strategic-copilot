@@ -1,5 +1,34 @@
 # Historique des versions
 
+## 1.0.5 — 2026-10-18
+
+Retours de la première phase de test.
+
+### Ajouté
+* **Une étape à la fois (« À FAIRE »)** : le copilote indique UNE action à faire maintenant, avec
+  une étiquette au-dessus de ce qu'il faut toucher, et recalcule après chaque action : JOUER /
+  DÉFAUSSER (cartes), À PRENDRE (boutique, paquet), À VENDRE (remplacement, place pour un
+  consommable, joker inutile, Luchador contre un boss dangereux, Invisible Joker prêt), RELANCER,
+  BLINDE SUIVANTE, JOUER / PASSER au choix de la blinde, UTILISER + CIBLE (planètes, Hermit,
+  Temperance, tarots sur les cartes qui vont jouer), PASSER un paquet. Probabilité qui justifie le
+  choix visible par défaut. Seuils réglables (`config.lua`, section `advice`).
+* **Ordre des jokers** : numéros 1, 2, 3… sous les jokers, seulement quand l'ordre actuel n'est
+  pas le bon (×Mult avant +Mult) ; calculé aussi pendant une main ; disparaît une fois corrigé.
+* Étiquettes sur les **boutons du jeu** (relance, blinde suivante, sélectionner / passer la
+  blinde, passer le paquet), repérés en lecture seule ; si un bouton n'est pas trouvé, l'étape
+  reste écrite et les boutons vus sont notés dans le journal.
+
+### Corrigé
+* **Boss The House** (toutes les cartes face cachée) : « Aucune analyse disponible ». Le conseil
+  porte désormais sur un nombre de cartes cachées à jouer ou défausser, évalué sur les cartes
+  possibles (pioche visible dans la vue du deck), sans jamais lire l'identité d'une carte cachée ;
+  vaut aussi pour The Mark, The Wheel, The Fish.
+* Le panneau ne répète plus la recommandation (la ligne « À FAIRE » la porte).
+* Un ordre de jokers calculé avant un déplacement ne peut plus être appliqué à la nouvelle
+  disposition.
+* Lua 5.1 : le calcul de l'ordre des jokers échouait silencieusement (suspension impossible dans
+  un `pcall`) ; nouvelle protection compatible (`Sched.protected`).
+
 ## 1.0.4 — 2026-10-18
 
 ### Ajouté

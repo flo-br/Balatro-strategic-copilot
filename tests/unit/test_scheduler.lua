@@ -64,4 +64,27 @@ function S.errors_reported(T)
     T.ok(tostring(err):find('boom'))
 end
 
+-- protection that still lets the task yield (Lua 5.1 cannot yield across pcall)
+function S.protected_yields_catches_and_propagates_cancel(T)
+    local Sch = BSCopilot.require('core/scheduler')
+    local sched = Sch.new()
+    local steps, got = 0, nil
+    sched:submit('p', function(task)
+        local ok, v = Sch.protected(function()
+            for _ = 1, 5 do steps = steps + 1; coroutine.yield() end
+            return 42
+        end)
+        local ok2, err = Sch.protected(function() error('boom') end)
+        return { ok = ok, v = v, ok2 = ok2, err = tostring(err) }
+    end, function(res) got = res end)
+    for _ = 1, 50 do sched:step(0.001) end
+    T.ok(got, 'task finished')
+    T.eq(got.ok, true); T.eq(got.v, 42); T.eq(steps, 5)
+    T.eq(got.ok2, false); T.ok(got.err:find('boom', 1, true))
+    -- a cancellation is not turned into an ordinary error
+    local okc, errc = pcall(Sch.protected, function() error({ cancelled = true }) end)
+    T.eq(okc, false)
+    T.ok(type(errc) == 'table' and errc.cancelled, 'cancellation propagated')
+end
+
 return S

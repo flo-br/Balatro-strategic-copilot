@@ -13,8 +13,8 @@ Aucune dépendance de test : `tests/testlib.lua` fournit assertions, exécution 
 
 ```bash
 python3 tools/build.py                                    # paquet dist/…zip
-pwsh -NoProfile -File tests/installer/test_installer.ps1 -Zip dist/BalatroStrategicCopilot-1.0.4-installateur.zip [-Smods <sources Steamodded>]
-tests/standalone/run_love_standalone.sh dist/BalatroStrategicCopilot-1.0.4.zip [dossier]      # mode autonome, vrai LÖVE
+pwsh -NoProfile -File tests/installer/test_installer.ps1 -Zip dist/BalatroStrategicCopilot-1.0.5-installateur.zip [-Smods <sources Steamodded>]
+tests/standalone/run_love_standalone.sh dist/BalatroStrategicCopilot-1.0.5.zip [dossier]      # mode autonome, vrai LÖVE
 luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai chargeur Steamodded
 ```
 
@@ -22,12 +22,13 @@ luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai
 
 | Fichier | Tests | Couvre |
 |---|---|---|
-| `unit/test_util`, `test_json`, `test_rng`, `test_scheduler` | 22 | utilitaires, JSON sûr (jamais exécuté), PRNG isolé du jeu, découpage/annulation des calculs |
+| `unit/test_util`, `test_json`, `test_rng`, `test_scheduler` | 23 | utilitaires, JSON sûr (jamais exécuté), PRNG isolé du jeu, découpage/annulation des calculs, protection d'erreur compatible avec la suspension des calculs (Lua 5.1) |
 | `unit/test_poker_eval` | 11 | toutes les mains, As bas/haut sans boucle, Four Fingers, Shortcut, Smeared, Wild (affaiblie ou non), Pierre, Splash, ordre de jeu |
 | `unit/test_score_reference` | 36 | **tests de référence** : scores calculés à la main d'après les règles (voir ci-dessous) |
 | `unit/test_jokers` | 12 | 150 jokers présents ; jokers de rang, couleur, type de main, état, progression ; Loyalty Card ; argent ; Lucky Cat ; Bloodstone ; **fuzzing** des 150 jokers sur 40 mains aléatoires |
 | `unit/test_probability` | 4 | hypergéométrique, inclusion-exclusion, « au moins r groupes » **comparés à l'énumération brute** ; Wilson |
-| `unit/test_hand_advisor` | 8 | 218 jeux, défausse de couleur exacte, cas impossibles/faciles, monotonie en nombre de mains, carte imposée, The Psychic, cartes face cachée, quintes Four Fingers |
+| `unit/test_hand_advisor` | 9 | 218 jeux, défausse de couleur exacte, cas impossibles/faciles, monotonie en nombre de mains, carte imposée, The Psychic, carte cachée inutile quand la paire visible gagne, **toutes les cartes cachées (The House)** : conseil non vide, positions interchangeables, même conseil quelle que soit l'identité réelle des cartes, quintes Four Fingers |
+| `unit/test_advice` | 17 | **prochaine étape** : achat du meilleur objet abordable, remplacement (vendre d'abord), consommables pleins (faire de la place), vente d'un joker inutile seulement, relance puis blinde suivante, attente de l'analyse complète, planètes (sauf Observatory), tarots d'argent, jouer / défausser, tarot sur les cartes à jouer, Luchador contre un boss dangereux, Invisible Joker prêt, paquets (prendre / passer, cibles d'Arcana), passer ou jouer une blinde (boss toujours joué), numéros d'ordre seulement quand l'ordre est faux |
 | `unit/test_economy`, `test_strategy`, `test_synergy`, `test_shop` | 20 | intérêts, puissance reproductible, bootstrap monotone, effets de boss, blindes futures, a priori de croissance, danger continu, ordre des jokers, contributions, adéquation, classement boutique, remplacement, planètes, variantes, relance, poids selon le danger |
 | `unit/test_persistence` | 8 | aller-retour, **écriture interrompue** (A/B), corruption détectée par somme de contrôle, migration avec sauvegarde, schéma futur jamais écrasé, export/import, rotation des logs, fichiers jamais exécutés |
 | `unit/test_learning` | 12 | **scénarios synthétiques à vérité connue** (voir ci-dessous) |
@@ -38,9 +39,10 @@ luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai
 | `integration/test_compat` | 5 | mods détectés, nombres Talisman, contrôle croisé avec le jeu, dégradation des scores « exacts », multiplicateur appris |
 | `integration/test_old_smods` | 6 | Steamodded sans événements de mod (1.0.0~BETA-0509c) : mode de repli, main/défausse/achat/vente/relance reconstruits, bandeau actif, **bandeau encore visible au menu après l'intro**, **bandeau d'erreur au démarrage**, retour au mode natif sans double comptage |
 | `integration/test_standalone` | 7 | mode autonome : démarrage sans Steamodded (modules et `config.lua` via `love.filesystem`), bandeau, touches lues au clavier (bascule, pas de répétition, ignorées pendant une saisie ou avec Ctrl, touche déjà enfoncée au démarrage ignorée), amorce : `main.lua` d'origine exécuté une seule fois, ordre de recherche rétabli, démarrage à la 1re image, Steamodded laissé seul s'il a chargé le copilote, dossier du mod absent sans bloquer le jeu, arrêt clair si le `main.lua` d'origine est introuvable |
+| `integration/test_steps_ui` | 5 | étiquette sur le bouton « blinde suivante », bouton absent : étape gardée en texte et boutons vus écrits au journal, étiquette « passer » sur la colonne de la blinde en cours, numéros d'ordre sous les jokers puis disparition une fois l'ordre corrigé, **The House** toutes cartes cachées (plus de « Aucune analyse disponible ») |
 | `integration/test_full_flow` | 2 | partie complète (main → défaite → bilan → fichiers → **redémarrage avec profil conservé**), boutique de bout en bout avec badges |
 | `unit/test_performance` | 6 | mesures (ci-dessous) |
-| **Total** | **182** | |
+| **Total** | **206** | |
 
 ### Tests de référence (scores)
 
@@ -77,10 +79,10 @@ prédiction (journal + diagnostic de compatibilité).
 
 | Environnement | Résultat |
 |---|---|
-| LuaJIT 2.1.1703358377 | **182 réussis, 0 échec** |
-| Lua 5.1.5 | **182 réussis, 0 échec** |
+| LuaJIT 2.1.1703358377 | **206 réussis, 0 échec** |
+| Lua 5.1.5 | **206 réussis, 0 échec** |
 | Mode autonome sur le **vrai LÖVE 11.5**, exécutable fusionné comme `Balatro.exe` (ci-dessous) | **5 scénarios conformes** |
-| Installateur extrait de `…-1.0.4-installateur.zip`, PowerShell 7.4 (Linux) | **9 scénarios, 53 vérifications réussies** |
+| Installateur extrait de `…-1.0.5-installateur.zip`, PowerShell 7.4 (Linux) | **9 scénarios, 53 vérifications réussies** |
 | Installateur, analyse statique de compatibilité Windows PowerShell 5.1 (PSScriptAnalyzer 1.25, profil Windows 10 / PS 5.1) | **0 erreur de syntaxe, 0 incompatibilité** |
 
 ### Mode autonome sur le vrai LÖVE (`tests/standalone/run_love_standalone.sh`)
@@ -88,11 +90,11 @@ prédiction (journal + diagnostic de compatibilité).
 Le script construit un **exécutable fusionné** (binaire LÖVE 11.5 + archive d'un Balatro simulé
 contenant `conf.lua` et `main.lua`), exactement comme `Balatro.exe`, puis le lance sous Xvfb avec
 différents dossiers de sauvegarde (l'équivalent de `%AppData%\Balatro`) remplis depuis l'archive
-`BalatroStrategicCopilot-1.0.4.zip`. Résultats (2026-10-18) :
+`BalatroStrategicCopilot-1.0.5.zip`. Résultats (2026-10-18) :
 
 | Scénario | Résultat |
 |---|---|
-| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.0.4 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 230) ; panneau et badges « JOUER » affichés (capture) |
+| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.0.5 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 230) ; panneau et badges « JOUER » affichés (capture) |
 | mod seul, sans amorce | jeu normal, pas de copilote (témoin) |
 | amorce sans le dossier du mod | jeu normal jusqu'au bout ; bandeau rouge « dossier introuvable » ; erreur dans `amorce.log` |
 | Steamodded a déjà chargé le copilote | l'amorce se retire (« Steamodded gère déjà le copilote »), pas de double chargement |

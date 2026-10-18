@@ -37,6 +37,13 @@ return {
         poll_interval = 0.15,    -- seconds between state-change checks
         shop_samples = 120,      -- simulated hands to estimate build power
     },
+    advice = {                   -- the "À FAIRE" step (engine/advice.lua)
+        buy_note = 56,           -- buy / take an item from this strategic score (/100, 50 = neutral)
+        sell_note = 60,          -- sell a joker for money from this score...
+        sell_max_contribution = 0.03, -- ...and only if it brings at most 3 % of the score
+        order_min_gain = 0.01,   -- show the joker order numbers when the right order scores >= 1 % more
+        luchador_below = 0.80,   -- advise selling Luchador against a boss below 80 % win chance
+    },
     learning = {
         enabled = true,
         max_runs_kept = 300,     -- raw run logs kept on disk (summaries are kept forever)

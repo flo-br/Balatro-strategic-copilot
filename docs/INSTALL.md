@@ -6,11 +6,11 @@ Pour les PC qui bloquent les scripts (`.bat`, PowerShell) ou la DLL de Lovely (`
 souvent supprimée par les antivirus ou contrôles parentaux) : **ni Lovely, ni Steamodded, ni
 programme** — seulement des fichiers texte à copier.
 
-1. Extraire `BalatroStrategicCopilot-1.0.4.zip` (clic droit → *Extraire tout…*).
+1. Extraire `BalatroStrategicCopilot-1.0.5.zip` (clic droit → *Extraire tout…*).
 2. Ouvrir le dossier `COPIER_DANS_AppData_Balatro`, tout sélectionner (`main.lua` et `Mods`),
    copier, puis coller dans `%AppData%\Balatro\` (touche Windows + R, taper `%AppData%\Balatro`).
    Accepter de remplacer les fichiers si Windows le demande.
-3. Lancer Balatro normalement. Bandeau vert : « Balatro Strategic Copilot 1.0.4 actif — touche C :
+3. Lancer Balatro normalement. Bandeau vert : « Balatro Strategic Copilot 1.0.5 actif — touche C :
    panneau (mode autonome, sans Steamodded) ».
 
 Résultat :
@@ -46,7 +46,7 @@ d'origine exécuté, copilote démarré ou erreur). Voir [TROUBLESHOOTING.md](TR
 
 ### L'installateur (1.0.3+)
 
-1. Extraire **toute** l'archive `BalatroStrategicCopilot-1.0.4-installateur.zip` (clic droit →
+1. Extraire **toute** l'archive `BalatroStrategicCopilot-1.0.5-installateur.zip` (clic droit →
    *Extraire tout…*).
 2. Fermer Balatro, puis double-cliquer sur **`INSTALLER_COPILOT.bat`** dans le dossier extrait
    (si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires* →
@@ -125,7 +125,7 @@ dossier du jeu.
 
 1. Fermer le jeu.
 2. Supprimer toute ancienne copie du mod dans `%AppData%\Balatro\Mods\` (dossier ou `.zip`).
-3. Ouvrir l'archive `BalatroStrategicCopilot-1.0.4-installateur.zip` (ou le zip téléchargé depuis GitHub) et
+3. Ouvrir l'archive `BalatroStrategicCopilot-1.0.5-installateur.zip` (ou le zip téléchargé depuis GitHub) et
    **glisser le dossier `BalatroStrategicCopilot` qu'elle contient** dans `%AppData%\Balatro\Mods\`.
 4. Vérifier que ce fichier existe **exactement** à cet endroit :
    ```
@@ -142,7 +142,7 @@ dossier du jeu.
        LISEZMOI.txt
        src\core\ src\engine\ src\game\ src\io\ src\learning\ src\model\ src\ui\
    ```
-5. Lancer le jeu : un bandeau vert « Balatro Strategic Copilot 1.0.4 actif » s'affiche en haut de
+5. Lancer le jeu : un bandeau vert « Balatro Strategic Copilot 1.0.5 actif » s'affiche en haut de
    l'écran pendant l'intro puis 15 secondes au menu principal. Dans *Mods*, « Balatro Strategic
    Copilot » apparaît. En partie, le résumé compact s'affiche en haut à droite ; `C` ouvre le
    panneau complet.

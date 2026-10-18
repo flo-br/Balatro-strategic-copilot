@@ -107,4 +107,22 @@ function S:run_all(max_iterations)
     end
 end
 
+-- Runs fn with error protection that, unlike pcall, lets the task yield: Lua 5.1 cannot yield
+-- across pcall (LuaJIT can, the game's runtime). fn runs in a nested coroutine whose yields
+-- are passed up to the task. A cancellation of the task is propagated, never swallowed.
+-- Returns true, result  or  false, error.
+function S.protected(fn, ...)
+    local args, n = { ... }, select('#', ...)
+    local co = coroutine.create(function() return fn(unpack(args, 1, n)) end)
+    while true do
+        local ok, res = coroutine.resume(co)
+        if not ok then
+            if type(res) == 'table' and res.cancelled then error(res) end
+            return false, res
+        end
+        if coroutine.status(co) == 'dead' then return true, res end
+        if coroutine.running() then coroutine.yield() end
+    end
+end
+
 return S

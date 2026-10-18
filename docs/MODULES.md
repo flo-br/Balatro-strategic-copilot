@@ -1,8 +1,8 @@
 # Description des modules
 
 Tous les fichiers sont dans `BalatroStrategicCopilot/`. Seuls `game/state_reader.lua`,
-`game/hooks.lua`, `game/controller.lua`, `game/compat.lua`, `game/config_ui.lua` et
-`ui/ui_manager.lua` touchent le jeu ou LÖVE ; tout le reste est pur et testé hors jeu.
+`game/hooks.lua`, `game/controller.lua`, `game/compat.lua`, `game/config_ui.lua`,
+`game/ui_targets.lua` et `ui/ui_manager.lua` touchent le jeu ou LÖVE ; tout le reste est pur et testé hors jeu.
 
 | Fichier | Responsabilité (cahier des charges) |
 |---|---|
@@ -28,6 +28,7 @@ Tous les fichiers sont dans `BalatroStrategicCopilot/`. Seuls `game/state_reader
 | `src/engine/strategy.lua` | **StrategyEngine** : puissance, P(blinde), perspectives de victoire, danger |
 | `src/engine/shop.lua` | **ShopAnalyzer** : options, notes, ventes, remplacements, relance |
 | `src/engine/outlook.lua` | choix de blinde : prochaine blinde, boss, passer ou jouer |
+| `src/engine/advice.lua` | **prochaine étape** : UNE action à faire maintenant (jouer, défausser, acheter, vendre, relancer, blinde suivante, utiliser, prendre ou passer un paquet, jouer ou passer une blinde) et numéros d'ordre des jokers |
 | `src/learning/recorder.lua` | journal brut des parties |
 | `src/learning/calibration.lua` | calibration et métriques (Brier, log-loss, ECE) |
 | `src/learning/learning.lua` | **LearningEngine** : profil appris |
@@ -41,6 +42,7 @@ Tous les fichiers sont dans `BalatroStrategicCopilot/`. Seuls `game/state_reader
 | `src/game/boot.lua` | assemblage au démarrage |
 | `src/game/register_strategy.lua` | analyses de boutique, blinde, paquet, fin de manche ; alertes |
 | `src/game/config_ui.lua` | onglet de configuration Steamodded (export, import, réinitialisation) |
+| `src/game/ui_targets.lua` | repère les boutons du jeu (relance, blinde suivante, sélectionner / passer la blinde, passer le paquet) pour y poser l'étiquette ; lecture seule |
 | `src/ui/format.lua`, `src/ui/format_strategy.lua` | présentation pure (lignes, couleurs, symboles) |
 | `src/ui/ui_manager.lua` | **UIManager** : rendu LÖVE (panneau, badges, alertes) |
 
