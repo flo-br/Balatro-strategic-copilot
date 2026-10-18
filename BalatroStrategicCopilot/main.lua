@@ -3,18 +3,24 @@
 
 BSCopilot = BSCopilot or {}
 local BSC = BSCopilot
-BSC.VERSION = '1.0.3'
+BSC.VERSION = '1.0.4'
 BSC.mod = SMODS and SMODS.current_mod or BSC.mod
 BSC.modules = BSC.modules or {}
 
 -- Module loader on top of SMODS.load_file (works after the initial load too, thanks to the id).
+-- Autonomous mode (no Lovely/Steamodded, started by %AppData%/Balatro/main.lua): BSC.root_lfs is
+-- the mod folder relative to the save directory, read through love.filesystem.
 function BSC.require(name)
     local m = BSC.modules[name]
     if m ~= nil then return m end
     local path = 'src/' .. name .. '.lua'
     local chunk, err
-    if SMODS and SMODS.load_file then
-        chunk, err = SMODS.load_file(path, BSC.mod and BSC.mod.id or nil)
+    if BSC.mod and SMODS and SMODS.load_file then
+        chunk, err = SMODS.load_file(path, BSC.mod.id)
+    elseif BSC.root_lfs and love and love.filesystem then
+        chunk, err = love.filesystem.load(BSC.root_lfs .. '/' .. path)
+    elseif SMODS and SMODS.load_file then
+        chunk, err = SMODS.load_file(path)
     elseif BSC.root then
         chunk, err = loadfile(BSC.root .. '/' .. path)
     end
@@ -82,11 +88,17 @@ end)
 
 local ok, err = pcall(function()
     BSC.config = (BSC.mod and BSC.mod.config) or {}
+    if not BSC.mod and BSC.root_lfs and love and love.filesystem then
+        -- autonomous mode: defaults from config.lua (Steamodded normally does this)
+        local okc, cfg = pcall(function() return love.filesystem.load(BSC.root_lfs .. '/config.lua')() end)
+        if okc and type(cfg) == 'table' then BSC.config = cfg end
+    end
     BSC.require('game/boot').start()
 end)
 if ok then
     local keys = BSC.config and BSC.config.keys or {}
     local events = BSC.events_mode == 'native' and 'événements natifs' or 'détection par état (Steamodded ancien)'
+    if BSC.standalone then events = 'mode autonome, sans Steamodded' end
     BSC.status = { ok = true, ttl = 15, text = 'Balatro Strategic Copilot ' .. BSC.VERSION .. ' actif — touche '
         .. string.upper(keys.panel or 'c') .. ' : panneau  (' .. events .. ')' }
 else
@@ -97,5 +109,6 @@ else
     local first = msg:gsub('\n.*', '')
     if #first > 140 then first = first:sub(1, 140) .. '…' end
     BSC.status = { ok = false, text = 'Balatro Strategic Copilot : erreur au démarrage\n' .. first
-        .. '\nDétails : %AppData%\\Balatro\\Mods\\lovely\\log (rechercher BSCopilot)' }
+        .. (BSC.standalone and '\nDétails : %AppData%\\Balatro\\BSC\\amorce.log et BSC\\logs\\bsc.log'
+            or '\nDétails : %AppData%\\Balatro\\Mods\\lovely\\log (rechercher BSCopilot)') }
 end

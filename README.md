@@ -29,23 +29,28 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 
 ## Installation rapide (Windows)
 
-1. Installer [Lovely](https://github.com/ethangreen-dev/lovely-injector) et
-   [Steamodded](https://github.com/Steamodded/smods) (voir [docs/INSTALL.md](docs/INSTALL.md)).
-2. **Le plus simple** : extraire toute l'archive `BalatroStrategicCopilot-1.0.3.zip`, puis
-   double-cliquer sur `INSTALLER_COPILOT.bat`. Il vérifie et répare toute la chaîne (dossier du jeu,
-   Lovely, Steamodded, copilote), lance le jeu et confirme que tout s'est chargé
-   ([détails](docs/INSTALL.md)).
-   À la main : copier **uniquement** le dossier `BalatroStrategicCopilot/` (pas tout le dépôt) dans
-   `%AppData%\Balatro\Mods\`, de sorte que
-   `%AppData%\Balatro\Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json` existe. L'archive
-   `dist/BalatroStrategicCopilot-1.0.3.zip` (produite par `python tools/build.py`) contient ce dossier :
-   l'**extraire**, ne pas déposer le `.zip` tel quel (ignoré par les anciens Steamodded).
-3. Lancer Balatro. Un **bandeau vert « actif »** s'affiche en haut de l'écran pendant l'intro puis
-   15 secondes au menu (ou un bandeau rouge expliquant l'erreur). **Aucun bandeau = mod non trouvé** :
-   voir les pièges d'installation dans [docs/INSTALL.md](docs/INSTALL.md). Les conseils
-   apparaissent **en partie**.
+**Méthode sans programme (recommandée, 1.0.4+)** — ni Lovely, ni Steamodded, ni script, ni DLL ;
+fonctionne aussi sur un PC protégé (contrôle parental, antivirus strict) :
 
-Désinstallation : supprimer `%AppData%\Balatro\Mods\BalatroStrategicCopilot` (et, si souhaité,
+1. Extraire l'archive `BalatroStrategicCopilot-1.0.4.zip`.
+2. Copier le **contenu** du dossier `COPIER_DANS_AppData_Balatro` (`main.lua` + `Mods`) dans
+   `%AppData%\Balatro\` (touche Windows + R, `%AppData%\Balatro`).
+3. Lancer Balatro : bandeau vert « … actif — touche C : panneau (mode autonome, sans Steamodded) ».
+
+Balatro tourne sur LÖVE 11, qui lit `main.lua` d'abord dans le dossier de sauvegarde : le
+`main.lua` fourni exécute celui du jeu, inchangé, puis démarre le copilote (détails et limites :
+[docs/INSTALL.md](docs/INSTALL.md)). Désinstaller : supprimer `%AppData%\Balatro\main.lua`.
+
+**Avec Lovely + Steamodded** : copier le dossier `BalatroStrategicCopilot` dans
+`%AppData%\Balatro\Mods\` (de sorte que `Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json`
+existe ; une archive `.zip` déposée telle quelle est ignorée par les anciens Steamodded). L'archive
+`BalatroStrategicCopilot-1.0.4-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
+répare toute la chaîne (dossier du jeu, Lovely, Steamodded, copilote) puis confirme que tout s'est
+chargé. Un **bandeau vert « actif »** s'affiche au lancement ; **aucun bandeau = mod non trouvé**
+([pièges vérifiés](docs/INSTALL.md)).
+
+Désinstallation : supprimer `%AppData%\Balatro\main.lua` (mode autonome) et
+`%AppData%\Balatro\Mods\BalatroStrategicCopilot` (et, si souhaité,
 les données apprises `%AppData%\Balatro\BSC\`). Détails dans [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Utilisation
@@ -115,6 +120,7 @@ lua5.1 tests/run.lua            # même suite sous Lua 5.1
 luajit tests/run.lua score      # filtre par nom de fichier
 python3 tools/build.py          # paquet dist/BalatroStrategicCopilot-<version>.zip
 luajit tools/smods_loader_check.lua <sources_steamodded> <dossier_Mods>  # vrai chargeur Steamodded
-pwsh -File tests/installer/test_installer.ps1 -Zip dist/BalatroStrategicCopilot-<version>.zip  # installateur
+pwsh -File tests/installer/test_installer.ps1 -Zip dist/BalatroStrategicCopilot-<version>-installateur.zip
+tests/standalone/run_love_standalone.sh dist/BalatroStrategicCopilot-<version>.zip   # mode autonome, vrai LÖVE
 xvfb-run -s "-screen 0 1600x900x24" love tools/love_harness "$(pwd)" hand   # rendu réel LÖVE
 ```

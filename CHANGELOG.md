@@ -1,5 +1,21 @@
 # Historique des versions
 
+## 1.0.4 — 2026-10-18
+
+### Ajouté
+* **Mode autonome : installation sans Lovely, sans Steamodded, sans script ni DLL**, pour les PC
+  qui bloquent les `.bat`, PowerShell ou `winmm.dll`. Il suffit de copier `main.lua` et `Mods` dans
+  `%AppData%\Balatro\`. LÖVE 11 lit `main.lua` d'abord dans le dossier de sauvegarde (vérifié dans
+  son `boot.lua`) ; l'amorce exécute le `main.lua` d'origine du jeu sans le modifier, puis démarre
+  le copilote. Trace de chaque étape dans `BSC\amorce.log`, bandeau rouge si le copilote ne peut
+  pas démarrer (le jeu continue), désinstallation = supprimer `main.lua`.
+* Sans Steamodded : modules lus via `love.filesystem`, `config.lua` lu directement, touches C/V/B
+  lues au clavier (jamais pendant une saisie de texte ni avec Ctrl/Alt).
+* Deux archives : `BalatroStrategicCopilot-1.0.4.zip` (sans aucun script) et
+  `BalatroStrategicCopilot-1.0.4-installateur.zip` (installateur 1.0.3).
+* Tests : 7 tests Lua du mode autonome ; exécution sur le **vrai LÖVE 11.5** avec un exécutable
+  fusionné comme `Balatro.exe` (5 scénarios, `tests/standalone/run_love_standalone.sh`).
+
 ## 1.0.3 — 2026-10-18
 
 ### Ajouté

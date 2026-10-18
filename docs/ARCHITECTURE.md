@@ -33,6 +33,7 @@ BalatroStrategicCopilot/              <- dossier à copier dans %AppData%/Balatr
   src/game/      state_reader (GameStateReader), compat (CompatibilityManager), hooks, controller
   src/ui/        format (textes/couleurs, pur), ui_manager (UIManager, rendu LÖVE)
 tests/           suite de tests (LuaJIT / Lua 5.1), simulateur de `G` pour l'intégration
+standalone/      amorce du mode autonome (main.lua à copier dans %AppData%\Balatro) et son LISEZ-MOI
 installer/       installateur-diagnostic Windows (INSTALLER_COPILOT.bat, DIAGNOSTIC_COPILOT.bat,
                  outils/installer_copilot.ps1), livré à la racine de l'archive
 tools/           script de paquet (zip), harnais LÖVE (tests de persistance réelle),

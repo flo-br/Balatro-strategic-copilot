@@ -12,6 +12,19 @@
 * Les valeurs par défaut des jokers (`config` dans `jokers_db.lua`) ne servent qu'en repli ; en
   jeu, les valeurs réelles sont lues dans `card.ability`.
 
+## Mode autonome (sans Lovely ni Steamodded)
+
+* Repose sur l'ordre de recherche de LÖVE 11 (dossier de sauvegarde avant le jeu pour `main.lua`,
+  vérifié dans `boot.lua` de LÖVE 11.3 à 11.5 et sur le vrai LÖVE 11.5 avec un exécutable fusionné).
+  Il ne fonctionne pas si `conf.lua` de Balatro demande `appendidentity = true`, ce qui n'a pas pu
+  être vérifié sans le jeu ; dans ce cas rien ne se passe et le jeu reste normal.
+* Pas d'onglet de configuration (il est fourni par Steamodded) : réglages dans `config.lua`.
+* Pas d'événements de Steamodded : les actions sont reconstruites en comparant les états (comme
+  avec les anciens Steamodded).
+* Si Lovely est installé en même temps, il modifie aussi l'amorce (comme le `main.lua` du jeu) ;
+  l'amorce reste valide et ne fait rien en double (vérifié en compilant l'amorce entourée du code
+  de Steamodded 0509c et 26.x), mais elle est alors inutile.
+
 ## Règles et modèle
 
 * Jokers, améliorations, éditions, sceaux, mains et boss **moddés** : non simulés ; résultats

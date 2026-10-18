@@ -1,0 +1,51 @@
+BALATRO STRATEGIC COPILOT - INSTALLATION SANS PROGRAMME (2 copier-coller)
+==========================================================================
+
+Cette méthode n'utilise AUCUN programme, AUCUN script, AUCUNE DLL, ni Lovely, ni Steamodded :
+seulement des fichiers texte à copier. Elle convient aux PC protégés (contrôle parental,
+antivirus strict, PC restreint) qui bloquent .bat, PowerShell ou winmm.dll.
+
+1. Extraire l'archive
+   Clic droit sur le fichier .zip > « Extraire tout... » > Extraire.
+
+2. Copier le CONTENU du dossier COPIER_DANS_AppData_Balatro
+   - Ouvrir le dossier extrait, puis le dossier COPIER_DANS_AppData_Balatro.
+   - Il contient : main.lua et un dossier Mods. Tout sélectionner (Ctrl+A), copier (Ctrl+C).
+   - Touche Windows + R, taper   %AppData%\Balatro   puis Entrée.
+     (C'est le dossier des sauvegardes de Balatro, PAS le dossier du jeu.)
+   - Coller (Ctrl+V). Si Windows demande de remplacer des fichiers : « Remplacer ».
+
+   Résultat attendu :
+     %AppData%\Balatro\main.lua
+     %AppData%\Balatro\Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json
+     (vos sauvegardes, dans les dossiers de profil 1, 2, 3, ne sont pas touchées)
+
+3. Lancer Balatro normalement (par Steam)
+   Un bandeau vert apparaît en haut de l'écran :
+     « Balatro Strategic Copilot 1.0.4 actif - touche C : panneau (mode autonome, sans Steamodded) »
+   En partie : résumé en haut à droite, touche C = panneau complet, V = détails, B = badges.
+
+Si rien n'apparaît
+   Ouvrir %AppData%\Balatro\BSC\ :
+   - amorce.log existe : il dit étape par étape ce qui s'est passé. Envoyez-le, avec
+     BSC\logs\bsc.log s'il existe.
+   - amorce.log n'existe pas : Balatro n'a pas lu %AppData%\Balatro\main.lua. Vérifiez le nom
+     exact du fichier (main.lua, pas main.lua.txt : dans l'Explorateur, Affichage > Afficher >
+     Extensions de noms de fichiers) et son emplacement (à côté des dossiers 1, 2, 3).
+     Si tout est correct, votre version du jeu ne permet pas cette méthode : dites-le-moi.
+
+Comment ça marche
+   Balatro est construit avec le moteur LÖVE. Au démarrage, LÖVE cherche le fichier main.lua
+   d'abord dans le dossier des sauvegardes, puis dans le jeu. Le main.lua fourni exécute le
+   main.lua ORIGINAL du jeu, sans le modifier, puis démarre le copilote. Aucun fichier du jeu
+   n'est modifié ; vos sauvegardes ne sont pas touchées.
+
+Désinstaller
+   Supprimer %AppData%\Balatro\main.lua (le jeu redevient exactement l'original),
+   et si vous voulez : %AppData%\Balatro\Mods\BalatroStrategicCopilot et %AppData%\Balatro\BSC.
+
+Si vous avez Lovely + Steamodded (fenêtre noire « Lovely » au lancement)
+   Copier seulement le dossier Mods ; main.lua n'est pas nécessaire (Steamodded charge le
+   copilote, et main.lua le laisse alors faire).
+
+Le copilote ne joue jamais à votre place, fonctionne hors ligne et n'envoie aucune donnée.

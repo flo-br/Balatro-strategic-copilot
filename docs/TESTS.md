@@ -13,7 +13,8 @@ Aucune dépendance de test : `tests/testlib.lua` fournit assertions, exécution 
 
 ```bash
 python3 tools/build.py                                    # paquet dist/…zip
-pwsh -NoProfile -File tests/installer/test_installer.ps1 -Zip dist/BalatroStrategicCopilot-1.0.3.zip [-Smods <sources Steamodded>]
+pwsh -NoProfile -File tests/installer/test_installer.ps1 -Zip dist/BalatroStrategicCopilot-1.0.4-installateur.zip [-Smods <sources Steamodded>]
+tests/standalone/run_love_standalone.sh dist/BalatroStrategicCopilot-1.0.4.zip [dossier]      # mode autonome, vrai LÖVE
 luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai chargeur Steamodded
 ```
 
@@ -36,9 +37,10 @@ luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai
 | `integration/test_state_reader` | 6 | lecture complète, **ordre du deck non divulgué**, cartes face cachée masquées, améliorations/éditions/sceaux, jokers et boutique, erreurs confinées par section |
 | `integration/test_compat` | 5 | mods détectés, nombres Talisman, contrôle croisé avec le jeu, dégradation des scores « exacts », multiplicateur appris |
 | `integration/test_old_smods` | 6 | Steamodded sans événements de mod (1.0.0~BETA-0509c) : mode de repli, main/défausse/achat/vente/relance reconstruits, bandeau actif, **bandeau encore visible au menu après l'intro**, **bandeau d'erreur au démarrage**, retour au mode natif sans double comptage |
+| `integration/test_standalone` | 7 | mode autonome : démarrage sans Steamodded (modules et `config.lua` via `love.filesystem`), bandeau, touches lues au clavier (bascule, pas de répétition, ignorées pendant une saisie ou avec Ctrl, touche déjà enfoncée au démarrage ignorée), amorce : `main.lua` d'origine exécuté une seule fois, ordre de recherche rétabli, démarrage à la 1re image, Steamodded laissé seul s'il a chargé le copilote, dossier du mod absent sans bloquer le jeu, arrêt clair si le `main.lua` d'origine est introuvable |
 | `integration/test_full_flow` | 2 | partie complète (main → défaite → bilan → fichiers → **redémarrage avec profil conservé**), boutique de bout en bout avec badges |
 | `unit/test_performance` | 6 | mesures (ci-dessous) |
-| **Total** | **175** | |
+| **Total** | **182** | |
 
 ### Tests de référence (scores)
 
@@ -75,11 +77,30 @@ prédiction (journal + diagnostic de compatibilité).
 
 | Environnement | Résultat |
 |---|---|
-| LuaJIT 2.1.1703358377 | **175 réussis, 0 échec** |
-| Lua 5.1.5 | **175 réussis, 0 échec** |
-| Paquet `dist/BalatroStrategicCopilot-1.0.3.zip` extrait, tests d'intégration sur cette copie | **16 réussis, 0 échec** |
-| Installateur extrait du paquet, PowerShell 7.4 (Linux) | **9 scénarios, 53 vérifications réussies** |
+| LuaJIT 2.1.1703358377 | **182 réussis, 0 échec** |
+| Lua 5.1.5 | **182 réussis, 0 échec** |
+| Mode autonome sur le **vrai LÖVE 11.5**, exécutable fusionné comme `Balatro.exe` (ci-dessous) | **5 scénarios conformes** |
+| Installateur extrait de `…-1.0.4-installateur.zip`, PowerShell 7.4 (Linux) | **9 scénarios, 53 vérifications réussies** |
 | Installateur, analyse statique de compatibilité Windows PowerShell 5.1 (PSScriptAnalyzer 1.25, profil Windows 10 / PS 5.1) | **0 erreur de syntaxe, 0 incompatibilité** |
+
+### Mode autonome sur le vrai LÖVE (`tests/standalone/run_love_standalone.sh`)
+
+Le script construit un **exécutable fusionné** (binaire LÖVE 11.5 + archive d'un Balatro simulé
+contenant `conf.lua` et `main.lua`), exactement comme `Balatro.exe`, puis le lance sous Xvfb avec
+différents dossiers de sauvegarde (l'équivalent de `%AppData%\Balatro`) remplis depuis l'archive
+`BalatroStrategicCopilot-1.0.4.zip`. Résultats (2026-10-18) :
+
+| Scénario | Résultat |
+|---|---|
+| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.0.4 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 230) ; panneau et badges « JOUER » affichés (capture) |
+| mod seul, sans amorce | jeu normal, pas de copilote (témoin) |
+| amorce sans le dossier du mod | jeu normal jusqu'au bout ; bandeau rouge « dossier introuvable » ; erreur dans `amorce.log` |
+| Steamodded a déjà chargé le copilote | l'amorce se retire (« Steamodded gère déjà le copilote »), pas de double chargement |
+| jeu demandant `appendidentity = true` | amorce non lue, jeu normal (la seule configuration où le mode autonome ne peut pas fonctionner) |
+
+Avec Lovely, l'amorce serait elle aussi modifiée (même nom que le `main.lua` du jeu) : entourée
+du code que Steamodded 0509c et 26.x ajoutent (`crash_handler.lua` avant, `core.lua` après), elle
+**compile** et le code ajouté après `do return end` **ne s'exécute pas** (vérifié avec LuaJIT).
 
 ### Installateur-diagnostic (`tests/installer/test_installer.ps1`)
 
@@ -168,6 +189,9 @@ dossier de sauvegarde LÖVE, **0 erreur**. Captures : `docs/img/overlay_*.png`.
 * Steamodded complet dans le jeu : seuls ses **chargeurs** ont été exécutés (deux versions) ; le
   reste (API, interface, injection des objets) est remplacé par un faux respectant les signatures
   vérifiées.
+* Le mode autonome avec le **vrai Balatro** : le `conf.lua` du jeu n'a pas pu être lu ; s'il
+  demandait `appendidentity = true`, l'amorce ne serait pas lue (rien ne se passerait, jeu normal).
+  `BSC\amorce.log` le montre dès le premier lancement.
 * L'installateur sous **Windows réel** : il a été exécuté avec PowerShell 7 sous Linux et analysé
   pour Windows PowerShell 5.1, mais ni `cmd.exe` (fichiers `.bat`), ni le registre, ni Steam
   (`steam://`), ni la détection du processus du jeu, ni un antivirus n'ont pu être exercés.

@@ -1,8 +1,12 @@
-Balatro Strategic Copilot 1.0.3
+Balatro Strategic Copilot 1.0.4
 ================================
 
 Copilote stratégique pour Balatro : il analyse, calcule, recommande et apprend.
 Il ne joue JAMAIS à votre place.
+
+Installation sans programme (PC protégé, sans Lovely ni Steamodded)
+  Copier main.lua et Mods (dossier COPIER_DANS_AppData_Balatro de l'archive) dans
+  %AppData%\Balatro\ ; voir LISEZ-MOI.txt à la racine de l'archive.
 
 Installation (Windows)
   Le plus simple : dans le dossier extrait de l'archive, double-cliquer sur

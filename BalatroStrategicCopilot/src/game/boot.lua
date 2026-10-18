@@ -39,7 +39,12 @@ function Boot.start()
     if not ok_p then L.warn('boot', 'persistence unavailable: %s', tostring(err_p)) end
 
     BSC.events_mode = BSC.require('game/event_fallback').detect()
-    L.info('boot', 'Steamodded %s, events: %s', tostring(rawget(_G, 'MODDED_VERSION') or '?'), BSC.events_mode)
+    if BSC.standalone then
+        L.info('boot', 'autonomous mode (no Steamodded), LÖVE %s, events: %s',
+            love and love.getVersion and table.concat({ love.getVersion() }, '.', 1, 3) or '?', BSC.events_mode)
+    else
+        L.info('boot', 'Steamodded %s, events: %s', tostring(rawget(_G, 'MODDED_VERSION') or '?'), BSC.events_mode)
+    end
 
     local ok_cm, err_cm = pcall(function() BSC.compat = BSC.require('game/compat'); BSC.compat.scan() end)
     if not ok_cm then L.warn('boot', 'compatibility scan failed: %s', tostring(err_cm)) end
@@ -62,8 +67,10 @@ function Boot.start()
     local installed = Hooks.install(Ctl, UI)
     BSC.hooks = installed
 
-    local ok_c, err_c = pcall(function() BSC.require('game/config_ui').attach(BSC.mod) end)
-    if not ok_c then L.warn('boot', 'config tab unavailable: %s', tostring(err_c)) end
+    if BSC.mod then -- the configuration tab lives in Steamodded's Mods menu
+        local ok_c, err_c = pcall(function() BSC.require('game/config_ui').attach(BSC.mod) end)
+        if not ok_c then L.warn('boot', 'config tab unavailable: %s', tostring(err_c)) end
+    end
 
     L.info('boot', 'Balatro Strategic Copilot %s ready (update=%s draw=%s events=%s keys=%s)', BSC.VERSION,
         tostring(installed.update), tostring(installed.draw), tostring(installed.calculate), tostring(installed.keys))
