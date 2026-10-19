@@ -340,14 +340,16 @@ mention « simulation approchée ».
 
 ## 10. Recalcul des réglages après chaque partie (1.0.9)
 
-`learning/adapt.lua`. Après chaque partie, le bilan (`learning/review.lua`) donne les causes de la
-défaite ; chaque cause vote pour des réglages (table `AD.RULES`) :
+`learning/adapt.lua`. Après chaque partie, le bilan (`learning/review.lua`) donne les causes ; le
+profil compte, pour chaque cause, dans combien de **défaites** et de **victoires** du joueur elle
+apparaît. Une cause ne déplace un réglage que si elle **distingue les défaites des victoires** :
+vue dans au moins 2 défaites, et `P(cause | défaite) − P(cause | victoire) ≥ 0,2` (estimations de
+Laplace `(n + 1) / (N + 2)` ; sans victoire enregistrée, `P(cause | victoire)` part de 1/2).
+Règles (table `AD.RULES`) :
 
 | Cause | Réglages déplacés |
 |---|---|
 | argent dormant | seuil « dépenser l'excédent » −2, réserve au-delà du plafond −2, réserve avant relance −4 |
-| puissance qui décroche | seuil « dépenser l'excédent » −2, seuil d'achat −1, épargne une ante plus tard |
-| main typique sous la mise | sécurité exigée +0,02 (prochaine blinde) et +0,03 (boss) |
 | ×Mult manquants | seuil de remplacement −2 |
 | trop peu de jokers | +1 joker pris d'office aux antes 1-2, seuil d'achat −1 |
 | main principale peu montée | seuil « dépenser l'excédent » −2, seuil d'achat −1 |
@@ -355,10 +357,16 @@ défaite ; chaque cause vote pour des réglages (table `AD.RULES`) :
 | marge, boss | sécurité exigée et sécurité d'un passage +1 pas |
 | défaite juste après un passage | marge d'un passage +2 $, sécurité d'un passage +0,02 |
 
-Un réglage bouge d'**un pas au plus par partie**, dans le sens de la majorité des votes, dans des
-bornes fixes (ex. seuil d'achat 56 ± 4 / +3, sécurité boss 0,70 de −0,05 à +0,15). Après une
-victoire, chaque réglage revient d'un pas vers sa valeur de `config.lua` (pas de dérive sur un
-coup de chance). Les 10 dernières modifications sont gardées avec leurs causes et affichées dans
-le bilan (« Ce que je change pour la prochaine partie »). Les valeurs ajustées s'appliquent par
-dessus `config.lua` dans `engine/advice.lua` et `engine/skip.lua`.
+« Main typique sous la mise » et « puissance qui décroche » ne déplacent rien : elles sont dans
+**toutes** les défaites. **Mesure qui a imposé cette règle** : la première version déplaçait les
+réglages sur toutes les causes de chaque défaite ; sur 10 parties simulées enchaînées (mise
+blanche, graines 201-210), les réglages ont atteint leurs bornes en 5 parties (dépenser toujours
+plus) et le copilote a gagné **1 partie sur 10, ante moyenne 6,4**, contre **4 sur 10, ante 7,3**
+sans recalcul sur les mêmes graines (TRAINING.md).
 
+Un réglage bouge d'**un pas au plus par partie**, dans le sens de la majorité des votes, dans des
+bornes fixes (ex. seuil d'achat 56, de −4 à +3 ; sécurité boss 0,70, de −0,05 à +0,15). Après une
+victoire, chaque réglage revient d'un pas vers sa valeur de `config.lua`. Les 10 dernières
+modifications sont gardées avec leurs causes et affichées dans le bilan (« Ce que je change pour
+la prochaine partie »). Les valeurs ajustées s'appliquent par dessus `config.lua` dans
+`engine/advice.lua` et `engine/skip.lua`.

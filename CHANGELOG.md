@@ -26,11 +26,15 @@ indiquer, recalcul du copilote après chaque partie, toutes les mises et tous le
 * Étiquettes voisines décalées d'une rangée quand elles se chevauchent.
 
 ### Après chaque partie : le copilote recalcule ses réglages (`learning/adapt.lua`)
-* Les causes trouvées par le bilan (argent dormant, puissance qui décroche, ×Mult manquants, marge,
+* Les causes trouvées par le bilan (argent dormant, ×Mult manquants, trop peu de jokers, marge,
   boss, défaite juste après un passage…) déplacent ses seuils d'achat, d'épargne, de sécurité et de
   passage : un pas au plus par partie, dans des bornes fixes ; une victoire ramène d'un pas vers la
   base. Chaque changement est affiché dans le bilan (« Ce que je change pour la prochaine
   partie ») avec sa cause. Nouvelle cause du bilan : défaite dans l'ante d'un passage de blinde.
+* Seule une cause qui **distingue vos défaites de vos victoires** (2 défaites au moins, nettement
+  plus fréquente que dans les victoires) déplace un réglage. Mesuré sur le simulateur : la première
+  version, qui réagissait à toutes les causes de chaque défaite, poussait les réglages à leurs
+  bornes en 5 parties et gagnait 1 partie sur 10 contre 4 sans recalcul, sur les mêmes graines.
 
 ### Mises et decks (erreurs trouvées en faisant jouer le copilote à toutes les mises)
 * **Location** (mise or) : un joker loué coûte 1 $ puis 3 $ à chaque manche ; il était noté comme un

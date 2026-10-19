@@ -34,7 +34,7 @@ luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai
 | `unit/test_builds` | 5 | **1.0.8** : synergies des builds (Baron + Mime, réduites aux antes 1-2), anti-synergie (Vampire et cartes chance), Steel Joker et cartes d'acier, Blueprint qui veut un ×Mult à copier, build en cours et cartes voulues, cibles des tarots selon le build (Strength Dame → Roi avec Baron, Hanged Man sur les figures avec Canio, The Sun vers les Cœurs avec Bloodstone) |
 | `unit/test_plan` | 5 | **1.0.9** : remplacer le seul ×Mult attendu à l'ante suivante par un joker sans ×Mult est pénalisé ; plan de partie : types de jokers, sources de ×Mult (Polychrome comprise), objectifs par ante, « en retard », bonus selon la phase, affichage en boutique |
 | `unit/test_persistence` | 8 | aller-retour, **écriture interrompue** (A/B), corruption détectée par somme de contrôle, migration avec sauvegarde, schéma futur jamais écrasé, export/import, rotation des logs, fichiers jamais exécutés |
-| `unit/test_adapt` | 3 | **1.0.9** : réglages recalculés après une partie (un pas par réglage, bornes, causes enregistrées, partie comptée une seule fois), retour vers la base après une victoire, réglages appliqués aux conseils |
+| `unit/test_adapt` | 4 | **1.0.9** : réglages recalculés après une partie (une seule défaite ne change rien, la même cause dans 2 défaites : un pas par réglage, bornes, causes enregistrées, partie comptée une seule fois), une cause aussi présente dans les victoires ne change rien, « main sous la mise » et « décrochage » ne déplacent rien, retour vers la base après une victoire, réglages appliqués aux conseils |
 | `unit/test_learning` | 13 | **scénarios synthétiques à vérité connue** (voir ci-dessous) ; **1.0.7** : bilan sans « malchance », causes d'une défaite (déficit, décrochage, ×Mult, argent dormant, boss, marge), causes retenues pour le plan |
 | `unit/test_recorder` | 3 | manche complète journalisée, fin de partie, abandon détecté |
 | `unit/test_format` | 7 | pourcentages, classes + symboles, méthode et confiance affichées, couverture partielle, panneau boutique, traduction anglaise, **effets des cartes et autocollants affichés** |
@@ -46,7 +46,7 @@ luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai
 | `integration/test_steps_ui` | 5 | étiquette sur le bouton « blinde suivante », bouton absent : étape gardée en texte et boutons vus écrits au journal, étiquette « passer » sur la colonne de la blinde en cours, numéros d'ordre sous les jokers puis disparition une fois l'ordre corrigé, **The House** toutes cartes cachées (plus de « Aucune analyse disponible ») |
 | `integration/test_full_flow` | 2 | partie complète (main → défaite → bilan → fichiers → **redémarrage avec profil conservé**), boutique de bout en bout avec badges |
 | `unit/test_performance` | 6 | mesures (ci-dessous) |
-| **Total** | **260** | |
+| **Total** | **261** | |
 
 ### Tests de référence (scores)
 

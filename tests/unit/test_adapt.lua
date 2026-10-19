@@ -16,25 +16,43 @@ end
 function S.losses_move_settings_one_bounded_step(T)
     local AD, LE = env()
     local prof = LE.new_profile(0)
+    -- one loss is not a pattern: nothing moves
     local ch = AD.update(prof, review('idle_money', 'deficit'), { id = 'r1', won = false })
+    T.eq(#ch, 0, 'a single loss changes nothing')
+    -- the same cause in a second loss: one step on its settings
+    ch = AD.update(prof, review('idle_money', 'deficit', 'power_drop'), { id = 'r2', won = false })
     local d = AD.deltas(prof)
     T.eq(d.excess_note, -2); T.eq(d.excess_reserve, -2); T.eq(d.idle_reserve, -4)
-    T.near(d.safe_next, 0.02, 1e-9); T.near(d.safe_boss, 0.03, 1e-9)
-    T.ok(#ch == 5, 'five settings changed')
-    T.eq(ch[1].causes[1] ~= nil, true)
+    T.eq(#ch, 3, 'three settings changed')
+    T.eq(ch[1].causes[1], 'idle_money')
+    -- "a hand below the blind" and "power drop" are in every loss: they move nothing
+    T.eq(d.safe_next, nil); T.eq(d.buy_note, nil); T.eq(d.save_from_ante, nil)
     -- the same run is never counted twice
-    AD.update(prof, review('idle_money'), { id = 'r1', won = false })
+    AD.update(prof, review('idle_money'), { id = 'r2', won = false })
     T.eq(AD.deltas(prof).excess_note, -2)
     -- bounded
-    for i = 2, 20 do AD.update(prof, review('idle_money'), { id = 'r' .. i, won = false }) end
+    for i = 3, 20 do AD.update(prof, review('idle_money'), { id = 'r' .. i, won = false }) end
     T.eq(AD.deltas(prof).excess_note, -8, 'never below the bound')
     T.eq(#prof.adapt.history, AD.HISTORY_KEPT)
+end
+
+function S.causes_also_seen_in_wins_move_nothing(T)
+    -- idle money in the wins as often as in the losses: not what loses the runs
+    local AD, LE = env()
+    local prof = LE.new_profile(0)
+    for i = 1, 3 do AD.update(prof, review('idle_money'), { id = 'w' .. i, won = true }) end
+    for i = 1, 3 do AD.update(prof, review('idle_money'), { id = 'l' .. i, won = false }) end
+    T.eq(AD.deltas(prof).excess_note, nil, 'not discriminating: no change')
+    -- few jokers only in losses: it moves
+    for i = 4, 5 do AD.update(prof, review('few_jokers'), { id = 'l' .. i, won = false }) end
+    T.eq(AD.deltas(prof).first_jokers, 1)
 end
 
 function S.a_win_moves_back_toward_base(T)
     local AD, LE = env()
     local prof = LE.new_profile(0)
-    AD.update(prof, review('few_jokers'), { id = 'a', won = false })
+    AD.update(prof, review('few_jokers'), { id = 'a1', won = false })
+    AD.update(prof, review('few_jokers'), { id = 'a2', won = false })
     T.eq(AD.deltas(prof).first_jokers, 1)
     local ch = AD.update(prof, { causes = {}, result = 'win' }, { id = 'b', won = true })
     T.eq(AD.deltas(prof).first_jokers, 0)

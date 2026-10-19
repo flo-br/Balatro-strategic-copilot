@@ -34,7 +34,7 @@ résumés restent dans le profil.
 | Précision des scores | erreur relative ; nombre de prédictions « exactes » démenties | diagnostic de compatibilité |
 | Suivi des recommandations | Bêta-binomiale, stratifiée par niveau de danger, avec intervalles | descriptif uniquement |
 | Résultats par deck/mise | Bêta-binomiale | descriptif |
-| **Réglages du copilote** (1.0.9, `learning/adapt.lua`) | après chaque partie, les causes du bilan déplacent d'un pas au plus les seuils d'achat, d'épargne, de sécurité et de passage, dans des bornes fixes ; une victoire les ramène d'un pas vers `config.lua` ; 10 dernières modifications gardées avec leurs causes | conseils des parties suivantes ; affiché dans le bilan (« Ce que je change pour la prochaine partie ») — détails : [MATHS.md](MATHS.md) §10 |
+| **Réglages du copilote** (1.0.9, `learning/adapt.lua`) | causes comptées dans les défaites et les victoires ; une cause qui distingue les défaites déplace d'un pas au plus les seuils d'achat, d'épargne, de sécurité et de passage, dans des bornes fixes ; une victoire les ramène d'un pas vers `config.lua` ; 10 dernières modifications gardées avec leurs causes | conseils des parties suivantes ; affiché dans le bilan (« Ce que je change pour la prochaine partie ») — détails : [MATHS.md](MATHS.md) §10 |
 
 ## 3. Garde-fous
 
@@ -61,10 +61,12 @@ résumés restent dans le profil.
 * **Réglages recalculés, pas réécrits** (1.0.9) : après chaque partie, le copilote ajuste ses
   propres seuils selon les causes trouvées (argent dormant → dépenser plus tôt ; marge trop
   faible → exiger plus de sécurité ; défaite juste après un passage → passer moins…), **d'un pas
-  au plus par partie et dans des bornes fixes** ; une victoire ramène chaque réglage d'un pas vers
-  sa valeur de base ; une même partie n'est jamais comptée deux fois. Chaque changement est écrit
-  dans le bilan avec sa cause. Les réglages de `config.lua` restent la base : effacer le profil
-  remet tout à zéro.
+  au plus par partie et dans des bornes fixes**, et **seulement pour une cause qui distingue vos
+  défaites de vos victoires** (vue dans 2 défaites au moins, nettement plus fréquente que dans les
+  victoires) : une cause présente partout n'apprend rien. Une victoire ramène chaque réglage d'un
+  pas vers sa valeur de base ; une même partie n'est jamais comptée deux fois. Chaque changement
+  est écrit dans le bilan avec sa cause. Les réglages de `config.lua` restent la base : effacer le
+  profil remet tout à zéro.
 * **Poids de la note non auto-ajustés** : écarté volontairement (attribution trop bruitée).
 
 ## 4. Évaluation objective
