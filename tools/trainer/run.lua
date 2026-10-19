@@ -30,7 +30,11 @@ for i = 4, #arg do
         if v == 'true' then num = true elseif v == 'false' then num = false end
         if k == 'deck' then opts.deck = v
         elseif k == 'stake' then opts.stake = tonumber(v)
-        elseif k == 'learn' then opts.learn = (v == '1' or v == 'true')
+        elseif k == 'learn' then
+            -- learn=1: lessons + settings; learn=lessons / learn=adapt: one mechanism only
+            opts.learn = (v == '1' or v == 'true' or v == 'lessons' or v == 'adapt')
+            opts.learn_lessons = opts.learn and v ~= 'adapt'
+            opts.learn_adapt = opts.learn and v ~= 'lessons'
         elseif cfg.compute[k] ~= nil then cfg.compute[k] = num
         else cfg.advice[k] = (num ~= nil) and num or v end
     end
@@ -49,7 +53,8 @@ if opts.learn then
     AD = BSCopilot.require('learning/adapt')
     BR = dofile(TRAINER_DIR .. '/bridge.lua')
     profile = LE.new_profile(0)
-    BSCopilot.learning_runtime = { profile = function() return profile end, adapt_deltas = function() return AD.deltas(profile) end }
+    BSCopilot.learning_runtime = { profile = function() return profile end,
+        adapt_deltas = function() return opts.learn_adapt and AD.deltas(profile) or nil end }
 end
 
 local fh = assert(io.open(out, 'a'))
@@ -62,9 +67,11 @@ for seed = first, first + n - 1 do
     if ok and profile then
         local run = BR.to_run(summary)
         local rv = RV.build(run, profile)
-        if not run.won and rv.lessons and #rv.lessons > 0 then LE.add_lessons(profile, rv.lessons, run.id) end
-        summary.adapt = AD.update(profile, rv, run)
-        summary.adapt_deltas = AD.deltas(profile)
+        if opts.learn_lessons and not run.won and rv.lessons and #rv.lessons > 0 then LE.add_lessons(profile, rv.lessons, run.id) end
+        if opts.learn_adapt then
+            summary.adapt = AD.update(profile, rv, run)
+            summary.adapt_deltas = AD.deltas(profile)
+        end
     end
     if not ok then
         summary = { seed = tostring(seed), error = tostring(summary), ante = g.ante, history = g.history, decisions = p.decisions,

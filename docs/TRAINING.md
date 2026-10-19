@@ -27,6 +27,7 @@ luajit tools/trainer/report.lua sortie.jsonl [autre.jsonl ...]
   dans le jeu : après chaque partie, le bilan du mod trouve les causes, les leçons nourrissent le
   plan et le copilote recalcule ses réglages (`learning/adapt.lua`) pour la partie suivante ; la
   ligne JSON contient alors `adapt` (changements) et `adapt_deltas` (écarts cumulés).
+  `learn=lessons` ou `learn=adapt` : un seul des deux mécanismes (leçons du plan, réglages).
 * `BSC_MOD_ROOT=<dossier>` : évaluer une autre version du mod (ex. une copie de la 1.0.6).
 * `BSC_TRAIN_VERBOSE=1` : chaque main jouée ou défaussée est affichée.
 * Une ligne JSON par partie : résultat, ante atteinte, blinde perdue, historique des manches,
