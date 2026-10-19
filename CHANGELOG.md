@@ -38,6 +38,9 @@ indiquer, recalcul du copilote après chaque partie, toutes les mises et tous le
   de 9 avec seulement les causes qui distinguent les défaites ; les leçons de la 1.0.7, qui
   pesaient d'office sur le plan, aussi : 7 sur 20). « Main sous la mise » et « décrochage », présentes
   dans toutes les défaites, ne changent plus rien.
+* Version par essais mesurée sur les mêmes graines : 7 sur 20 contre 9 sans recalcul (écart dans le
+  bruit de 20 parties) ; l'essai qui faisait moins bien a bien été annulé. **Pas de progrès
+  démontré** : le recalcul reste prudent et se coupe avec `learning.adapt = false` (`config.lua`).
 
 ### Mises et decks (erreurs trouvées en faisant jouer le copilote à toutes les mises)
 * **Location** (mise or) : un joker loué coûte 1 $ puis 3 $ à chaque manche ; il était noté comme un

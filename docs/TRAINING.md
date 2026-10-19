@@ -204,3 +204,27 @@ aux mises 3 et plus, les blindes de l'ante 5 (20 000 à 30 000) demandent un pla
 copilote ne réunit pas encore à temps. Les boss qui cachent des cartes (The House, The Fish,
 The Mark) terminent 10 parties sur 44. Aux mises 5 et 8, le copilote ne gagne aucune partie
 simulée : il n'est pas au niveau des meilleurs joueurs sur ces mises.
+
+### Recalcul après chaque partie (`learn`), mise blanche, deck rouge, graines 201-220
+
+Chaque série enchaîne les parties sur **un même profil**, comme un joueur : après chaque partie,
+le bilan du mod, puis le recalcul. Comparaison avec les mêmes graines jouées sans recalcul.
+
+| Version du recalcul | Graines 201-210 | Graines 211-220 | Total |
+|---|---|---|---|
+| Aucun recalcul | 4 / 10, ante 7,3 | 5 / 10, ante 6,7 | **9 / 20, ante 7,0** |
+| v1 : toutes les causes, appliquées tout de suite (+ leçons 1.0.7) | 1 / 10, ante 6,4 | — | — |
+| v2 : causes qui distinguent les défaites, appliquées tout de suite (+ leçons 1.0.7) | 3 / 10, ante 6,8 | 3 / 10, ante 6,5 | 6 / 20, ante 6,65 |
+| leçons 1.0.7 seules (poids d'office sur le plan) | 2 / 10, ante 7,0 | 5 / 10, ante 6,7 | 7 / 20, ante 6,85 |
+| v2 réglages seuls | 4 / 10, ante 7,1 | 3 / 10, ante 6,5 | 7 / 20, ante 6,8 |
+| **v3 livrée : un essai de 3 parties, gardé seulement s'il ne fait pas moins bien** | 3 / 10, ante 7,0 | 4 / 10, ante 6,6 | 7 / 20, ante 6,8 (et une série de 20 parties d'affilée : 7 / 20, ante 6,8) |
+
+Lecture honnête : **aucune version du recalcul ne fait mieux que pas de recalcul** sur ces 20
+graines ; la v1 faisait nettement moins bien (les réglages atteignaient leurs bornes en 5 parties).
+La v3 a fait ce pour quoi elle est conçue : l'urgence des ×Mult, essayée après 3 défaites, a donné
+ante 6, victoire, ante 6 (moyenne 7,0) contre 8,0 avant : **annulée** ; les essais « plus de
+sécurité » ont été annulés une fois puis gardés (sécurité exigée contre le boss +0,03 à +0,06), ce
+qui reste dans le bruit. Avec 20 parties, un écart de 2 victoires n'est pas significatif
+(écart-type ≈ 2,2 victoires) ; il ne montre pas non plus de progrès. Le recalcul reste donc
+prudent (un essai à la fois, annulé s'il ne paie pas) et peut être coupé (`learning.adapt = false`).
+

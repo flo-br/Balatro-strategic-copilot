@@ -377,7 +377,9 @@ recalcul : 9 victoires sur 20, ante moyenne 7,0) :
   directement sur le plan : 7 sur 20) fait moins bien que sans recalcul, jamais mieux ;
 * d'où la version livrée : un changement n'est **gardé que si les parties suivantes ne sont pas
   moins bonnes**. Les leçons de la 1.0.7 (×Mult, planètes) passent par les mêmes essais au lieu de
-  peser d'office sur le plan.
+  peser d'office sur le plan. Mesurée sur les mêmes graines : 7 sur 20 (ante 6,8) ; l'essai qui
+  faisait moins bien (urgence des ×Mult) a été annulé ; pas de progrès démontré sur 20 parties.
+  `learning.adapt = false` coupe les essais.
 
 Les valeurs ajustées s'appliquent par dessus `config.lua` dans `engine/advice.lua`,
 `engine/skip.lua` et `engine/plan.lua`.

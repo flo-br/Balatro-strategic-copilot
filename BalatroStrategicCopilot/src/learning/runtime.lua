@@ -52,7 +52,7 @@ end
 function RT.weights() return RT.profile_data and RT.profile_data.weights end
 -- settings the copilot adjusted after its past runs (learning/adapt.lua)
 function RT.adapt_deltas()
-    if cfg().enabled == false or not RT.profile_data then return nil end
+    if cfg().enabled == false or cfg().adapt == false or not RT.profile_data then return nil end
     return AD.deltas(RT.profile_data)
 end
 
@@ -116,7 +116,7 @@ function RT.finish_run(run)
     end
     -- and the copilot recalculates its own development (learning/adapt.lua): one change on
     -- trial after a loss, kept only if the next runs are not worse; shown in the review
-    if cfg().enabled ~= false then
+    if cfg().enabled ~= false and cfg().adapt ~= false then
         local okA, changes = pcall(AD.update, RT.profile_data, RT.last_review, run)
         if okA then RT.last_review.adapt = changes end
         save(RT.PROFILE, LE.SCHEMA, RT.profile_data)

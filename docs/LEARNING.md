@@ -93,7 +93,8 @@ Depuis *Mods → Balatro Strategic Copilot → Config* :
 
 Pour tout effacer : supprimer le dossier `%AppData%\Balatro\BSC\` jeu fermé.
 L'apprentissage peut être désactivé (`learning.enabled`) : le journal brut reste tenu, le profil
-n'est plus mis à jour.
+n'est plus mis à jour. `learning.adapt = false` (dans `config.lua`) coupe seulement les essais de
+changements après une défaite : les conseils suivent alors toujours les valeurs de `config.lua`.
 
 ## 6. Robustesse du stockage
 

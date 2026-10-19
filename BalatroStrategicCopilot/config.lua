@@ -64,6 +64,9 @@ return {
         enabled = true,
         max_runs_kept = 300,     -- raw run logs kept on disk (summaries are kept forever)
         min_samples_calibration = 30,
+        -- after a loss, try one change of the copilot's own settings for 3 runs and keep it only
+        -- if those runs are not worse (learning/adapt.lua); false: config.lua values only
+        adapt = true,
     },
     log = {
         level = 'info',          -- off, error, warn, info, debug, trace
