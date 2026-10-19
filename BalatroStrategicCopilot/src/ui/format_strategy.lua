@@ -9,6 +9,7 @@ local BL = BSC.require('model/blinds_db')
 
 local FS = {}
 local T = I.T
+local SK = BSC.require('engine/skip')
 
 local function seg(t, c) return { t = t, c = c or 'text' } end
 local function line(...) return { ... } end
@@ -101,6 +102,13 @@ function FS.plan_lines(plan, state)
     if g.scaling then gaps[#gaps + 1] = T('plan_gap_scaling') end
     if g.economy then gaps[#gaps + 1] = T('plan_gap_economy') end
     if #gaps > 0 then out[#out + 1] = line(seg('  ' .. T('plan_missing') .. table.concat(gaps, ', '), 'mid')) end
+    -- the most advanced build of top players under way (engine/builds.lua)
+    local b = plan.builds and plan.builds[1]
+    if b then
+        out[#out + 1] = line(seg('  ' .. T('plan_build', b.name), 'accent'),
+            seg((#b.missing > 0) and ('  ' .. T('plan_build_missing', table.concat(b.missing, ', '))) or '', 'dim'))
+        if b.tip then out[#out + 1] = line(seg('    ' .. b.tip, 'dim')) end
+    end
     return out
 end
 
@@ -208,12 +216,22 @@ function FS.blind_panel(state, r, detail)
         growth = r.outlook.growth, growth_source = r.outlook.growth_source }) end
     local pt, pc = posture(r.danger)
     if pt then lines[#lines + 1] = line(seg('Situation ' .. pt, pc)) end
-    if r.skip then
+    if r.skip and r.skip.tag then
         local s = r.skip
-        local txt = s.recommended and 'possible' or 'déconseillé'
-        lines[#lines + 1] = line(seg(T('skip_advice', txt), s.recommended and 'good' or 'mid'),
-            seg(string.format('  (tag ~%d $ vs ~%d $ perdus, blinde suivante %s, heuristique)', s.tag_value, s.lost,
-                I.pct(math.max(0.001, math.min(0.999, s.p_following or 0)))), 'dim'))
+        local function d(x) return math.floor((x or 0) + 0.5) end
+        lines[#lines + 1] = line(seg(T(s.recommended and 'skip_verdict_yes' or 'skip_verdict_no'), s.recommended and 'good' or 'mid'))
+        lines[#lines + 1] = line(seg('  ' .. T('skip_tag_line', SK.tag_name(state, r.current and r.current.slot, s.tag), d(s.tag_value)), 'text'),
+            seg('  ' .. T(s.value_why or 'tag_unknown', s.value_detail or ''), 'dim'))
+        local p = s.parts or {}
+        local list = {}
+        for _, k in ipairs({ 'reward', 'hands', 'interest', 'jokers', 'shop', 'growth', 'throwback', 'pillar' }) do
+            if p[k] and math.abs(p[k]) >= 0.5 then list[#list + 1] = T('skip_part_' .. k, d(p[k])) end
+        end
+        lines[#lines + 1] = line(seg('  ' .. T('skip_cost_line', d(s.lost), table.concat(list, ', ')), 'dim'))
+        if s.p_following then
+            lines[#lines + 1] = line(seg('  ' .. T('skip_follow_line', T(s.following_is_boss and 'skip_follow_boss' or 'skip_follow_big'),
+                I.pct(math.max(0.001, math.min(0.999, s.p_following))), I.pct(s.p_needed or 0)), 'dim'))
+        end
     end
     if detail and r.contributions and #r.contributions > 0 then
         lines[#lines + 1] = line(seg('Contribution mesurée (score sans le joker)', 'title'))

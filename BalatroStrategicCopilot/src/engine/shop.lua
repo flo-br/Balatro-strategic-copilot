@@ -20,6 +20,7 @@ local IT = BSC.require('model/items_db')
 local E = BSC.require('engine/economy')
 local ST = BSC.require('engine/strategy')
 local SY = BSC.require('engine/synergy')
+local BD = BSC.require('engine/builds')
 local HA = BSC.require('engine/hand_advisor')
 local EF = BSC.require('model/effects_db')
 local PL = BSC.require('engine/plan')
@@ -387,7 +388,11 @@ function SH.analyse(state, opts, task)
                 if not def then opt.risks[#opt.risks + 1] = 'joker non reconnu : effet non simulé'; opt.method = 'partial' end
                 local pb, pwhy = PL.joker_bonus(def, plan)
                 if pwhy then opt.reasons[#opt.reasons + 1] = pwhy end
-                local comp = components(m, { potential = pot + pb, synergy = fit, econ = U.clamp(ev * 3 / 20, -1, 1), cost = cc, risk = risk,
+                -- synergies of top players' builds with the board and the deck (engine/builds.lua)
+                local sb, swhy = BD.joker_bonus(j.key, state)
+                if swhy then opt.reasons[#opt.reasons + 1] = swhy end
+                opt.synergy_bonus = sb
+                local comp = components(m, { potential = pot + pb + sb, synergy = fit, econ = U.clamp(ev * 3 / 20, -1, 1), cost = cc, risk = risk,
                     reliability = (def and m.complete) and 1 or 0.5 })
                 finish(opt, m, comp)
             else
@@ -416,7 +421,12 @@ function SH.analyse(state, opts, task)
                     local pb, pwhy = PL.joker_bonus(def, plan)
                     local pout = PL.joker_bonus(DB.get(best.owned.key, best.owned.name), plan)
                     if pwhy then opt.reasons[#opt.reasons + 1] = pwhy end
-                    local comp = components(best.m, { potential = pb - pout, synergy = fit, econ = U.clamp(ev * 3 / 20, -1, 1), cost = cc2, risk = risk,
+                    -- synergies: those of the new joker with the rest, minus those lost with the old one
+                    local sb, swhy = BD.joker_bonus(j.key, state, best.owned)
+                    local sout = BD.joker_bonus(best.owned.key, state, best.owned)
+                    if swhy then opt.reasons[#opt.reasons + 1] = swhy end
+                    opt.synergy_bonus = sb - sout
+                    local comp = components(best.m, { potential = pb - pout + sb - sout, synergy = fit, econ = U.clamp(ev * 3 / 20, -1, 1), cost = cc2, risk = risk,
                         reliability = def and 1 or 0.5 })
                     finish(opt, best.m, comp)
                 else
@@ -570,9 +580,13 @@ function SH.analyse(state, opts, task)
             local m = measure(ctx, st)
             local def = DB.get(j.key, j.name)
             local ev = econ_of(def, j, state)
-            local comp = components(m, { econ = U.clamp(((j.sell_cost or 0) - ev * 2) / 15, -1, 1), reliability = def and 1 or 0.5 })
+            -- a piece of a build keeps what it will bring with the others (engine/builds.lua)
+            local sout = BD.joker_bonus(j.key, state, j)
+            local comp = components(m, { econ = U.clamp(((j.sell_cost or 0) - ev * 2) / 15, -1, 1), potential = -sout,
+                reliability = def and 1 or 0.5 })
             local note = SH.note(comp, w)
             res.sells[#res.sells + 1] = { index = k, name = j.name, uid = j.uid, sell = j.sell_cost or 0, note = note, ratio = m.ratio,
+                synergy = sout,
                 d_next = (m.p_next and p_next) and (m.p_next - p_next) or nil, d_boss = (m.p_boss and p_boss) and (m.p_boss - p_boss) or nil,
                 contribution = 1 - m.ratio }
         end
@@ -767,7 +781,7 @@ function SH.joker_samples(state, ctx, res, w, task)
                 local db = (m.p_boss and res.base.p_boss) and (m.p_boss - res.base.p_boss) or 0
                 local comp = { impact = U.clamp((0.5 * dn + 0.5 * db) * 5, -1.5, 1.5),
                     power = U.clamp(math.log(math.max(1e-6, m.ratio)) / math.log(2), -1, 1), synergy = fit,
-                    potential = (PL.joker_bonus(DB.get(key), ctx.plan)),
+                    potential = (PL.joker_bonus(DB.get(key), ctx.plan)) + (BD.joker_bonus(key, state, weakest and weakest.j)),
                     cost = U.clamp((j.cost or 5) / math.max(10, (econ.dollars or 0) + 10), 0, 1.5), reliability = 1 }
                 note = SH.note(comp, w)
             else

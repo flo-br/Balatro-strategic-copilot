@@ -53,7 +53,11 @@ function UI.check_glyphs(font)
     end
     local map = { ['≈'] = '~', ['…'] = '...', ['—'] = '-', ['±'] = '+/-', ['œ'] = 'oe', ['é'] = 'e', ['è'] = 'e',
         ['ê'] = 'e', ['à'] = 'a', ['â'] = 'a', ['ç'] = 'c', ['î'] = 'i', ['ô'] = 'o', ['û'] = 'u', ['ù'] = 'u',
-        ['É'] = 'E', ['È'] = 'E', ['À'] = 'A', ['→'] = '>', ['×'] = 'x', ['−'] = '-', ['≥'] = '>=', ['≤'] = '<=' }
+        ['É'] = 'E', ['È'] = 'E', ['À'] = 'A', ['→'] = '>', ['×'] = 'x', ['−'] = '-', ['≥'] = '>=', ['≤'] = '<=',
+    }
+    -- suits in free text: the same letters as the card labels (i18n suit_letters)
+    local letters = Fmt and Fmt.suit_letters and Fmt.suit_letters() or {}
+    map['♠'], map['♥'], map['♣'], map['♦'] = letters.Spades or 'S', letters.Hearts or 'H', letters.Clubs or 'C', letters.Diamonds or 'D'
     UI.sanitize = {}
     for ch, rep in pairs(map) do
         if not has(ch) then UI.sanitize[ch] = rep end

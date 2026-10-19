@@ -52,7 +52,7 @@ function Write-LovelyLog([string]$mods, [string]$game, [string[]]$extra, [string
     return (Join-Path $dir $name)
 }
 $SmodsLine = 'INFO - [G] 2026-10-18 12:00:00 :: INFO  :: SMODS :: Steamodded v1.0.0~BETA-0509c-STEAMODDED'
-$ReadyLine = 'INFO - [G] 2026-10-18 12:00:02 :: INFO  :: BSCopilot :: boot: Balatro Strategic Copilot 1.0.7 ready (update=true draw=true events=true keys=true)'
+$ReadyLine = 'INFO - [G] 2026-10-18 12:00:02 :: INFO  :: BSCopilot :: boot: Balatro Strategic Copilot 1.0.8 ready (update=true draw=true events=true keys=true)'
 $Version = ((Expand-Archive -LiteralPath $Zip -DestinationPath (Join-Path $Work 'v') -PassThru | Where-Object { $_.Name -eq 'BalatroStrategicCopilot.json' } | Select-Object -First 1 | Get-Content -Raw) | ConvertFrom-Json).version
 
 # ---------------------------------------------------------------------------------------------

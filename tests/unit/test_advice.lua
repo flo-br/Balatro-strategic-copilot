@@ -161,11 +161,11 @@ function S.arcana_pack_tarot_with_targets(T)
 end
 
 function S.blind_play_or_skip(T)
-    local r = { current = { name = 'Small Blind', chips = 300 }, p_current = { p = 0.97, lo = 0.9, hi = 1 },
+    local r = { current = { name = 'Small Blind', chips = 300, slot = 'Small' }, p_current = { p = 0.97, lo = 0.9, hi = 1 },
         skip = { recommended = true, tag = 'tag_investment', tag_value = 15, lost = 5, p_following = 0.9 } }
     local st = A().blind_step(state({ phase = 'blind_select' }), r)
     T.eq(st.action, 'skip_blind'); T.eq(st.label, 'PASSER'); T.eq(st.button, 'skip_blind')
-    T.ok(st.why:find('investment', 1, true), st.why)
+    T.ok(st.why:find('Investment Tag', 1, true), st.why)
     r.skip.recommended = false
     st = A().blind_step(state({ phase = 'blind_select' }), r)
     T.eq(st.action, 'select_blind'); T.eq(st.label, 'JOUER'); T.eq(st.button, 'select_blind'); T.eq(st.p, 0.97)

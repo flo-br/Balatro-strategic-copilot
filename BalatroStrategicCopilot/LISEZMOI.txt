@@ -1,4 +1,4 @@
-Balatro Strategic Copilot 1.0.7
+Balatro Strategic Copilot 1.0.8
 ================================
 
 Copilote stratégique pour Balatro : il analyse, calcule, recommande et apprend.

@@ -1,5 +1,65 @@
 # Historique des versions
 
+## 1.0.8 — 2026-10-19
+
+Retours de la partie de test : boss qui impose une carte mal pris en compte, plus aucune blinde
+passée, synergies des builds des pros.
+
+### Corrigé
+* **Cerulean Bell** (une carte toujours sélectionnée) : la carte imposée part avec **chaque jeu et
+  chaque défausse** ; une défausse conseillée ne contient plus que 4 autres cartes au plus (avant :
+  jusqu'à 5 autres, soit 6 cartes, impossible dans le jeu) ; « défausser la seule carte imposée »
+  est une option. Dans la simulation de la fin de manche, une nouvelle carte est imposée après
+  chaque pioche (avant, la simulation ne trouvait plus de jeu possible : 30 % annoncés au lieu de
+  ~100 % sur un cas test). Étiquette **IMPOSÉE** sur la carte et explication dans le panneau.
+  L'analyse repart quand le jeu impose la carte (après la pioche).
+* Boss dont l'effet change d'une main à l'autre, désormais simulés dans la fin de manche : The Eye,
+  The Mouth, The Arm (niveau perdu pour la suite), The Hook (2 cartes tenues défaussées), Crimson
+  Heart (un autre joker désactivé), The Fish / The Wheel / The Mark (cartes piochées face cachée).
+* Prévision des boss : cartes Joker (Wild) et, avec Smeared Joker, les deux couleurs rouges ou
+  noires affaiblies par les boss de couleur ; toutes les cartes contre The Plant avec Pareidolia ;
+  cartes déjà jouées dans l'ante contre The Pillar ; Cerulean Bell.
+* Symboles de couleur (♣…) dans le texte du panneau remplacés par les lettres des cartes quand la
+  police ne les a pas.
+
+### Blindes passées : recalcul complet (`engine/skip.lua`)
+* La règle « presque jamais » reposait sur des avis d'avant le patch 1.0.1f (mai 2024), qui a
+  rendu gratuits les jokers des tags et porté Investment à 25 $. Nouvelle recherche sourcée :
+  [docs/PRO_SKIPS_SOURCES.md](docs/PRO_SKIPS_SOURCES.md).
+* Coût réel du passage, affiché : récompense (0 $ pour la Small Blind dès la mise rouge, lu dans
+  le jeu), mains restantes, intérêts, argent des jokers (location économisée), boutique sautée
+  (plus chère au fil des antes et quand le build manque de pièces), croissance perdue, ce que le
+  passage préserve (Throwback, jokers qui s'usent, The Pillar).
+* Valeur de chacun des 24 tags selon la situation (classement des pros : Investment et Coupon
+  tôt, Polychrome, Holographic tôt, Negative, Economy avec de l'argent, Orbital seulement sur la
+  main principale, Boss seulement contre un boss qui contre le jeu, Speed / Handy / Garbage selon
+  le montant affiché ; presque jamais Voucher, Juggle, D6 ; autocollants des mises noire et or).
+* Sécurité : la blinde qui suit doit rester battue sans la boutique sautée (boss ≥ 90 % pour
+  passer une Big Blind), chances tirées d'une simulation complète de la manche (l'ancienne
+  estimation, sans défausses, était beaucoup trop pessimiste : 70-81 % pour une Big Blind d'ante 1
+  gagnée 60 fois sur 60).
+* Nom du tag lu dans le jeu, main de l'Orbital Tag lue dans le jeu.
+
+### Synergies des builds des meilleurs joueurs (`model/builds_db.lua`, `engine/builds.lua`)
+* 15 builds (Baron + Mime, Photograph + Hanging Chad, Triboulet + Sock and Buskin, Canio,
+  petites cartes avec Hack, couleur, chance, verre, acier, cartes ajoutées, Vampire, planètes,
+  paires portées par les jokers, défausses, Perkeo), ≈ 110 paires de jokers notées S / A / B / C
+  et anti-synergies, synergies joker + deck. Recherche sourcée :
+  [docs/PRO_SYNERGIES_SOURCES.md](docs/PRO_SYNERGIES_SOURCES.md).
+* Boutique : bonus de note et raison affichée (« synergie : Baron, chaque Roi tenu compte deux
+  fois ») ; plus faible aux antes 1-2 (ne pas forcer un build) ; une pièce de build garde sa valeur
+  à la vente et au remplacement.
+* Tarots : cibles selon le build (Strength Dame → Roi avec Baron, Hanged Man sur les figures avec
+  Canio, tarots de couleur vers la couleur des jokers de couleur…).
+* Plan : « Build en cours », pièces à chercher et comment l'assembler.
+
+### Entraînement
+* Simulateur corrigé (Cerulean Bell, affaiblissements dès le début de la blinde, tags de
+  boutique, main de l'Orbital Tag).
+* Sur les mêmes 40 parties simulées : 1.0.7 gagne 8 parties (20 %), 1.0.8 en gagne 16 (40 %) ;
+  ante 8 atteinte 58 % → 60 % ; 38 blindes passées au lieu de 23, pour 10 tags différents au lieu
+  de 2. Mesure sur le simulateur, pas sur le vrai jeu ([docs/TRAINING.md](docs/TRAINING.md)).
+
 ## 1.0.7 — 2026-10-19
 
 Retours de la partie de test : effets de cartes et de jokers mal pris en compte, Judgement avec

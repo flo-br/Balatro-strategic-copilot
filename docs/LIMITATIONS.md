@@ -60,14 +60,19 @@
 * Défis (challenges) aux règles spéciales (ex. plafond de jetons) : non modélisés.
 * Loyalty Card : hypothèse sur le moment où `hands_played` augmente (cohérente avec la description
   « toutes les 6 mains » ; l'écart éventuel serait détecté par le contrôle de score).
-* Simulations de manche : politique simple et non optimale ; The Fish/The Wheel supposés
-  transparents, Crimson Heart ignoré au-delà de la main courante, destruction des cartes de verre
-  non simulée en cours de manche.
+* Simulations de manche : politique simple et non optimale ; destruction des cartes de verre
+  non simulée en cours de manche ; dans les prévisions de boss, The House (main de départ
+  supposée visible) et Verdant Leaf (supposé levé sans perte de joker) sont optimistes.
 * Victoire à long terme : modèle de progression (croissance géométrique apprise, blindes
   indépendantes, boss inconnus ~15 % plus durs) → **confiance limitée** par construction.
 * Tarots, spectrales, paquets, tags : simulés seulement pour les améliorations / changements de
   couleur / niveaux ; le reste est heuristique (affiché comme tel).
 * Pas de réglage automatique des poids de la note (choix délibéré, voir LEARNING.md).
+* Blindes passées : valeurs des tags et de la boutique sautée **estimées** (synthèse des avis des
+  meilleurs joueurs, PRO_SKIPS_SOURCES.md), pas mesurées ; le joker qu'un tag donnera est inconnu.
+* Synergies des builds : bonus estimés (paires notées S / A / B / C), ajoutés au gain mesuré ;
+  l'ordre des cartes tenues en main (Dames avant Rois avec Shoot the Moon et Baron) n'est pas
+  conseillé.
 
 ## Interface
 

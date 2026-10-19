@@ -13,6 +13,9 @@ local I = BSC.require('core/i18n')
 local IT = BSC.require('model/items_db')
 local E = BSC.require('engine/economy')
 local EF = BSC.require('model/effects_db')
+local C = BSC.require('model/cards')
+local SK = BSC.require('engine/skip')
+local BD = BSC.require('engine/builds')
 
 local A = {}
 
@@ -90,11 +93,14 @@ local function deck_stats(state)
 end
 A.deck_stats = deck_stats
 
--- how much a card is worth keeping / playing in this deck (explainable, documented)
+-- how much a card is worth keeping / playing in this deck (explainable, documented), plus
+-- what the builds under way want (engine/builds.lua: Kings for Baron, figures for
+-- Photograph, 2-5 for Hack, the payoff suit of a flush build)
 local function usefulness(c, st)
     local u = card_value(c)
     if c.id and st.rank[c.id] then u = u + 2 * (st.rank[c.id] - 4) end
     if st.dom_suit and c.suit == st.dom_suit then u = u + 6 end
+    if st.build_bonus then u = u + st.build_bonus(c) end
     return u
 end
 A.usefulness = usefulness
@@ -143,6 +149,10 @@ function A.targets(info, state, hand, ctx)
     local tg = target_of(info)
     if not tg then return nil end
     local st = deck_stats(state)
+    st.build_bonus = BD.card_bonus(state)
+    -- a flush build converts toward the suit of its payoff jokers, not just the most common one
+    local payoff = BD.payoff_suit(state)
+    if payoff then st.dom_suit = payoff end
     local n = tg.n or 1
     local visible = filter(hand or {}, function(c) return not c.face_down end)
     if #visible == 0 then return nil end
@@ -186,16 +196,26 @@ function A.targets(info, state, hand, ctx)
         end
         roles = role_all(picked, T('role_suit'))
     elseif tg.kind == 'rank_up' then
-        -- +1 rank: where the next rank is more common in the deck (more pairs / sets)
+        -- +1 rank: where the next rank is more common in the deck (more pairs / sets), or
+        -- where a build wants it (Strength: Queen -> King for Baron / Triboulet)
         local cands = filter(visible, function(c) return c.id and c.id >= 2 and c.id < 14 and c.enh ~= 'm_stone' end)
-        local function gain(c) return (st.rank[c.id + 1] or 0) - (st.rank[c.id] or 0) end
+        local function gain(c)
+            local up = { id = c.id + 1, suit = c.suit }
+            return (st.rank[c.id + 1] or 0) - (st.rank[c.id] or 0) + (st.build_bonus(up) - st.build_bonus(c)) / 2
+        end
         picked = first(sorted(cands, function(c) return gain(c) * 100 - U_(c) end, true), n)
         if ctx.strict and #picked > 0 and gain(picked[1]) <= 0 then return nil end
         roles = role_all(picked, T('role_rank_up'))
     elseif tg.kind == 'destroy' then
-        -- deck thinning: the least useful plain cards, never below 20 cards
+        -- deck thinning: the least useful plain cards, never below 20 cards; with Canio, figures
+        -- (each one destroyed: +x1 Mult for good)
         if st.n > 0 and st.n - n < 20 then return nil end
-        picked = first(sorted(filter(visible, plain), U_, false), n)
+        local pool = filter(visible, plain)
+        if BD.destroy_faces(state) then
+            local faces = filter(visible, function(c) return C.is_face(c) end)
+            if #faces > 0 then pool = faces end
+        end
+        picked = first(sorted(pool, U_, false), n)
         roles = role_all(picked, T('role_destroy'))
     elseif tg.kind == 'copy' then
         local by_u = sorted(visible, U_, true)
@@ -366,16 +386,26 @@ function A.hand_step(state, r, cfg)
     if not rec then return nil end
     local p = r.round and r.round.p_clear
     local approx = r.coverage and r.coverage.unsupported and #r.coverage.unsupported > 0 or nil
+    local step
     if rec.type == 'play' and play then
-        return { action = 'play', label = T('lbl_play'), targets = uids(play), cards = play, text = T('step_play'),
+        step = { action = 'play', label = T('lbl_play'), targets = uids(play), cards = play, text = T('step_play'),
             hand = rec.ref and rec.ref.hand, score = rec.ref, p = p, p_text = T('p_blind'), cls = 'good', approx = approx,
             lo = r.round and r.round.lo, hi = r.round and r.round.hi, method = r.round and r.round.method }
     elseif rec.type == 'discard' and disc then
-        return { action = 'discard', label = T('lbl_discard'), targets = uids(disc), cards = disc, text = T('step_discard'),
+        step = { action = 'discard', label = T('lbl_discard'), targets = uids(disc), cards = disc, text = T('step_discard'),
             target = rec.ref and rec.ref.target, p_complete = rec.ref and rec.ref.p_complete, p = p, p_text = T('p_blind'),
             cls = 'mid', approx = approx, lo = r.round and r.round.lo, hi = r.round and r.round.hi, method = r.round and r.round.method }
     end
-    return nil
+    -- Cerulean Bell: the forced card is already selected and goes with the play or the discard
+    if step then
+        for _, c in ipairs(step.cards) do
+            if c.forced then
+                step.target_labels = { [c.uid] = T('lbl_forced', step.label) }
+                step.why = T(step.action == 'play' and 'why_forced_play' or 'why_forced_discard', c.name or C.label(c))
+            end
+        end
+    end
+    return step
 end
 
 -- Shop -----------------------------------------------------------------------------------------
@@ -593,14 +623,22 @@ end
 function A.blind_step(state, r, cfg, partial)
     if not r or not r.current then return nil end
     local pc = r.p_current
-    if r.skip and r.skip.recommended and not partial then
-        local tag = r.skip.tag and tostring(r.skip.tag):gsub('^tag_', ''):gsub('_', ' ') or '?'
+    local sk = r.skip
+    local name = sk and sk.tag and SK.tag_name(state, r.current.slot, sk.tag)
+    local v, c = sk and math.floor((sk.tag_value or 0) + 0.5), sk and math.floor((sk.lost or 0) + 0.5)
+    if sk and sk.recommended and not partial then
         return { action = 'skip_blind', label = T('lbl_skip'), button = 'skip_blind', text = T('step_skip_blind', r.current.name or '?'),
-            why = T('why_skip', tag, r.skip.tag_value or 0, r.skip.lost or 0), p = r.skip.p_following, p_text = T('p_following'), cls = 'mid' }
+            why = T(sk.following_is_boss and 'why_skip_boss' or 'why_skip', name, v, c), p = sk.p_following,
+            p_text = T(sk.following_is_boss and 'p_following_boss' or 'p_following'), cls = 'mid' }
     end
+    local why
+    if r.current.boss then why = T('why_boss')
+    elseif sk and sk.tag and sk.reason == 'not_safe' then
+        why = T(sk.following_is_boss and 'why_no_skip_risk_boss' or 'why_no_skip_risk', name, v, I.pct(sk.p_following or 0), I.pct(sk.p_needed or 0))
+    elseif sk and sk.tag then why = T('why_no_skip', name, v, c)
+    else why = T('why_play') end
     return { action = 'select_blind', label = T('lbl_play_blind'), button = 'select_blind', text = T('step_play_blind', r.current.name or '?'),
-        why = r.current.boss and T('why_boss') or (r.skip and T('why_no_skip', r.skip.tag_value or 0, r.skip.lost or 0)) or T('why_play'),
-        p = pc and pc.p, p_text = T('p_blind'), lo = pc and pc.lo, hi = pc and pc.hi, method = 'monte_carlo', cls = 'good' }
+        why = why, p = pc and pc.p, p_text = T('p_blind'), lo = pc and pc.lo, hi = pc and pc.hi, method = 'monte_carlo', cls = 'good' }
 end
 
 -- Joker order ------------------------------------------------------------------------------------

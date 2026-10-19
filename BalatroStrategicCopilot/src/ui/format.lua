@@ -35,6 +35,11 @@ function F.mark(class)
     return F.symbols[class] or ''
 end
 
+function F.suit_letters()
+    local letters = I.T('suit_letters')
+    return type(letters) == 'table' and letters or {}
+end
+
 function F.card_label(c)
     if not c then return '?' end
     if c.face_down then return '??' end
@@ -139,7 +144,7 @@ function F.target_text(t)
     if t.name == 'Flush' then return T('target_flush', I.suit_name(t.suit), t.have, t.need) end
     if t.name == 'Straight' then return T('target_straight', t.have, t.need) end
     if t.name == 'Full House' then return T('target_full') end
-    if t.name == 'Keep' then return T('target_keep') end
+    if t.name == 'Keep' then return T(t.detail == 'forced' and 'target_forced' or 'target_keep') end
     if t.rank then
         local ranks = I.T('ranks')
         local r = (type(ranks) == 'table' and ranks[t.rank]) or tostring(t.rank)

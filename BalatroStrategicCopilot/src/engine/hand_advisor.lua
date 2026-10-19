@@ -195,16 +195,40 @@ function HA.structural_candidates(hand, rules, opts)
         end
     end
     -- constraints
-    if opts.forced or opts.min_cards then
-        local filtered = {}
-        for _, cand in ipairs(out) do
-            local okf = true
-            if opts.forced then
-                okf = false
-                for _, c in ipairs(cand) do if c == opts.forced then okf = true end end
-            end
-            if okf and (not opts.min_cards or #cand >= opts.min_cards) then filtered[#filtered + 1] = cand end
+    if opts.forced then
+        -- Cerulean Bell: the forced card is always selected, so it goes with every play: added
+        -- to each candidate (in place of its least valuable card when there are already 5)
+        local forced_out = {}
+        seen = {}
+        local function keep(cards)
+            local ordered = in_hand_order(hand, cards)
+            local k = key_of(ordered)
+            if not seen[k] then seen[k] = true; forced_out[#forced_out + 1] = ordered end
         end
+        for _, cand in ipairs(out) do
+            local has = false
+            for _, c in ipairs(cand) do if c == opts.forced then has = true end end
+            if has then keep(cand)
+            else
+                local t = {}
+                for _, c in ipairs(cand) do t[#t + 1] = c end
+                if #t >= 5 then
+                    local wi = 1
+                    for i = 2, #t do if card_value(t[i]) < card_value(t[wi]) then wi = i end end
+                    table.remove(t, wi)
+                end
+                t[#t + 1] = opts.forced
+                keep(t)
+            end
+        end
+        keep({ opts.forced })
+        out = forced_out
+    end
+    if opts.min_cards then
+        -- The Psychic: 5 cards (fewer only when the hand holds fewer)
+        local need = math.min(opts.min_cards, #visible)
+        local filtered = {}
+        for _, cand in ipairs(out) do if #cand >= need then filtered[#filtered + 1] = cand end end
         out = filtered
     end
     return out
@@ -242,19 +266,23 @@ function HA.discard_targets(state, hand, deck, opts)
     local hand_size = (state.round and state.round.hand_size) or 8
     local N = #deck
     local out, seen = {}, {}
+    -- Cerulean Bell: the forced card is always selected, so it leaves with every discard (and
+    -- only 4 other cards can go with it): it can never be part of what a discard keeps
+    local forced
+    for _, c in ipairs(hand) do if opts.forced and c == opts.forced then forced = c end end
     local visible = {}
-    for _, c in ipairs(hand) do if not c.face_down then visible[#visible + 1] = c end end
+    for _, c in ipairs(hand) do if not c.face_down and c ~= forced then visible[#visible + 1] = c end end
 
     local function finish(keep, target, p)
         local keep_set = {}
-        for _, c in ipairs(keep) do keep_set[c] = true end
-        if opts.forced then keep_set[opts.forced] = true end
+        for _, c in ipairs(keep) do if c ~= forced then keep_set[c] = true end end
         local others = {}
-        for _, c in ipairs(hand) do if not keep_set[c] then others[#others + 1] = c end end
-        if #others == 0 then return end
+        for _, c in ipairs(hand) do if not keep_set[c] and c ~= forced then others[#others + 1] = c end end
         table.sort(others, function(a, b) return card_value(a) < card_value(b) end)
         local discard = {}
-        for i = 1, math.min(limit, #others) do discard[i] = others[i] end
+        if forced then discard[1] = forced end
+        for i = 1, math.min(limit - #discard, #others) do discard[#discard + 1] = others[i] end
+        if #discard == 0 then return end
         discard = in_hand_order(hand, discard)
         local k = key_of(discard)
         if seen[k] then
@@ -348,6 +376,8 @@ function HA.discard_targets(state, hand, deck, opts)
     if opts.best_play then
         finish(opts.best_play, { name = 'Keep', detail = 'best' }, nil)
     end
+    -- Cerulean Bell: discard the forced card alone (one card drawn, a new card forced)
+    if forced then finish(visible, { name = 'Keep', detail = 'forced' }, nil) end
     return out
 end
 
@@ -416,13 +446,19 @@ local function draw(hand, deck, pos, n)
 end
 
 -- Policy decision for a simulated state. Returns {type='play'|'discard', cards}.
-function HA.policy(P, hand, h, d, remaining, deck_rest, rng, ctx)
-    local best, best_score = HA.best_play_fast(P, hand, rng, ctx.play_opts)
-    if not best then return { type = 'discard', cards = { hand[1] } } end
+-- forced: the card Cerulean Bell forces in this simulated hand (nil otherwise).
+function HA.policy(P, hand, h, d, remaining, deck_rest, rng, ctx, forced)
+    local popts = ctx.play_opts
+    if ctx.forced_rule then popts = { forced = forced, min_cards = popts and popts.min_cards } end
+    local best, best_score = HA.best_play_fast(P, hand, rng, popts)
+    if not best then
+        local any = { forced or hand[1] }
+        return { type = (d > 0) and 'discard' or 'play', cards = any }
+    end
     if best_score >= remaining then return { type = 'play', cards = best } end
     local on_track = best_score * h >= remaining
     if d > 0 and (not on_track or h == 1) then
-        local targets = HA.discard_targets(ctx.state, hand, deck_rest, { rules = P.rules, forced = ctx.forced, serpent = ctx.serpent, best_play = best })
+        local targets = HA.discard_targets(ctx.state, hand, deck_rest, { rules = P.rules, forced = forced, serpent = ctx.serpent, best_play = best })
         local best_t, best_v
         for _, t in ipairs(targets) do
             local pot = t.p_complete and target_potential(P, t, deck_rest, rng, P.rules)
@@ -450,12 +486,13 @@ function HA.rollout(P0, root, hand0, deck_cards, h, d, remaining, rng, ctx)
     local hands_used = 0
     local dollars = P0.dollars
     local hands_played = P0.hands_played_total
+    local forced = ctx.forced
     for _ = 1, 40 do
         if action.type == 'play' then
             local held = minus(hand, action.cards)
             local Pstep = Score.derive(P, { hands_left = h, discards_left = d, deck_count = #deck - pos + 1,
                 dollars = dollars, hands_played = hands_played })
-            local s, _, _, r = Score.quick(Pstep, action.cards, held, rng, 1)
+            local s, hname, _, r = Score.quick(Pstep, action.cards, held, rng, 1)
             remaining = remaining - s
             h = h - 1
             hands_used = hands_used + 1
@@ -466,22 +503,119 @@ function HA.rollout(P0, root, hand0, deck_cards, h, d, remaining, rng, ctx)
             end
             if remaining <= 0 then return true, hands_used end
             if h <= 0 then return false, hands_used end
+            P = HA.boss_after_play(P, hname, rng)
             hand = held
+            -- The Hook: 2 random cards held in hand are discarded with every hand played
+            if P.boss == 'bl_hook' then
+                for _ = 1, math.min(2, #hand) do table.remove(hand, rng:int(1, #hand)) end
+            end
             local n = ctx.serpent and 3 or math.max(0, ctx.hand_size - #hand)
+            local first = #hand + 1
             pos = draw(hand, deck, pos, n)
+            -- The Fish: cards drawn after a hand is played are face down (unknown to the player)
+            if P.boss == 'bl_fish' then
+                for i = first, #hand do hand[i] = HA.unknown_card(hand[i]) end
+            end
+            HA.draw_face_down(P, hand, first, rng)
         else
             hand = minus(hand, action.cards)
             d = d - 1
             local n = ctx.serpent and 3 or math.max(0, ctx.hand_size - #hand)
+            local first = #hand + 1
             pos = draw(hand, deck, pos, n)
+            HA.draw_face_down(P, hand, first, rng)
         end
         if #hand == 0 then return false, hands_used end
+        -- Cerulean Bell: once the forced card has been played or discarded, a random card of
+        -- the new hand is forced
+        if ctx.forced_rule then
+            local still = false
+            for _, c in ipairs(hand) do if c == forced then still = true end end
+            if not still then forced = hand[rng:int(1, #hand)] end
+        end
         local rest = {}
         for i = pos, #deck do rest[#rest + 1] = deck[i] end
         local Pstep = Score.derive(P, { hands_left = h, discards_left = d, deck_count = #rest, dollars = dollars, hands_played = hands_played })
-        action = HA.policy(Pstep, hand, h, d, remaining, rest, rng, ctx)
+        action = HA.policy(Pstep, hand, h, d, remaining, rest, rng, ctx, forced)
     end
     return false, hands_used
+end
+
+-- Boss effects that change from one hand to the next, applied in the simulated rest of the
+-- round (the first hand reads them from the game):
+--   The Eye: a poker hand type already played this round no longer scores;
+--   The Mouth: only the first hand type played scores;
+--   The Arm: the played hand loses a level (kept for the next hands);
+--   Crimson Heart: another random joker is disabled for each hand.
+function HA.boss_after_play(P, hname, rng)
+    local boss = P.boss
+    if not boss or not hname then return P end
+    if boss == 'bl_eye' then
+        local b = {}
+        for k, v in pairs(P.blind or {}) do b[k] = v end
+        local used = {}
+        for k, v in pairs(b.hands_used or {}) do used[k] = v end
+        used[hname] = true
+        b.hands_used = used
+        return Score.derive(P, { blind = b })
+    elseif boss == 'bl_mouth' then
+        if P.blind and P.blind.only_hand then return P end
+        local b = {}
+        for k, v in pairs(P.blind or {}) do b[k] = v end
+        b.only_hand = hname
+        return Score.derive(P, { blind = b })
+    elseif boss == 'bl_arm' then
+        local h = P.hands and P.hands[hname]
+        if not h or (h.level or 1) <= 1 then return P end
+        local hs = {}
+        for k, v in pairs(P.hands) do hs[k] = v end
+        local nh = {}
+        for k, v in pairs(h) do nh[k] = v end
+        nh.level = (h.level or 1) - 1
+        local b = H.BASE[hname] or {}
+        nh.chips, nh.mult = H.values_at(hname, nh.level, { l_chips = h.l_chips or b.l_chips or 0, l_mult = h.l_mult or b.l_mult or 0,
+            s_chips = h.s_chips or b.chips or h.chips, s_mult = h.s_mult or b.mult or h.mult })
+        hs[hname] = nh
+        return Score.derive(P, { hands = hs })
+    elseif boss == 'bl_final_heart' then
+        -- (Blind:drawn_to_hand: the new joker is drawn among those not disabled; a perished
+        -- joker stays disabled)
+        local n = #(P.jokers or {})
+        if n == 0 then return P end
+        local pool = {}
+        for i, j in ipairs(P.jokers) do if not j.debuff or n < 2 then pool[#pool + 1] = i end end
+        local k = pool[1] and pool[rng:int(1, #pool)]
+        local js = {}
+        for i, j in ipairs(P.jokers) do
+            local nj = {}
+            for kk, v in pairs(j) do nj[kk] = v end
+            nj.debuff = (i == k) or (EF.perish_left(j) == 0) or nil
+            js[i] = nj
+        end
+        local Q = Score.derive(P, {})
+        Q.jokers = js
+        return Q
+    end
+    return P
+end
+
+-- The Wheel (1 card in 7) and The Mark (face cards) also draw cards face down.
+function HA.draw_face_down(P, hand, first, rng)
+    if P.boss == 'bl_wheel' then
+        for i = first, #hand do
+            if not hand[i].face_down and rng:float() < (P.prob_normal or 1) / 7 then hand[i] = HA.unknown_card(hand[i]) end
+        end
+    elseif P.boss == 'bl_mark' then
+        for i = first, #hand do
+            if not hand[i].face_down and C.is_face(hand[i], P.rules, true) then hand[i] = HA.unknown_card(hand[i]) end
+        end
+    end
+end
+
+-- A card drawn face down in the simulation: the player knows neither rank nor suit (it still
+-- scores nothing the policy can plan on; slightly pessimistic, as for The House).
+function HA.unknown_card(c)
+    return { uid = c.uid, face_down = true, id = 0, nominal = 0, unknown = true, debuff = c.debuff }
 end
 
 -- Full analysis --------------------------------------------------------------------------
@@ -565,6 +699,15 @@ function HA.analyse_hidden(state, opts, task, P, hand, visible, hidden, forced)
             if not has then return end
         end
         if kind == 'play' and min_cards and #cards < min_cards and #hand >= min_cards then return end
+        if kind == 'discard' and forced then
+            -- Cerulean Bell: the forced card leaves with every discard
+            local has = false
+            for _, c in ipairs(cards) do if c == forced then has = true end end
+            if not has then
+                if #cards >= 5 then return end
+                cards[#cards + 1] = forced
+            end
+        end
         cands[#cands + 1] = { type = kind, cards = in_hand_order(hand, cards), hidden_n = k, vis_n = #vis }
     end
     -- visible-only plays: exact immediate value with hidden held cards unknown (no effect)
@@ -647,8 +790,8 @@ function HA.analyse_hidden(state, opts, task, P, hand, visible, hidden, forced)
     end
 
     -- rest of the round, simulated for every candidate (same hidden identities per run)
-    local ctx = { state = state, forced = forced, serpent = P.boss == 'bl_serpent',
-        hand_size = round.hand_size or 8, play_opts = { forced = forced, min_cards = min_cards } }
+    local ctx = { state = state, forced = forced, forced_rule = forced ~= nil or P.boss == 'bl_final_bell',
+        serpent = P.boss == 'bl_serpent', hand_size = round.hand_size or 8, play_opts = { forced = forced, min_cards = min_cards } }
     local n = opts.rollouts or 64
     local function run(c, from, to)
         for i = from, to do
@@ -766,8 +909,8 @@ function HA.analyse(state, opts, task)
 
     -- 3. round simulation for candidate actions
     local wins_now = res.best_play and res.best_play.p_win >= 1 - 1e-12
-    local ctx = { state = state, forced = forced, serpent = P.boss == 'bl_serpent',
-        hand_size = round.hand_size or 8, play_opts = { forced = forced, min_cards = min_cards } }
+    local ctx = { state = state, forced = forced, forced_rule = forced ~= nil or P.boss == 'bl_final_bell',
+        serpent = P.boss == 'bl_serpent', hand_size = round.hand_size or 8, play_opts = { forced = forced, min_cards = min_cards } }
     local candidates = {}
     local by_mean = {}
     for i, p in ipairs(res.plays) do by_mean[i] = p end

@@ -37,11 +37,16 @@ function ST.apply_boss(state, boss_key, deck)
     local h, d, hs = round_params(state)
     local out = {}
     local effect = b and b.effect
+    -- vanilla Blind:debuff_card: card:is_suit(suit, true) (Wild cards, and both red or both
+    -- black suits with Smeared Joker, are debuffed too), card:is_face(true) (every card with
+    -- Pareidolia), cards played this ante for The Pillar
+    local rules = (effect == 'debuff_suit' or effect == 'debuff_face') and Score.prepare(state).rules or nil
     for i, c in ipairs(deck) do
         local cc = c
         local deb = false
-        if effect == 'debuff_suit' and c.suit == b.suit and not c.any_suit then deb = true end
-        if effect == 'debuff_face' and C.has_rank(c) and c.id >= 11 and c.id <= 13 then deb = true end
+        if effect == 'debuff_suit' and C.is_suit(c, b.suit, rules, true) then deb = true end
+        if effect == 'debuff_face' and C.is_face(c, rules, true) then deb = true end
+        if effect == 'debuff_played_ante' and c.played_this_ante then deb = true end
         if deb then cc = C.copy(c); cc.debuff = true end
         out[i] = cc
     end
@@ -76,7 +81,8 @@ function ST.power_samples(state, opts)
         local rng = R.new((opts.seed or 'power') .. ':' .. i)
         local hand = rng:sample(deck, math.min(hs, #deck))
         local PP = (h > 0 and i % math.max(1, h) == 0) and P_last or P
-        local best, s, hname = HA.best_play_fast(PP, hand, rng, { min_cards = min_cards })
+        local forced = (opts.boss == 'bl_final_bell' and #hand > 0) and hand[rng:int(1, #hand)] or nil
+        local best, s, hname = HA.best_play_fast(PP, hand, rng, { min_cards = min_cards, forced = forced })
         scores[i] = s or 0
         if hname then usage[hname] = (usage[hname] or 0) + 1 end
         if opts.keep_plays and best then
@@ -150,6 +156,7 @@ function ST.p_clear_rollouts(state, X, opts)
     st2.round = { hands_left = h, discards_left = d, hand_size = hs }
     local P = Score.prepare(st2)
     local ctx = { state = st2, hand_size = hs, serpent = opts.boss == 'bl_serpent',
+        forced_rule = opts.boss == 'bl_final_bell',
         play_opts = { min_cards = (opts.boss == 'bl_psychic') and 5 or nil } }
     local wins = 0
     for i = 1, n do
@@ -162,8 +169,10 @@ function ST.p_clear_rollouts(state, X, opts)
         for k = 1, math.min(hs, #deck) do hand[k] = deck[k] end
         local rest = {}
         for k = hs + 1, #deck do rest[#rest + 1] = deck[k] end
+        -- Cerulean Bell: a random card of the first hand is forced
+        ctx.forced = (ctx.forced_rule and #hand > 0) and hand[rng:int(1, #hand)] or nil
         local Pstep = Score.derive(P, { hands_left = h, discards_left = d, deck_count = #rest })
-        local action = HA.policy(Pstep, hand, h, d, X, rest, rng, ctx)
+        local action = HA.policy(Pstep, hand, h, d, X, rest, rng, ctx, ctx.forced)
         local ok = HA.rollout(P, action, hand, rest, h, d, X, rng, ctx)
         if ok then wins = wins + 1 end
     end

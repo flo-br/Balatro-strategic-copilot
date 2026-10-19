@@ -3,7 +3,7 @@
 
 BSCopilot = BSCopilot or {}
 local BSC = BSCopilot
-BSC.VERSION = '1.0.7'
+BSC.VERSION = '1.0.8'
 BSC.mod = SMODS and SMODS.current_mod or BSC.mod
 BSC.modules = BSC.modules or {}
 

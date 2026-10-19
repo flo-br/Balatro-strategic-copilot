@@ -87,6 +87,85 @@ function S.forced_card_and_psychic_constraints(T)
     for _, p in ipairs(r.plays) do T.eq(#p.cards, 5) end
 end
 
+function S.cerulean_bell_forced_card_leaves_with_discards(T)
+    local F, C, HA = env()
+    local hand = C.parse_list('Ah Ad 7c 2s 3h 9d Kc Qd')
+    hand[1].forced = true -- Cerulean Bell forces one ace of the pair
+    local deck = deck_without(C, hand)
+    local s = F.state({ hand_cards = hand, deck = deck, required = 100000,
+        blind = { key = 'bl_final_bell', boss = true, chips_required = 100000 } })
+    local targets = HA.discard_targets(s, hand, deck, { rules = {}, forced = hand[1] })
+    T.ok(#targets > 0, 'discard options')
+    local alone = false
+    for _, t in ipairs(targets) do
+        local has = false
+        for _, c in ipairs(t.discard) do if c == hand[1] then has = true end end
+        T.ok(has, 'the forced card goes with every discard')
+        T.ok(#t.discard <= 5, 'at most 4 other cards')
+        for _, c in ipairs(t.keep) do T.ok(c ~= hand[1], 'the forced card is never kept by a discard') end
+        if #t.discard == 1 then alone = true end
+    end
+    T.ok(alone, 'discarding the forced card alone is an option')
+    -- the full analysis: every discard candidate holds the forced card too
+    local r = HA.analyse(s, { rollouts = 8 })
+    for _, d in ipairs(r.discards) do
+        local has = false
+        for _, c in ipairs(d.discard) do if c == hand[1] then has = true end end
+        T.ok(has, 'analysis discards hold the forced card')
+    end
+    hand[1].forced = nil
+end
+
+function S.cerulean_bell_rest_of_round_is_simulated(T)
+    -- after each draw a new card is forced: the chances stay close to the same hand without the
+    -- boss (before 1.0.8 the simulation found no legal play once the forced card was gone)
+    local F, C, HA = env()
+    local hand = C.parse_list('Ah Ad 7c 2s 3h 9d Kc Qd')
+    local deck = deck_without(C, hand)
+    local function p(bell)
+        hand[3].forced = bell or nil
+        local s = F.state({ hand_cards = hand, deck = deck, required = 200, hands_left = 4, discards_left = 3,
+            blind = { key = bell and 'bl_final_bell' or 'bl_small', boss = bell, chips_required = 200, chips_scored = 0 } })
+        return HA.analyse(s, { rollouts = 64, seed = 'bell' }).round.p_clear
+    end
+    local free, bell = p(false), p(true)
+    hand[3].forced = nil
+    T.ok(free > 0.5, string.format('reference chances %.2f', free))
+    T.ok(bell > 0.75 * free, string.format('Cerulean Bell %.2f vs free %.2f', bell, free))
+end
+
+function S.bosses_that_change_between_hands(T)
+    local F, C, HA = env()
+    local Score = BSCopilot.require('engine/score')
+    local R = BSCopilot.require('core/rng')
+    local H = BSCopilot.require('model/hands')
+    local rng = R.new('boss')
+    local s = F.state({ levels = { Pair = 3 }, blind = { key = 'bl_eye', boss = true, chips_required = 1000 } })
+    local P = Score.prepare(s)
+    local Q = HA.boss_after_play(P, 'Pair', rng)
+    T.ok(Q.blind.hands_used.Pair, 'The Eye: Pair used')
+    T.ok(not (P.blind.hands_used or {}).Pair, 'state untouched')
+    s.blind = { key = 'bl_mouth', boss = true, chips_required = 1000 }
+    Q = HA.boss_after_play(Score.prepare(s), 'Flush', rng)
+    T.eq(Q.blind.only_hand, 'Flush')
+    s.blind = { key = 'bl_arm', boss = true, chips_required = 1000 }
+    P = Score.prepare(s)
+    Q = HA.boss_after_play(P, 'Pair', rng)
+    T.eq(Q.hands.Pair.level, 2)
+    T.eq(P.hands.Pair.level, 3)
+    local c2, m2 = H.values_at('Pair', 2)
+    T.eq(Q.hands.Pair.chips, c2); T.eq(Q.hands.Pair.mult, m2)
+    local J = BSCopilot.require('model/jokers_db')
+    s.blind = { key = 'bl_final_heart', boss = true, chips_required = 1000 }
+    s.jokers = { { key = 'j_joker', name = 'Joker', ability = { mult = 4 } }, { key = 'j_greedy_joker', name = 'Greedy Joker', ability = {} } }
+    P = Score.prepare(s)
+    Q = HA.boss_after_play(P, 'Pair', rng)
+    local n = 0
+    for _, j in ipairs(Q.jokers) do if j.debuff then n = n + 1 end end
+    T.eq(n, 1)
+    T.ok(J ~= nil)
+end
+
 function S.face_down_cards_winning_visible_play(T)
     local F, C, HA = env()
     local hand = C.parse_list('Ah Ad 7c 2s')

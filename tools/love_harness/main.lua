@@ -43,6 +43,12 @@ function love.load()
         opts.hand = { 'Ah', '9s', '7c', '2h', 'Kh', '5d', '3c', 'Qd' }
         opts.jokers = { FG.joker('j_joker', 'Joker', { mult = 4 }) }
     end
+    if scenario == 'bell' then
+        -- Cerulean Bell: one card is forced (always selected); it goes with every play / discard
+        opts.hand = { 'Ah', 'Ad', '7c', '2s', '3h', '9d', 'Kc', 'Qd' }
+        opts.jokers = { FG.joker('j_joker', 'Joker', { mult = 4 }) }
+        opts.required = 1200
+    end
     if scenario == 'effects' then
         -- cards with modifiers and jokers with stickers: what the copilot shows about them
         opts.hand = { 'Ks', 'Kh', 'Qs', 'Ah', '9d', '7c', '4h', '2s' }
@@ -92,12 +98,19 @@ function love.load()
             for _, k in ipairs(kids) do HARNESS_BUTTONS[#HARNESS_BUTTONS + 1] = k end
         end
         G.blind_select = { UIRoot = { config = {}, children = cols } }
-        G.GAME.round_resets.blind_tags = { Small = 'tag_investment', Big = 'tag_double' }
+        G.GAME.round_resets.blind_tags = { Small = 'tag_polychrome', Big = 'tag_double' }
     end
     G.LANG.font.file = nil
     if scenario == 'house' then
         G.GAME.blind = { name = 'The House', chips = 600, boss = true, config = { blind = { key = 'bl_house' } } }
         for _, c in ipairs(G.hand.cards) do c.facing = 'back' end
+    end
+    if scenario == 'bell' then
+        G.GAME.blind = { name = 'Cerulean Bell', chips = 1200, boss = true, config = { blind = { key = 'bl_final_bell' } } }
+        local forced = G.hand.cards[3]
+        forced.ability.forced_selection = true
+        forced.highlighted = true
+        G.hand.highlighted = { forced }
     end
     BSCopilot = nil
     dofile(MOD .. '/main.lua')

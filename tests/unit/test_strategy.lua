@@ -108,23 +108,35 @@ end
 
 -- Top players almost never skip: skipping loses the reward AND the shop that follows; only a
 -- tag worth more than both (e.g. Investment) with a safe following blind is skipped.
-function S.skips_are_rare(T)
+function S.skip_decisions_follow_top_players(T)
+    -- Ante 1 Small Blind with a deck that beats the Big Blind: top players skip for Investment,
+    -- Coupon, Polychrome (docs/PRO_LESSONS.md); never for Voucher, Juggle, D6 alone
     local F, C = env()
     local O = BSCopilot.require('engine/outlook')
     local strong = { F.joker('j_joker'), F.joker('j_cavendish'), F.joker('j_duo'), F.joker('j_baron') }
-    local function skip_for(tag, jokers)
-        local s = base_state(F, C, { jokers = jokers })
+    local function skip_for(tag, jokers, upcoming)
+        local s = base_state(F, C, { jokers = jokers, upcoming = upcoming })
         s.run.ante = 1
         s.blind_tags = { Small = tag, Big = 'tag_uncommon' }
         return O.analyse(s, { samples = 24, rollouts = 16 }).skip
     end
-    for _, tag in ipairs({ 'tag_uncommon', 'tag_rare', 'tag_negative', 'tag_polychrome', 'tag_voucher', 'tag_buffoon' }) do
+    for _, tag in ipairs({ 'tag_investment', 'tag_coupon', 'tag_polychrome' }) do
         local sk = skip_for(tag, strong)
-        T.no(sk.recommended, tag .. ' does not pay for the lost shop')
-        T.ok(sk.lost >= 15, 'the shop counts in what is lost')
+        T.ok(sk.recommended, tag .. ' is worth the skip (' .. string.format('%.1f vs %.1f', sk.tag_value, sk.lost) .. ')')
+        T.ok(sk.p_following >= 0.9, 'the Big Blind stays safe')
     end
-    T.ok(skip_for('tag_investment', strong).recommended, 'Investment tag with a safe next blind')
-    T.no(skip_for('tag_investment', {}).recommended, 'not without the means to win the next blind')
+    for _, tag in ipairs({ 'tag_voucher', 'tag_juggle', 'tag_d_six', 'tag_double' }) do
+        T.no(skip_for(tag, strong).recommended, tag .. ' is not worth a skip on its own')
+    end
+    -- not when the next blind cannot be beaten without the shop
+    local hard = {
+        { slot = 'Small', key = 'bl_small', chips = 300, state = 'Select', reward = 3 },
+        { slot = 'Big', key = 'bl_big', chips = 20000, state = 'Upcoming', reward = 4 },
+        { slot = 'Boss', key = 'bl_club', chips = 30000, boss = true, state = 'Upcoming', reward = 5 },
+    }
+    local sk = skip_for('tag_investment', strong, hard)
+    T.no(sk.recommended, 'Investment, but the Big Blind is not safe')
+    T.eq(sk.reason, 'not_safe')
 end
 
 return S

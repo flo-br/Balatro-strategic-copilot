@@ -35,6 +35,7 @@ function RS.attach(Ctl)
         local o = model_opts(c)
         o.samples = c.compute.shop_samples and math.floor(c.compute.shop_samples / 2) or 60
         o.rollouts = math.max(24, math.floor((c.compute.rollouts or 64) * 0.75))
+        o.cfg = c
         return O.analyse(state, o, task)
     end, FS.blind_panel, nil)
 

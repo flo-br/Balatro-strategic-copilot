@@ -37,7 +37,12 @@ luajit tools/trainer/report.lua sortie.jsonl [autre.jsonl ...]
 * Effets de boss simulés : couleurs et figures affaiblies, The Pillar, The Needle, The Water,
   The Manacle, The Psychic, The Eye, The Mouth (via le moteur de score), The Hook, The Arm, The Ox,
   The Tooth, The Serpent, The Flint, cartes face cachée (The House, The Wheel, The Mark, The Fish),
-  Verdant Leaf, Crimson Heart, Cerulean Bell, Amber Acorn (mélange), Violet Vessel, The Wall.
+  Verdant Leaf, Crimson Heart, Cerulean Bell (1.0.8 : la carte imposée part avec chaque jeu et
+  chaque défausse, une nouvelle est imposée après chaque pioche), Amber Acorn (mélange), Violet
+  Vessel, The Wall. Comme dans le jeu (`Blind:set_blind`), toutes les cartes sont affaiblies dès
+  le début de la blinde, pioche comprise (1.0.8 ; avant, celles de la pioche ne l'étaient qu'une
+  fois piochées : The Pillar paraissait sûr à 100 %), cartes Joker (Wild) et Smeared Joker compris
+  contre les boss de couleur, Pareidolia contre The Plant.
 * Argent : récompense 3 / 4 / 5 $, 1 $ par main restante, intérêts calculés avant les gains
   (1 $ par 5 $, plafond 25 $), cartes Or et sceaux bleus en fin de manche, revenus des jokers
   (Golden, Cloud 9, Rocket, Satellite, Delayed Gratification, Egg, Gift Card), location.
@@ -48,6 +53,10 @@ luajit tools/trainer/report.lua sortie.jsonl [autre.jsonl ...]
   (amélioration 40 %, sceau 20 %, éditions), Spectral ; The Soul et Black Hole 0,3 %.
 * Tous les tarots, planètes et spectrales ; les bons qui changent le jeu (mains, défausses, taille
   de main, emplacements, remises, éditions, relances, intérêts, taux) ; les tags principaux.
+  Tags de boutique comme dans le jeu (1.0.8) : Uncommon / Rare remplacent la première carte de la
+  boutique par un joker gratuit, un tag d'édition rend gratuit et édité le prochain joker sans
+  édition qui apparaît (relances comprises) ; la main de l'Orbital Tag est affichée avant le
+  passage.
 * Événements de jokers hors score : défausse (Green Joker, Ramen, Castle, Hit the Road, Mail-In
   Rebate, Faceless, Trading Card, Yorick, Burnt), fin de manche (Popcorn, Turtle Bean, Ice Cream,
   Seltzer, Campfire, Invisible Joker, Gros Michel, Cavendish, périssable), vente (Campfire,
@@ -100,3 +109,27 @@ Ce qui reste, d'après le bilan du mod sur les 29 défaites de la 1.0.7 (une dé
 plusieurs causes) : main typique sous la mise de base (29), puissance qui décroche à une ante (24),
 ×Mult manquants (24), boss mal préparé (24), argent dormant au-delà du plafond (20), planètes
 dispersées (15), main principale peu montée (12). Ce sont les pistes des prochaines versions.
+
+## Résultats 1.0.8 (2026-10-19, simulateur corrigé, mêmes 40 graines)
+
+Le simulateur a été corrigé (Cerulean Bell, affaiblissements dès le début de la blinde, tags de
+boutique) : les chiffres ne se comparent qu'entre versions jouées sur **ce** simulateur.
+
+| Version | Victoires | Ante moyenne | Ante 6 atteinte | Ante 7 | Ante 8 | Blindes passées |
+|---|---|---|---|---|---|---|
+| 1.0.7 | 8 / 40 (20 %) | 6,78 | 85 % | 68 % | 58 % | 23 (Investment 16, Economy 7) |
+| 1.0.8 | 16 / 40 (40 %) | 6,95 | 88 % | 73 % | 60 % | 38 (Economy 10, Investment 8, Polychrome 5, Holographic 3, Boss 3, Garbage 3, Rare 2, Coupon 2, Negative 1, Handy 1) |
+
+Graine par graine, la 1.0.8 va plus loin sur 20 graines, moins loin sur 13, aussi loin sur 7. Les
+blindes annoncées gagnées à 90-100 % l'ont été 721 fois sur 723. Une défaite suit directement un
+passage : graine 24, The Manacle (ante 1) perdu à 268 / 600 alors qu'il était annoncé à 96 %.
+
+**Mesure qui a changé le calcul des passages** : passer la première Small Blind, puis jouer la
+Big Blind de l'ante 1 **sans aucun joker** avec les conseils du copilote : **60 victoires sur 60**.
+L'ancienne estimation rapide (mains typiques sans défausses) l'annonçait à 70-81 % et interdisait
+donc ce passage, que les meilleurs joueurs font couramment ; la blinde qui suit est désormais
+estimée par une simulation complète de la manche (100 % ici).
+
+Causes des 24 défaites de la 1.0.8 d'après le bilan du mod : main typique sous la mise de base
+(24), puissance qui décroche (21), boss (21), ×Mult manquants (20), argent dormant (17), planètes
+dispersées (13).

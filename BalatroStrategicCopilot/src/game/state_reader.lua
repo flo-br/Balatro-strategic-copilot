@@ -251,6 +251,8 @@ local function read_upcoming(G, ante)
     local states = get(function() return G.GAME.round_resets.blind_states end, {})
     local ante_scaling = get(function() return G.GAME.starting_params.ante_scaling end, 1)
     local amount = blind_amount(G, ante)
+    -- Red Stake and above: the Small Blind pays no reward (G.GAME.modifiers.no_blind_reward)
+    local no_reward = get(function() return G.GAME.modifiers.no_blind_reward end, nil)
     for _, slot in ipairs({ 'Small', 'Big', 'Boss' }) do
         local key = choices[slot]
         if key then
@@ -260,7 +262,8 @@ local function read_upcoming(G, ante)
                 slot = slot, key = key, name = (pb and pb.name) or (BL.get(key) and BL.get(key).name) or key,
                 boss = (pb and pb.boss) and true or (slot == 'Boss'), state = states[slot],
                 chips = math.floor(amount * mult * ante_scaling),
-                reward = (pb and pb.dollars) or (slot == 'Small' and 3 or slot == 'Big' and 4 or 5),
+                reward = (type(no_reward) == 'table' and no_reward[slot]) and 0
+                    or (pb and pb.dollars) or (slot == 'Small' and 3 or slot == 'Big' and 4 or 5),
                 known_key = BL.get(key) ~= nil,
             }
         end
@@ -304,6 +307,8 @@ function SR.snapshot(opts)
             won = GG.won and true or false,
             hands_played = num(GG.hands_played, 0),
             skips = num(GG.skips, 0),
+            -- discards left unused at the end of rounds (Garbage Tag); nil when the game has none
+            unused_discards = tonumber(get(function() return GG.unused_discards end, nil)),
             tarots_used = num(get(function() return GG.consumeable_usage_tally.tarot end, 0), 0),
             planets_used = num(get(function() return GG.consumeable_usage_tally.planet end, 0), 0),
             scaling = num(get(function() return GG.modifiers.scaling end, 1), 1),
@@ -435,7 +440,18 @@ function SR.snapshot(opts)
 
     section('tags', function()
         local tags = get(function() return G.GAME.round_resets.blind_tags end, nil)
-        if type(tags) == 'table' then s.blind_tags = { Small = tags.Small, Big = tags.Big } end
+        if type(tags) == 'table' then
+            s.blind_tags = { Small = tags.Small, Big = tags.Big }
+            -- names as the game shows them (its own localization)
+            s.blind_tag_names = {}
+            for slot, key in pairs(s.blind_tags) do
+                s.blind_tag_names[slot] = get(function() return G.localization.descriptions.Tag[key].name end, nil)
+            end
+        end
+        -- the poker hand an Orbital Tag would level up (shown on the tag; nil when unknown)
+        local ante = get(function() return G.GAME.round_resets.ante end, nil)
+        local oc = ante and get(function() return G.GAME.orbital_choices[ante] end, nil)
+        if type(oc) == 'table' then s.orbital_hands = { Small = oc.Small, Big = oc.Big } end
     end)
 
     section('targets', function()

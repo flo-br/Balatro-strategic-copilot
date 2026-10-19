@@ -53,7 +53,8 @@ function Player:analyse(phase, st)
     elseif phase == 'pack' then
         res = SH.analyse(st, { n = 32, pack_items = (st.pack and st.pack.cards) or {} })
     elseif phase == 'blind_select' then
-        res = O.analyse(st, { samples = math.floor((c.shop_samples or 120) / 2), rollouts = math.max(24, math.floor((c.rollouts or 64) * 0.75)) })
+        res = O.analyse(st, { samples = math.floor((c.shop_samples or 120) / 2), rollouts = math.max(24, math.floor((c.rollouts or 64) * 0.75)),
+            cfg = self.cfg })
     end
     self.timing[phase] = self.timing[phase] + (os.clock() - t0)
     return res

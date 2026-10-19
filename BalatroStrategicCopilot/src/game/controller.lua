@@ -112,7 +112,9 @@ local function area_sig(area)
     if type(area) ~= 'table' or type(area.cards) ~= 'table' then return '' end
     local t = {}
     for i, c in ipairs(area.cards) do
-        t[i] = tostring(c.sort_id or '') .. (c.debuff and 'd' or '') .. (c.facing == 'back' and 'b' or '')
+        -- (Cerulean Bell forces its card after the draw: that must start a new analysis)
+        local forced = type(c.ability) == 'table' and c.ability.forced_selection
+        t[i] = tostring(c.sort_id or '') .. (c.debuff and 'd' or '') .. (c.facing == 'back' and 'b' or '') .. (forced and 'f' or '')
     end
     return table.concat(t, ',')
 end
@@ -547,7 +549,9 @@ function Ctl.ui_model()
         end
         if step then
             local text = step.label .. ((step.note and (step.action == 'buy' or step.action == 'take')) and (' · ' .. step.note .. '/100') or '')
-            for _, uid in ipairs(step.targets or {}) do on_uid(uid, text, step.cls or 'good', { strong = true }) end
+            for _, uid in ipairs(step.targets or {}) do
+                on_uid(uid, (step.target_labels and step.target_labels[uid]) or text, step.cls or 'good', { strong = true })
+            end
             for _, uid in ipairs(step.use_on or {}) do
                 on_uid(uid, (step.use_labels and step.use_labels[uid]) or I.T('lbl_target'), 'accent', { strong = true })
             end

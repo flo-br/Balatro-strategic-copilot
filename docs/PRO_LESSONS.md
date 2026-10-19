@@ -1,9 +1,11 @@
 # Leçons des meilleurs joueurs appliquées par le copilote
 
-Synthèse des règles que le copilote applique (version 1.0.7), tirées d'une recherche sourcée sur
-les guides, le wiki officiel (balatrowiki.org) et les forums de joueurs expérimentés. La recherche
-complète, en anglais, avec l'adresse de chaque source et les désaccords entre sources, est dans
-[PRO_LESSONS_SOURCES.md](PRO_LESSONS_SOURCES.md) (les numéros § y renvoient).
+Synthèse des règles que le copilote applique (version 1.0.8), tirées de recherches sourcées sur
+les guides, le wiki officiel (balatrowiki.org) et les forums de joueurs expérimentés. Les recherches
+complètes, en anglais, avec l'adresse de chaque source et les désaccords entre sources, sont dans
+[PRO_LESSONS_SOURCES.md](PRO_LESSONS_SOURCES.md) (les numéros § y renvoient),
+[PRO_SKIPS_SOURCES.md](PRO_SKIPS_SOURCES.md) (blindes passées, 1.0.8) et
+[PRO_SYNERGIES_SOURCES.md](PRO_SYNERGIES_SOURCES.md) (synergies des builds, 1.0.8).
 
 Point de départ, partagé par les meilleurs joueurs : **toute partie est jouable**. Une défaite
 s'explique presque toujours par un build qui a pris du retard ; le copilote cherche donc où,
@@ -48,11 +50,50 @@ avant de parler de variance (§0, §10.2).
 * Cartes à jouer (boutique, paquet Standard) notées selon leurs améliorations, éditions et sceaux ;
   une carte sans effet dilue le deck (§5.16-5.20).
 
-## 4. Blindes passées
+## 4. Blindes passées (recalculé en 1.0.8)
 
-Les meilleurs joueurs ne passent presque jamais (§4.2) : passer coûte la récompense, l'argent des
-mains, les intérêts **et la boutique**. Le copilote ne conseille de passer que si le tag vaut plus
-que tout cela et que la blinde suivante reste ≥ 95 % ; en pratique Investment ou Economy (§4.3-4.5).
+La règle de la 1.0.6-1.0.7 (« les pros ne passent presque jamais ») venait surtout de messages
+écrits **avant le patch 1.0.1f (mai 2024)**. Ce patch a rendu **gratuits** les jokers des tags
+Uncommon, Rare, Foil, Holographic, Polychrome et Negative (avant, les tags d'édition en
+augmentaient le prix) et porté Investment de 15 $ à 25 $. Le copilote compare maintenant, à chaque
+blinde, la valeur du tag au coût réel du passage (`engine/skip.lua`).
+
+**Ce que coûte un passage** (tout est affiché) : récompense de la blinde (**0 $ pour la Small
+Blind à partir de la mise rouge**), 1 $ par main restante, intérêts de la manche, argent des
+jokers de la manche (une **location** coûte 3 $ par manche : le passage l'**économise**), la
+**boutique** qui suit la blinde (≈ 4 $ à l'ante 1, 6 $ à l'ante 2, 10 $ aux antes 3-6, 14 $ aux
+antes 7-8 ; plus quand il manque des jokers ou un ×Mult, moins sans argent à dépenser, ×1,3 pour la
+boutique d'avant le boss), un tour de croissance des jokers qui grandissent et des jokers « quand
+la blinde est choisie » (Cartomancer, Madness…), moins ce que le passage préserve (jokers qui
+s'usent, Throwback, cartes non affaiblies contre The Pillar).
+
+**Ce que vaut le tag**, selon la situation (classement des pros) :
+
+| Tag | Valeur retenue |
+|---|---|
+| Investment | 25 $ (antes 1-3 ; ensuite surtout si l'argent manque) — S |
+| Coupon | ≈ 12 $ aux antes 1-2 (boutique gratuite quand l'argent manque), moins ensuite — S |
+| Polychrome / Holographic / Negative | joker de base gratuit + édition (Poly fort jusqu'à l'ante 4, Holo surtout antes 1-2, Negative = une place) — A |
+| Economy, Speed, Handy, Garbage | le montant que le tag affiche (Economy : votre argent, 40 $ au plus ; Speed : 5 $ par passage) |
+| Orbital | ≈ 3 planètes **seulement sur la main principale** (plus avant The Arm / The Flint), sinon rien |
+| Boss | seulement contre un boss qui contre le jeu (comparé à un boss ordinaire de même taille) |
+| Uncommon / Rare / Foil, Buffoon, Top-up | B : surtout comme premiers jokers, avec de la place |
+| Charm, Ethereal, Meteor, Standard | C : rarement (Meteor avec Constellation, Standard avec Hologram) |
+| Voucher, Juggle, D6, Double | presque jamais seuls (Double : vaut le tag suivant s'il est fort ; Juggle : avant The Manacle / The Psychic) |
+
+À partir de la mise noire, un joker de tag peut porter un autocollant : sa valeur baisse (×0,7,
+×0,6 à la mise or).
+
+**Condition de sécurité** : la blinde qui suit doit être battue **sans** la boutique sautée, avec le
+deck actuel : la Big Blind (≥ 90 %) après une Small Blind passée, **le boss** (≥ 90 %) après une Big
+Blind passée — les passages de Big Blind restent donc rares, comme chez les pros. Ces chances
+viennent d'une simulation complète de la manche (avec défausses) : l'ancienne estimation rapide,
+sans défausses, annonçait 70 à 80 % pour une Big Blind d'ante 1 sans joker que le copilote a
+gagnée 60 fois sur 60 en simulation.
+
+En pratique (graines simulées) : la première Small Blind est passée pour Investment, Coupon,
+Polychrome, Holographic (sans joker), Rare ; Investment, Negative, Orbital sur la main principale
+ou Economy avec de l'argent plus tard ; presque jamais pour Voucher, Juggle, D6.
 
 ## 5. Pendant la main
 
@@ -77,10 +118,45 @@ par « malchance » : une victoire estimée à 85 % laisse 15 % de risque, à r�
 Les causes des défaites sont retenues (10 dernières) : quand la même revient, le plan lui donne plus
 de poids (×1 à ×1,5), par exemple l'urgence des ×Mult.
 
-## 7. Ce qui n'est pas (encore) appliqué
+## 7. Synergies des builds qui terminent les parties (1.0.8)
 
+La base `model/builds_db.lua` reprend les builds que les meilleurs joueurs citent pour gagner
+l'ante 8 et au-delà (détail, chiffres du wiki et sources : PRO_SYNERGIES_SOURCES.md) :
+
+| Build | Pièces | Main | À construire avec |
+|---|---|---|---|
+| Rois tenus (Baron + Mime) | Baron, Mime, Rois d'acier à sceau rouge, Blueprint / Brainstorm | Carte haute, Paire | Chariot et Déjà Vu sur les Rois, Death (copier le meilleur Roi), Strength (Dame → Roi) |
+| Figures en tête (Photograph + Hanging Chad) | Photograph, Hanging Chad, Sock and Buskin | Carte haute, Paire | figure jouée en premier, sceau rouge et verre sur un Roi |
+| Triboulet + Sock and Buskin | Triboulet, Sock and Buskin | Full, Couleur | Strength et Death vers Rois et Dames |
+| Canio | Canio, Pareidolia, Glass Joker | toutes | Hanged Man **sur les figures** |
+| Petites cartes (Hack) | Hack, Wee Joker, Fibonacci, The Idol | Carré, Full | Hanged Man sur les figures, Death sur un 2 ou un 5 |
+| Couleur | jokers de couleur, Smeared Joker, Ancient, Bloodstone (+ Oops!) | Couleur | tarots de couleur vers la couleur des jokers |
+| Chance, verre, acier | Lucky Cat + Oops!, Glass Joker, Steel Joker + Mime | — | Magician, Justice, Chariot |
+| Cartes ajoutées, Vampire, planètes, Perkeo | Hologram + DNA, Vampire + Midas Mask, Constellation, Perkeo + Observatory | — | — |
+| Paires portées par les jokers | Card Sharp, The Duo / Trio / Family, Spare Trousers | Paire, Double paire | Mercury / Uranus, puis une source exponentielle |
+| Défausses | Yorick, Hit the Road | — | bons et jokers de défausses |
+
+Ce que le copilote en fait :
+* **Boutique** : en plus du gain mesuré tout de suite, un joker reçoit un bonus pour ses
+  synergies avec les jokers déjà là (≈ 110 paires notées S / A / B / C, et les anti-synergies :
+  Vampire et les cartes chance, Stuntman et Baron, Ride the Bus et les figures…) et avec le deck
+  (Steel Joker et des cartes d'acier, Baron et beaucoup de Rois…) ; « synergie : … » s'affiche.
+  Aux antes 1-2, ce bonus compte moins : les pros ne forcent pas un build avant que la boutique
+  en ait proposé les pièces.
+* **Vente et remplacement** : une pièce d'un build garde la valeur de ses synergies.
+* **Tarots** : les cibles suivent le build (Chariot et Strength vers les Rois avec Baron, Hanged
+  Man sur les figures avec Canio, tarots de couleur vers la couleur des jokers).
+* **Plan** : « Build en cours : … », les pièces à chercher et comment l'assembler.
+
+Règles générales retenues : une base de jetons et de +Mult d'abord, puis des ×Mult pour les antes
+7-8 ; une ou deux mains, montées par les planètes ; ne pas forcer un build tôt ; les effets de
+cartes tenues demandent des cartes en main (pas de Stuntman avec Baron).
+
+## 8. Ce qui n'est pas (encore) appliqué
+
+* L'ordre des cartes **tenues en main** (Dames de Shoot the Moon à gauche des Rois de Baron) n'est
+  pas conseillé ; seul l'ordre des jokers l'est.
 * Préparation explicite d'un boss connu à l'avance (garder Justice / Chariot pour The Needle ou The
   Eye, Luchador, Director's Cut) : seulement à travers la probabilité de battre le boss.
-* Choix de la main principale selon la mise (paire / carte haute aux mises élevées) et
-  « affinage » du deck (Hanged Man) au-delà des cibles de tarot.
+* Choix de la main principale selon la mise (paire / carte haute aux mises élevées).
 * Placement de Blueprint / Brainstorm au-delà du calcul d'ordre existant.

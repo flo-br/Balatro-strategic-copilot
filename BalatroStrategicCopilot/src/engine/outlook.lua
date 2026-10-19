@@ -8,20 +8,14 @@ local BL = BSC.require('model/blinds_db')
 local ST = BSC.require('engine/strategy')
 local SY = BSC.require('engine/synergy')
 local E = BSC.require('engine/economy')
+local SK = BSC.require('engine/skip')
+local PL = BSC.require('engine/plan')
 
 local O = {}
 
--- Heuristic tag values in dollars-equivalent (documented in docs/MATHS.md).
-O.TAG_VALUES = {
-    tag_uncommon = 5, tag_rare = 8, tag_negative = 10, tag_foil = 4, tag_holo = 5, tag_polychrome = 7,
-    tag_investment = 20, tag_voucher = 9, tag_boss = 3, tag_standard = 3, tag_charm = 6, tag_meteor = 6,
-    tag_buffoon = 7, tag_handy = 4, tag_garbage = 3, tag_ethereal = 5, tag_coupon = 6, tag_double = 4,
-    tag_juggle = 2, tag_d_six = 4, tag_top_up = 5, tag_skip = 5, tag_orbital = 8, tag_economy = 0,
-}
-
+-- Tag value in $ equivalents (engine/skip.lua; kept for callers of the old API).
 function O.tag_value(key, state)
-    if key == 'tag_economy' then return math.min(40, (state.econ and state.econ.dollars) or 0) end
-    return O.TAG_VALUES[key] or 4
+    return (SK.tag_value(key, state or {}, {}))
 end
 
 local function noop() end
@@ -64,25 +58,36 @@ function O.analyse(state, opts, task)
     res.danger = ST.danger(res.p_current and res.p_current.p, res.p_boss and res.p_boss.p)
     publish(res)
 
-    -- skip advice (only for Small/Big blinds)
+    -- skip advice (only for Small/Big blinds): engine/skip.lua
     if current and not current.boss then
-        local tag = state.blind_tags and state.blind_tags[current.slot]
-        local tag_v = tag and O.tag_value(tag, state) or 0
-        -- what skipping loses: the blind's reward, the money for unused hands, and the SHOP that
-        -- follows it (top players almost never skip: a shop visit is worth a lot, more so early)
-        local ante = (state.run and state.run.ante) or 1
-        local shop_value = (ante <= 4) and 10 or 8
-        local lost = (current.reward or 3) + 2 + shop_value
-        -- risk: the following blind is played without this round's shop and money
         local following
         for _, b in ipairs(state.upcoming or {}) do
             if b ~= current and b.state ~= 'Defeated' and b.state ~= 'Skipped' then following = b; break end
         end
-        local p_follow = following and ST.p_clear_bootstrap(ps, following.chips, { seed = 'follow', B = 300 }) or 1
-        if opts.calibrate then p_follow = opts.calibrate(p_follow) end
-        local ok = (tag_v - lost) > 0 and p_follow >= 0.95
-        res.skip = { tag = tag, tag_value = tag_v, lost = lost, shop_value = shop_value, p_following = p_follow,
-            recommended = ok, method = 'heuristic' }
+        -- the blind that follows, played with the current deck: full round rollouts (with
+        -- discards, like the real play; the quick bootstrap of typical hands, without discards,
+        -- was far too pessimistic: 0.7-0.8 for an ante 1 Big Blind the copilot's play won 28
+        -- times out of 28, docs/TRAINING.md)
+        local p_follow = 1
+        if following and following.boss and res.p_boss then p_follow = res.p_boss.p
+        elseif following then
+            p_follow = ST.p_clear_rollouts(state, following.chips, { n = opts.rollouts or 48, task = task,
+                boss = following.boss and following.key or nil, seed = 'follow' })
+            if opts.calibrate then p_follow = opts.calibrate(p_follow) end
+        end
+        local tag = state.blind_tags and state.blind_tags[current.slot]
+        local p_generic
+        if tag == 'tag_boss' and boss then
+            -- an ordinary boss of the same size, to see what rerolling this one would bring
+            p_generic = ST.p_clear_rollouts(state, boss.chips, { n = 24, task = task, seed = 'generic' })
+            if opts.calibrate then p_generic = opts.calibrate(p_generic) end
+        end
+        local plan = PL.analyse(state, { p_next = res.p_current and res.p_current.p, p_boss = res.p_boss and res.p_boss.p, median = ps.median })
+        res.plan = plan
+        res.skip = SK.evaluate(state, { current = current, following = following, p_following = p_follow,
+            p_boss = res.p_boss and res.p_boss.p, p_boss_generic = p_generic, median = ps.median,
+            usage = res.power.usage, plan = plan, boss = boss,
+            orbital_hand = state.orbital_hands and state.orbital_hands[current.slot] }, opts.cfg)
     end
     check()
     res.contributions = SY.contributions(state, ps, task)

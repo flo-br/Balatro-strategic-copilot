@@ -125,6 +125,9 @@ function PL.analyse(state, base)
     -- losses for lack of multipliers or of power make multipliers more urgent next time
     plan.xmult_weight = math.max(lesson('xmult'), lesson('power_drop'))
     plan.levels_weight = lesson('levels')
+    -- builds of top players under way (engine/builds.lua; loaded lazily: it requires this module)
+    local okb, BD = pcall(BSC.require, 'engine/builds')
+    if okb and BD then plan.builds = BD.active(state) end
     return plan
 end
 

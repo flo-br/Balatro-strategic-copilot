@@ -19,6 +19,7 @@ Tous les fichiers sont dans `BalatroStrategicCopilot/`. Seuls `game/state_reader
 | `src/model/jokers_db.lua` | logique des 150 jokers vanilla, étiquettes de synergie, économie, risques |
 | `src/model/blinds_db.lua` | blindes et boss, formule de taille vanilla |
 | `src/model/items_db.lua` | tarots, planètes, spectrales, bons, paquets (simulables ou heuristiques) |
+| `src/model/builds_db.lua` | builds des meilleurs joueurs (pièces, anti-synergies, main, cartes voulues, comment les assembler), paires de jokers notées S / A / B / C / anti, synergies joker + deck |
 | `src/model/effects_db.lua` | améliorations, éditions, sceaux, autocollants des jokers : rôle (jouer, garder, défausser, prudence), valeur d'une carte |
 | `src/engine/poker_eval.lua` | **RulesEngine** : identification des mains (Four Fingers, Shortcut, Smeared, Wild, Pierre, Splash) |
 | `src/engine/score.lua` | **ScoreEvaluator** : pipeline de score complet, aléas énumérés / Monte-Carlo, couverture |
@@ -28,7 +29,9 @@ Tous les fichiers sont dans `BalatroStrategicCopilot/`. Seuls `game/state_reader
 | `src/engine/economy.lua` | intérêts, revenus, coût d'opportunité |
 | `src/engine/strategy.lua` | **StrategyEngine** : puissance, P(blinde), perspectives de victoire, danger |
 | `src/engine/shop.lua` | **ShopAnalyzer** : options, notes, ventes, remplacements, relance |
-| `src/engine/outlook.lua` | choix de blinde : prochaine blinde, boss, passer ou jouer |
+| `src/engine/outlook.lua` | choix de blinde : prochaine blinde, boss (simulés), passer ou jouer (via `engine/skip.lua`) |
+| `src/engine/skip.lua` | passer ou jouer une blinde : valeur de chaque tag selon la situation contre le coût réel du passage, condition de sécurité |
+| `src/engine/builds.lua` | synergies d'un joker avec le plateau et le deck, builds en cours et pièces manquantes, cartes voulues par le build (cibles des tarots) |
 | `src/engine/plan.lua` | plan de partie (leçons des meilleurs joueurs) : main principale, ×Mult attendus par ante, « en retard », manques, bonus de note par type de joker |
 | `src/engine/advice.lua` | **prochaine étape** : UNE action à faire maintenant (jouer, défausser, acheter, vendre, relancer, blinde suivante, utiliser, prendre ou passer un paquet, jouer ou passer une blinde) et numéros d'ordre des jokers |
 | `src/learning/recorder.lua` | journal brut des parties |

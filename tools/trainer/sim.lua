@@ -134,6 +134,10 @@ function Sim:new_ante()
         { slot = 'Boss', key = boss, name = bb.name, boss = true, chips = math.floor(amount * (bb.mult or 2)), reward = RU.BLIND_REWARD.Boss, state = 'Upcoming' },
     }
     self.blind_tags = { Small = self:pick_tag(), Big = self:pick_tag() }
+    -- the hand each Orbital Tag would level up is shown on the blind select screen
+    local names = {}
+    for _, n in ipairs(H.ORDER) do if self.hands[n] and self.hands[n].visible ~= false then names[#names + 1] = n end end
+    self.orbital_hands = { Small = names[self.rng:int(1, #names)], Big = names[self.rng:int(1, #names)] }
     self.voucher_offer = self:pick_voucher()
     for _, c in ipairs(self.cards) do c.played_this_ante = nil end
 end
@@ -245,6 +249,7 @@ function Sim:snapshot(phase)
         for i, it in ipairs(self.pack.items) do s.pack.cards[i] = copy(it) end
     end
     s.blind_tags = copy(self.blind_tags or {})
+    s.orbital_hands = copy(self.orbital_hands or {})
     local idol = self.targets or {}
     s.targets = { ancient_suit = idol.ancient_suit, castle_suit = idol.castle_suit, idol = idol.idol, mail_id = idol.mail_id,
         most_played_hand = self:most_played_hand() }
@@ -393,8 +398,15 @@ function Sim:apply_debuff(c)
     local eff, d = self:boss_effect()
     c.debuff = nil
     if not eff then return end
-    if eff == 'debuff_suit' and c.suit == d.suit and not c.any_suit and not c.no_suit then c.debuff = true end
-    if eff == 'debuff_face' and C.has_rank(c) and FACE[c.id] then c.debuff = true end
+    -- vanilla Blind:debuff_card: is_suit(suit, true) and is_face(true) (Wild cards, Smeared Joker,
+    -- Pareidolia)
+    local rules = {}
+    for _, j in ipairs(self.jokers) do
+        if j.key == 'j_smeared' and not j.debuff then rules.smeared = true end
+        if j.key == 'j_pareidolia' and not j.debuff then rules.pareidolia = true end
+    end
+    if eff == 'debuff_suit' and C.is_suit(c, d.suit, rules, true) then c.debuff = true end
+    if eff == 'debuff_face' and C.is_face(c, rules, true) then c.debuff = true end
     if eff == 'debuff_played_ante' and c.played_this_ante then c.debuff = true end
     if eff == 'debuff_all' and not self.blind.leaf_cleared then c.debuff = true end
 end
@@ -422,6 +434,24 @@ function Sim:fill_hand(face_down)
     else
         self:draw_cards(math.max(0, b.hand_size - #b.hand), face_down)
     end
+    -- Cerulean Bell (Blind:drawn_to_hand): after each draw, if no card is forced, a random card
+    -- of the hand is forced (always selected)
+    if eff == 'forced_card' and #b.hand > 0 then
+        local any = false
+        for _, c in ipairs(b.hand) do if c.forced then any = true end end
+        if not any then b.hand[self.rng:int(1, #b.hand)].forced = true end
+    end
+end
+
+-- Cerulean Bell: the forced card is always selected, so it goes with every play and discard
+-- (the player cannot unselect it)
+local function with_forced(hand, uids)
+    local out, set = {}, {}
+    for _, u in ipairs(uids or {}) do out[#out + 1] = u; set[tostring(u)] = true end
+    for _, c in ipairs(hand) do
+        if c.forced and not set[tostring(c.uid)] then out[#out + 1] = c.uid end
+    end
+    return out
 end
 
 function Sim:start_blind()
@@ -435,6 +465,8 @@ function Sim:start_blind()
     if b.boss then
         for _, j in ipairs(self.jokers) do if j.key == 'j_chicot' and not j.debuff then b.disabled = true end end
     end
+    -- Blind:set_blind debuffs every playing card at once (draw pile included)
+    for _, c in ipairs(self.cards) do self:apply_debuff(c) end
     b.hands_left = self:round_hands_now()
     b.discards_left = self:round_discards_now()
     b.hand_size = self:hand_size_now() + (self.juggle or 0)
@@ -454,7 +486,6 @@ function Sim:start_blind()
     self.targets = { ancient_suit = C.SUITS[self.rng:int(1, 4)], castle_suit = C.SUITS[self.rng:int(1, 4)],
         idol = any and { id = any.id, suit = any.suit, rank = any.rank } or nil, mail_id = self.rng:int(2, 14) }
     self:fill_hand(eff == 'first_hand_face_down')
-    if eff == 'forced_card' and #b.hand > 0 then b.hand[self.rng:int(1, #b.hand)].forced = true end
     if eff == 'random_joker_disabled' then self:heart_disable() end
 end
 
@@ -476,7 +507,7 @@ end
 -- Play a hand. Returns the score.
 function Sim:play(uids)
     local b = self.blind
-    local played, held = split(b.hand, uids)
+    local played, held = split(b.hand, with_forced(b.hand, uids))
     if #played == 0 or #played > 5 then return nil, 'invalid play' end
     local eff = self:boss_effect()
     local st = self:snapshot('hand')
@@ -560,9 +591,8 @@ end
 function Sim:discard(uids)
     local b = self.blind
     if b.discards_left <= 0 then return nil, 'no discard left' end
-    local cards, rest = split(b.hand, uids)
+    local cards, rest = split(b.hand, with_forced(b.hand, uids))
     if #cards == 0 or #cards > 5 then return nil, 'invalid discard' end
-    for _, c in ipairs(cards) do if c.forced then return nil, 'forced card' end end
     b.discards_left = b.discards_left - 1
     b.discards_used = b.discards_used + 1
     b.hand = rest
@@ -622,7 +652,7 @@ function Sim:sell(uid)
         end
         if j.key == 'j_luchador' and self.blind and self.blind.boss then
             self.blind.disabled = true
-            for _, c in ipairs(self.cards) do c.debuff = nil end
+            for _, c in ipairs(self.cards) do c.debuff = nil; c.forced = nil end
         end
         if j.key == 'j_invisible' and (j.ability.invis_rounds or 0) >= (tonumber(j.ability.extra) or 2) and #self.jokers > 0 then
             local src = self.jokers[self.rng:int(1, #self.jokers)]
@@ -788,6 +818,36 @@ function Sim:shop_card()
     end
 end
 
+-- Shop tags (vanilla Tag:apply_to_run): the Uncommon / Rare Tag makes the first card created
+-- for the next shop a free joker of that rarity ('store_joker_create'); an edition tag turns
+-- the next base-edition joker that appears in a shop, rerolls included, into a free joker with
+-- that edition ('store_joker_modify'). fresh: the cards just created.
+local EDITION_TAGS = { tag_negative = 'e_negative', tag_foil = 'e_foil', tag_holo = 'e_holo', tag_polychrome = 'e_polychrome' }
+function Sim:apply_store_tags(fresh)
+    local keep = {}
+    local created = false
+    for _, t in ipairs(self.tags) do
+        local used = false
+        if (t == 'tag_uncommon' or t == 'tag_rare') and not created and fresh[1] then
+            local key = self:random_joker_key(t == 'tag_rare' and 3 or 2)
+            local j = self:make_joker(key)
+            fresh[1] = { uid = j.uid, key = key, name = j.name, set = 'Joker', area = 'shop', cost = 0, joker = j, tagged = true }
+            created, used = true, true
+        elseif EDITION_TAGS[t] then
+            for _, it in ipairs(fresh) do
+                if it.set == 'Joker' and not it.edition and not it.tagged and it.joker then
+                    it.edition = EDITION_TAGS[t]; it.joker.edition = EDITION_TAGS[t]
+                    it.cost = 0; it.tagged = true
+                    used = true
+                    break
+                end
+            end
+        end
+        if not used then keep[#keep + 1] = t end
+    end
+    self.tags = keep
+end
+
 function Sim:booster_item()
     local w = {}
     for i, b in ipairs(RU.BOOSTERS) do w[i] = b.weight end
@@ -815,18 +875,10 @@ function Sim:open_shop()
             cost = math.floor(RU.VOUCHER_COST * (100 - self.discount) / 100) }
     end
     -- tags waiting for the shop
+    self:apply_store_tags(self.shop.cards)
     local keep = {}
     for _, t in ipairs(self.tags) do
-        if t == 'tag_uncommon' or t == 'tag_rare' then
-            local key = self:random_joker_key(t == 'tag_rare' and 3 or 2)
-            local j = self:make_joker(key)
-            table.insert(self.shop.cards, 1, { uid = j.uid, key = key, name = j.name, set = 'Joker', area = 'shop', cost = 0, joker = j })
-        elseif t == 'tag_negative' or t == 'tag_foil' or t == 'tag_holo' or t == 'tag_polychrome' then
-            local ed = ({ tag_negative = 'e_negative', tag_foil = 'e_foil', tag_holo = 'e_holo', tag_polychrome = 'e_polychrome' })[t]
-            local key = self:random_joker_key()
-            local j = self:make_joker(key, { edition = ed })
-            table.insert(self.shop.cards, 1, { uid = j.uid, key = key, name = j.name, set = 'Joker', area = 'shop', cost = 0, edition = ed, joker = j })
-        elseif t == 'tag_coupon' then
+        if t == 'tag_coupon' then
             for _, it in ipairs(self.shop.cards) do it.cost = 0 end
             for _, it in ipairs(self.shop.boosters) do it.cost = 0 end
         elseif t == 'tag_voucher' then
@@ -856,6 +908,7 @@ function Sim:reroll()
     self.stats.rerolls = self.stats.rerolls + 1
     for i = 1, self.shop_slots do sh.cards[i] = self:shop_card() end
     for i = #sh.cards, self.shop_slots + 1, -1 do table.remove(sh.cards, i) end
+    self:apply_store_tags(sh.cards)
     for _, j in ipairs(self.jokers) do
         if j.key == 'j_flash' and not j.debuff then j.ability.mult = (j.ability.mult or 0) + (tonumber(j.ability.extra) or 2) end
     end
@@ -1187,6 +1240,7 @@ function Sim:skip_blind()
     for _, j in ipairs(self.jokers) do
         if j.key == 'j_throwback' then j.ability.x_mult = 1 + 0.25 * self.stats.skips end
     end
+    self.orbital_hand = self.orbital_hands and self.orbital_hands[cur.slot]
     self:apply_tag(tag)
     self:event('skip', { tag = tag })
     return true
@@ -1205,7 +1259,7 @@ function Sim:apply_tag(tag)
     elseif tag == 'tag_orbital' then
         local names = {}
         for _, n in ipairs(H.ORDER) do if self.hands[n].visible ~= false then names[#names + 1] = n end end
-        self:level_up(names[self.rng:int(1, #names)], 3)
+        self:level_up(self.orbital_hand or names[self.rng:int(1, #names)], 3)
     elseif tag == 'tag_boss' then
         self.upcoming[3].key = self:pick_boss()
         local bb = BL.get(self.upcoming[3].key)

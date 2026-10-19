@@ -61,8 +61,28 @@ doubles paires, full, couleurs, suites, carte haute, variantes complétées à 5
 décision **réelle** proposée au joueur, elle, compare les 218 sous-ensembles exactement.
 Les compteurs des jokers évoluent d'une main simulée à l'autre (Green Joker, Ice Cream…).
 
-Limites : politique non optimale (une meilleure stratégie peut faire mieux), Crimson Heart
-ignoré au-delà de la main courante, destruction des cartes de verre non simulée en cours de manche.
+Boss dont l'effet change d'une main à l'autre, appliqués dans la fin de manche simulée (1.0.8) :
+* **Cerulean Bell** : la carte imposée est toujours sélectionnée, donc jouée **et défaussée** avec
+  les autres (4 autres cartes au plus) ; après chaque pioche, une carte de la nouvelle main est
+  imposée au hasard (`Blind:drawn_to_hand`). Les défausses proposées contiennent donc toujours la
+  carte imposée, et « défausser la seule carte imposée » est une option ;
+* **The Eye** : un type de main déjà joué dans la manche ne marque plus ; **The Mouth** : seul le
+  premier type joué marque ; **The Arm** : la main jouée perd un niveau, pour les mains suivantes
+  aussi ;
+* **The Hook** : 2 cartes tenues au hasard sont défaussées à chaque main jouée ;
+* **Crimson Heart** : un autre joker au hasard (parmi ceux qui ne l'étaient pas) est désactivé
+  à chaque main ;
+* **The Fish** (cartes piochées après une main), **The Wheel** (1 sur 7), **The Mark** (figures) :
+  les cartes piochées face cachée restent inconnues de la politique (légèrement pessimiste).
+
+Prévision des boss à venir (choix de blinde) : mêmes règles, et les cartes affaiblies le sont comme
+dans le jeu (`Blind:debuff_card`) : cartes Joker (Wild) et, avec Smeared Joker, les deux couleurs
+rouges ou noires contre les boss de couleur ; toutes les cartes contre The Plant avec Pareidolia ;
+cartes déjà jouées dans l'ante contre The Pillar.
+
+Limites : politique non optimale (une meilleure stratégie peut faire mieux), destruction des
+cartes de verre non simulée en cours de manche, The House non appliqué aux prévisions (main de
+départ supposée visible), Verdant Leaf supposé levé sans perte de joker dans les prévisions.
 
 ### Cartes face cachée (The House, The Mark, The Wheel, The Fish)
 
@@ -162,7 +182,7 @@ section `advice`) :
 | Main | 1. Verdant Leaf : vendre le joker qui marque le moins (économie d'abord, jamais un éternel) ; 2. vendre Luchador (s'il n'est pas éternel) si boss actif et victoire < 80 % ; 3. utiliser une planète (sauf avec Observatory : la garder donne ×1,5), Black Hole, The Hermit (≥ 20 $, ou dernière ante), Temperance (≥ 3 $ de revente), Judgement / Wraith (≤ 10 $) / The Soul s'il y a la place, un tarot d'amélioration ou de couleur sur les cartes qui vont jouer ; 4. jouer / défausser selon la simulation de manche |
 | Boutique | 1. consommables comme ci-dessus (+ ceux qui créent des cartes quand il y a la place : High Priestess, Emperor, Wheel of Fortune ; Judgement / Wraith / The Soul avec les jokers pleins : vendre d'abord le joker le plus faible si un joker aléatoire a ≥ 50 % de chances d'être meilleur et un gain moyen ≥ 5 %, mesuré comme un remplacement) ; 2. vendre Invisible Joker quand il est prêt, un joker périssable expiré ; 3. meilleur achat abordable dont la note atteint le **seuil exigé** (ci-dessous) — remplacement : vendre d'abord le joker remplacé ; consommables pleins : vendre d'abord le plus faible ; 4. vendre un joker qui apporte ≤ 3 % du score (note de vente ≥ 60) ; 5. relancer : gratuite, ou rentable, ou **une fois par boutique** (ci-dessous) ; 6. blinde suivante |
 | Paquet | prendre la meilleure carte (note ≥ 50) — tarot ou spectrale : avec ses cartes cibles (dans la main du paquet) — sinon passer |
-| Choix de blinde | passer seulement si le tag vaut plus que la blinde **et la boutique** perdues et que la blinde d'après reste ≥ 95 % (§9), sinon jouer ; un boss se joue toujours. Seul le choix **définitif** est affiché (pas pendant que l'analyse se termine) |
+| Choix de blinde | passer si le tag vaut au moins 1 $ de plus que ce que coûte le passage (récompense, mains, intérêts, jokers, boutique, croissance) et que la blinde qui suit reste ≥ 90 % sans la boutique (§9), sinon jouer ; un boss se joue toujours. Seul le choix **définitif** est affiché (pas pendant que l'analyse se termine) |
 
 **Discipline d'argent inspirée des meilleurs joueurs** (seulement quand la suite est « sûre » :
 prochaine blinde ≥ 85 % et boss ≥ 70 % ; sinon la puissance passe d'abord et seul le seuil de
@@ -249,11 +269,25 @@ Utilisées seulement quand la simulation est impossible, toujours affichées « 
 ramenées vers 50 (fiabilité 0,5–0,6) :
 * valeurs en dollars des tarots, spectrales, bons non simulables, paquets (`model/items_db.lua`) ;
 * croissance future des jokers évolutifs (`GROWTH` dans `engine/shop.lua`) ;
-* valeurs des tags de blinde (`engine/outlook.lua`) et conseil de passer une blinde :
-  conseillé seulement si `valeur_tag > récompense perdue + 2 $ + valeur de la boutique perdue`
-  (10 $ jusqu'à l'ante 4, 8 $ ensuite) et si la blinde suivante reste ≥ 95 % sans la boutique
-  intermédiaire. Les meilleurs joueurs ne passent presque jamais de blinde : en pratique seuls
-  Investment (20 $) et Economy (avec beaucoup d'argent) le justifient.
+* passer une blinde (`engine/skip.lua`, 1.0.8, sources : PRO_SKIPS_SOURCES.md) : conseillé si
+  `valeur_tag − coût_passage ≥ 1 $` et si la blinde qui suit reste battue **sans** la boutique
+  sautée (Big Blind ≥ 90 % après une Small Blind passée ; boss ≥ 90 % après une Big Blind passée),
+  probabilité tirée d'une **simulation complète de la manche** avec le deck actuel.
+  `coût_passage = récompense (0 $ pour la Small Blind dès la mise rouge) + 1 $ × mains restantes
+  attendues + intérêts de la manche + argent des jokers de la manche (location : −3 $) + boutique
+  + croissance perdue − ce que le passage préserve`. Mains restantes : `mains − ⌈taille / (1,5 ×
+  main typique)⌉`. Boutique : 4 $ (ante 1), 6 $ (ante 2), 10 $ (antes 3-6), 14 $ (antes 7-8),
+  ×1,25 s'il manque des jokers / un ×Mult / de la puissance, ×0,6 avec moins de 5 $ à dépenser,
+  ×0,8 jokers pleins sans manque, ×1,3 pour la boutique d'avant le boss (Big Blind), ×1,3 si le
+  boss est sous 70 %, ×1,2 dès la mise violette. Croissance : 2 à 3 $ par joker qui grandit, 2 $
+  par joker « quand la blinde est choisie », −1 $ par joker qui s'use ; Throwback −6 $ ; The
+  Pillar −3 $. Valeur des tags : tableau de PRO_LESSONS.md §4 (montant affiché pour Economy,
+  Speed, Handy, Garbage ; Orbital sur la main principale seulement ; Boss : `60 × (P(boss
+  ordinaire) − P(ce boss))` ; Double : 0,6 × le tag suivant s'il vaut ≥ 12 $ ; jokers de tag ×0,7
+  dès la mise noire, ×0,6 à la mise or).
+* synergies des builds (`engine/builds.lua`, `model/builds_db.lua`) : bonus de « potentiel »
+  dans la note de boutique, somme des paires présentes (S 0,40, A 0,28, B 0,16, C 0,07,
+  anti-synergie −0,25), bornée à [−0,5 ; 0,6], ×0,7 aux antes 1-2.
 Les tarots qui améliorent ou changent la couleur de cartes sont **simulés** sur des cibles
 probables (les meilleures cartes non améliorées / les cartes de plus faible valeur), d'où la
 mention « simulation approchée ».

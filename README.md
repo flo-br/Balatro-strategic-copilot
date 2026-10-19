@@ -5,7 +5,7 @@ partie, calcule les scores exacts, les probabilités, évalue la boutique, conse
 défausses, et **apprend de vos parties**. **Il ne joue jamais à votre place** : il n'effectue
 aucune action (sélection, jeu, défausse, achat, vente, relance).
 
-> Statut : version 1.0.7. Développée **hors du jeu** (aucune installation de Balatro n'était
+> Statut : version 1.0.8. Développée **hors du jeu** (aucune installation de Balatro n'était
 > disponible dans l'environnement de développement), puis essayée par l'utilisateur dans le vrai
 > jeu (mode copier-coller). Validée par des tests automatisés, un environnement Balatro/Steamodded
 > simulé, le vrai runtime LÖVE 11.5 et des parties complètes simulées ([entraînement](docs/TRAINING.md)).
@@ -22,8 +22,8 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 | Manche | Probabilité de battre la blinde pour chaque action candidate, par simulation de la fin de manche avec une politique explicite |
 | Sélection | Score exact des cartes que **vous** sélectionnez, en direct, contrôlé par l'identification de main du jeu |
 | Boutique | Note stratégique /100, effet mesuré sur la prochaine blinde et le boss, coûts et intérêts perdus, ventes, remplacements, intérêt d'une relance (pool réel de jokers) |
-| Synergies | Contribution **mesurée** de chaque joker, ordre optimal des jokers, adéquation d'un joker au build |
-| Blindes | Prochaine blinde et boss simulés avec leurs effets (malus de couleur, The Needle, The Water, The Psychic…), conseil pour passer une blinde |
+| Synergies | Contribution **mesurée** de chaque joker, ordre optimal des jokers, et les **builds des meilleurs joueurs** (Baron + Mime, Photograph + Hanging Chad, Triboulet, Canio, couleur, verre, acier…) : synergies et anti-synergies en boutique, pièces à chercher, cibles des tarots selon le build |
+| Blindes | Prochaine blinde et boss simulés avec leurs effets (malus de couleur, The Needle, The Water, The Psychic, Cerulean Bell…), **passage d'une blinde** calculé tag par tag contre son coût réel (récompense, mains, intérêts, boutique) |
 | Risque | Pondérations qui dépendent continûment du danger (survie quand la situation est critique, investissement quand elle est confortable) |
 | Effets | Améliorations, éditions, sceaux et autocollants des jokers affichés et pris en compte (garder l'acier et l'or en main, défausser le sceau violet, jamais vendre un éternel…) |
 | Plan de partie | Leçons des meilleurs joueurs ([sources](docs/PRO_LESSONS.md)) : main principale, ×Mult attendus par ante, argent au-delà des intérêts réinvesti, boss à préparer |
@@ -35,7 +35,7 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 **Méthode sans programme (recommandée, 1.0.4+)** — ni Lovely, ni Steamodded, ni script, ni DLL ;
 fonctionne aussi sur un PC protégé (contrôle parental, antivirus strict) :
 
-1. Extraire l'archive `BalatroStrategicCopilot-1.0.7.zip`.
+1. Extraire l'archive `BalatroStrategicCopilot-1.0.8.zip`.
 2. Copier le **contenu** du dossier `COPIER_DANS_AppData_Balatro` (`main.lua` + `Mods`) dans
    `%AppData%\Balatro\` (touche Windows + R, `%AppData%\Balatro`).
 3. Lancer Balatro : bandeau vert « … actif — touche C : panneau (mode autonome, sans Steamodded) ».
@@ -47,7 +47,7 @@ Balatro tourne sur LÖVE 11, qui lit `main.lua` d'abord dans le dossier de sauve
 **Avec Lovely + Steamodded** : copier le dossier `BalatroStrategicCopilot` dans
 `%AppData%\Balatro\Mods\` (de sorte que `Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json`
 existe ; une archive `.zip` déposée telle quelle est ignorée par les anciens Steamodded). L'archive
-`BalatroStrategicCopilot-1.0.7-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
+`BalatroStrategicCopilot-1.0.8-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
 répare toute la chaîne (dossier du jeu, Lovely, Steamodded, copilote) puis confirme que tout s'est
 chargé. Un **bandeau vert « actif »** s'affiche au lancement ; **aucun bandeau = mod non trouvé**
 ([pièges vérifiés](docs/INSTALL.md)).
@@ -71,19 +71,19 @@ qu'il faut toucher ; dès que vous l'avez faite, il recalcule et montre la suiva
 
 | Étiquette | Où | Quand |
 |---|---|---|
-| **JOUER** / **DÉFAUSSER** | sur les cartes de la main | la meilleure action de la manche (aussi avec des cartes face cachée, ex. boss The House) |
+| **JOUER** / **DÉFAUSSER** | sur les cartes de la main | la meilleure action de la manche (aussi avec des cartes face cachée, ex. boss The House) ; **IMPOSÉE** sur la carte que Cerulean Bell sélectionne d'office (elle part avec le jeu ou la défausse) |
 | **À PRENDRE** | sur l'objet de boutique ou la carte du paquet | le meilleur achat rentable (avec sa note /100) |
 | **À VENDRE** | sur un joker ou un consommable | pour remplacer un joker par un meilleur, faire de la place, gagner de l'argent avec un joker inutile, ou un effet de vente (Luchador contre un boss dangereux, Invisible Joker prêt) |
 | **RELANCER** | sur le bouton de relance | relance gratuite, meilleure boutique assez probable, ou une relance avant de partir (habitude des meilleurs joueurs), sans casser l'épargne des intérêts |
 | **BLINDE SUIVANTE** | sur le bouton pour quitter la boutique | quand plus rien n'est rentable, ou pour garder 25 $ d'intérêts (à partir de l'ante 2, si la suite est sûre) |
-| **JOUER** / **PASSER** | sur les boutons du choix de blinde | passer seulement si le tag vaut plus que la blinde **et sa boutique** et que la suivante reste sûre (rare) ; seul le choix définitif s'affiche |
+| **JOUER** / **PASSER** | sur les boutons du choix de blinde | passer quand le tag vaut plus que ce que coûte le passage (récompense, mains, intérêts, boutique) et que la blinde suivante reste sûre sans boutique ; détail affiché dans le panneau ; seul le choix définitif s'affiche |
 | **UTILISER** + **CIBLE** | sur un consommable (+ les cartes à sélectionner) | planètes, argent (Hermit, Temperance), tarots et spectrales sur les cartes visées ; **Death** : DEVIENT (gauche) et MODÈLE (droite), avec la consigne de glisser la carte à gauche si besoin ; Hanged Man : À DÉTRUIRE |
 | **PASSER** | sur le bouton du paquet | quand aucune carte du paquet n'améliore le jeu |
 | **1, 2, 3…** | sous les jokers | seulement quand l'ordre actuel n'est pas le bon (un ×Mult avant un +Mult) : glissez les jokers pour suivre les numéros |
 
 Le panneau se place sous la zone des consommables pour ne pas cacher l'étiquette UTILISER. Les
 achats suivent une discipline inspirée des meilleurs joueurs (paquets souvent achetés, intérêts
-préservés, une relance avant de quitter la boutique, blindes presque jamais passées) ; seuils
+préservés, une relance avant de quitter la boutique, blindes passées pour les bons tags) ; seuils
 réglables dans `config.lua`, section `advice` (détails : [docs/MATHS.md](docs/MATHS.md) §7–8).
 
 La ligne « À FAIRE » est aussi la première du résumé compact, avec la probabilité qui justifie le
@@ -121,6 +121,8 @@ Explications détaillées : [docs/PERCENTAGES.md](docs/PERCENTAGES.md).
 
 ![Boss The House : toutes les cartes face cachée](docs/img/overlay_house.png)
 
+![Boss Cerulean Bell : la carte imposée part avec le jeu](docs/img/overlay_bell.png)
+
 *Captures produites avec le vrai runtime LÖVE 11.5 sur un état de jeu simulé (cartes factices) :
 elles montrent le rendu du mod, pas l'apparence du jeu.*
 
@@ -132,7 +134,7 @@ elles montrent le rendu du mod, pas l'apparence du jeu.*
 * [Installation / désinstallation / mise à jour](docs/INSTALL.md)
 * [Pourcentages et notes affichés](docs/PERCENTAGES.md)
 * [Méthodes mathématiques et limites des estimations](docs/MATHS.md)
-* [Leçons des meilleurs joueurs appliquées](docs/PRO_LESSONS.md) ([recherche sourcée complète](docs/PRO_LESSONS_SOURCES.md))
+* [Leçons des meilleurs joueurs appliquées](docs/PRO_LESSONS.md) (recherches sourcées : [générale](docs/PRO_LESSONS_SOURCES.md), [blindes passées](docs/PRO_SKIPS_SOURCES.md), [synergies des builds](docs/PRO_SYNERGIES_SOURCES.md))
 * [Entraînement sur des parties simulées](docs/TRAINING.md)
 * [Système d'apprentissage, export, réinitialisation](docs/LEARNING.md)
 * [Tests et résultats](docs/TESTS.md)
