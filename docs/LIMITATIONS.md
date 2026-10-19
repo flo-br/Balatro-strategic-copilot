@@ -77,9 +77,10 @@
   / en dernier) ; les cartes gardées sont rangées par une règle (additif, neutre, multiplicatif),
   pas par recherche exhaustive. Les numéros supposent que vous déplacez les cartes **avant** de
   jouer (le jeu compte de gauche à droite).
-* Réglages recalculés après chaque partie (1.0.9) : pas bornés choisis à la main, pas
-  d'apprentissage statistique des seuils ; l'effet a été mesuré sur le simulateur seulement
-  (TRAINING.md).
+* Développement recalculé après chaque partie (1.0.9) : un essai est jugé sur 3 parties, ce qui
+  est peu (le hasard d'une partie pèse lourd) ; un changement neutre peut être gardé ou annulé par
+  chance. La règle « garder seulement si ce n'est pas moins bon » limite les dégâts d'un mauvais
+  changement, elle ne garantit pas un progrès. Mesuré sur le simulateur seulement (TRAINING.md).
 * Mises 2 à 8 et decks (1.0.9) : la stratégie s'adapte à ce qui est **lu** (récompense nulle,
   taille des blindes, autocollants, défausses, cartes du deck) ; il n'y a pas de règle propre à
   chaque deck (par exemple pas de plan spécifique au deck Plasma ou au deck Damier).

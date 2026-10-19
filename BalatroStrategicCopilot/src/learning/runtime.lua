@@ -109,11 +109,13 @@ function RT.finish_run(run)
     end
     if RT.store then RT.store:delete(RT.ACTIVE) end
     RT.last_review = RV.build(run, RT.profile_data)
-    -- the causes of a loss feed the plan of the next runs (engine/plan.lua)
+    -- the causes of the last losses are kept in the profile (shown; the plan of the next runs
+    -- only changes through the trials of learning/adapt.lua)
     if not run.won and cfg().enabled ~= false and RT.last_review.lessons and #RT.last_review.lessons > 0 then
         LE.add_lessons(RT.profile_data, RT.last_review.lessons, run.id)
     end
-    -- and the copilot recalculates its own settings (learning/adapt.lua), shown in the review
+    -- and the copilot recalculates its own development (learning/adapt.lua): one change on
+    -- trial after a loss, kept only if the next runs are not worse; shown in the review
     if cfg().enabled ~= false then
         local okA, changes = pcall(AD.update, RT.profile_data, RT.last_review, run)
         if okA then RT.last_review.adapt = changes end

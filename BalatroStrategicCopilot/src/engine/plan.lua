@@ -85,14 +85,18 @@ function PL.main_hand(state)
     return best
 end
 
--- Weight of a lesson learned from the player's past losses (learning/learning.lua): x1 to x1.5.
+-- Weight of a lesson learned from the player's past runs: 1 + the urgency the copilot is
+-- trying or has kept (learning/adapt.lua: changed after a loss, kept only if the next runs are
+-- not worse). Before 1.0.9 the causes of the last losses weighed directly (x1 to x1.5) and
+-- "power that stopped following the blinds", present in every loss, raised the x Mult urgency
+-- after the first loss for good; measured worse on the simulator (docs/TRAINING.md).
+local URGENCY = { xmult = 'xmult_urgency', levels = 'levels_urgency' }
 local function lesson(key)
     local lr = BSC.learning_runtime
-    local prof = lr and lr.profile and lr.profile()
-    if not prof then return 1 end
-    local ok, LE = pcall(BSC.require, 'learning/learning')
-    if not ok or not LE.lesson_weight then return 1 end
-    return LE.lesson_weight(prof, key)
+    local d = lr and lr.adapt_deltas and lr.adapt_deltas()
+    local k = URGENCY[key]
+    if not (d and k and type(d[k]) == 'number') then return 1 end
+    return 1 + math.max(0, math.min(0.5, d[k]))
 end
 PL.lesson = lesson
 
@@ -132,8 +136,8 @@ function PL.analyse(state, base)
     if plan.phase == 'early' and kinds.econ == 0 and ((state.econ and state.econ.dollars) or 0) < 10 then plan.gaps.economy = true end
     -- additive jokers are outgrown in the late game: replacing them by multipliers pays
     plan.additive_late = (plan.phase == 'late') and kinds.additive or 0
-    -- losses for lack of multipliers or of power make multipliers more urgent next time
-    plan.xmult_weight = math.max(lesson('xmult'), lesson('power_drop'))
+    -- urgency of multipliers / planets tried (and kept only if it pays) after losses
+    plan.xmult_weight = lesson('xmult')
     plan.levels_weight = lesson('levels')
     -- builds of top players under way (engine/builds.lua; loaded lazily: it requires this module)
     local okb, BD = pcall(BSC.require, 'engine/builds')

@@ -338,35 +338,46 @@ Les tarots qui améliorent ou changent la couleur de cartes sont **simulés** su
 probables (les meilleures cartes non améliorées / les cartes de plus faible valeur), d'où la
 mention « simulation approchée ».
 
-## 10. Recalcul des réglages après chaque partie (1.0.9)
+## 10. Recalcul du développement après chaque partie (1.0.9)
 
 `learning/adapt.lua`. Après chaque partie, le bilan (`learning/review.lua`) donne les causes ; le
-profil compte, pour chaque cause, dans combien de **défaites** et de **victoires** du joueur elle
-apparaît. Une cause ne déplace un réglage que si elle **distingue les défaites des victoires** :
-vue dans au moins 2 défaites, et `P(cause | défaite) − P(cause | victoire) ≥ 0,2` (estimations de
-Laplace `(n + 1) / (N + 2)` ; sans victoire enregistrée, `P(cause | victoire)` part de 1/2).
-Règles (table `AD.RULES`) :
+profil compte chaque cause dans les **défaites** et les **victoires** du joueur, et garde le
+résultat des 20 dernières parties (ante atteinte, une victoire compte 9).
 
-| Cause | Réglages déplacés |
+**Un essai, puis un verdict.** Après une défaite, et si aucun essai n'est en cours, le copilote
+essaie **un** changement : celui que demande la cause la plus fréquente de vos défaites, à
+condition qu'elle les distingue des victoires (vue dans 2 défaites au moins et
+`P(cause | défaite) − P(cause | victoire) ≥ 0,2`, estimations de Laplace ; sans victoire
+enregistrée, `P(cause | victoire)` part de 1/2) et qu'au moins 3 parties soient enregistrées.
+Le changement est joué pendant **3 parties**, puis jugé : moyenne des 3 parties ≥ moyenne des
+parties enregistrées avant l'essai → **gardé** ; sinon **annulé**, et la même cause n'est plus
+essayée pendant 10 parties. Chaque étape (à l'essai, gardé, annulé, avec les deux moyennes) est
+écrite dans le bilan.
+
+| Cause | Changement essayé (un pas, dans des bornes fixes) |
 |---|---|
+| ×Mult manquants | urgence des ×Mult en boutique +0,25 (bonus de potentiel ×1,25, au plus ×1,5), seuil de remplacement −2 |
+| main principale peu montée | poids des planètes de la main principale +0,25 (au plus ×1,5) |
 | argent dormant | seuil « dépenser l'excédent » −2, réserve au-delà du plafond −2, réserve avant relance −4 |
-| ×Mult manquants | seuil de remplacement −2 |
 | trop peu de jokers | +1 joker pris d'office aux antes 1-2, seuil d'achat −1 |
-| main principale peu montée | seuil « dépenser l'excédent » −2, seuil d'achat −1 |
+| aucune amélioration à l'ante 2 | seuil « dépenser l'excédent » −2, seuil d'achat −1 |
 | économie | seuil d'achat +1, épargne une ante plus tôt |
 | marge, boss | sécurité exigée et sécurité d'un passage +1 pas |
 | défaite juste après un passage | marge d'un passage +2 $, sécurité d'un passage +0,02 |
 
-« Main typique sous la mise » et « puissance qui décroche » ne déplacent rien : elles sont dans
-**toutes** les défaites. **Mesure qui a imposé cette règle** : la première version déplaçait les
-réglages sur toutes les causes de chaque défaite ; sur 10 parties simulées enchaînées (mise
-blanche, graines 201-210), les réglages ont atteint leurs bornes en 5 parties (dépenser toujours
-plus) et le copilote a gagné **1 partie sur 10, ante moyenne 6,4**, contre **4 sur 10, ante 7,3**
-sans recalcul sur les mêmes graines (TRAINING.md).
+« Main typique sous la mise » et « puissance qui décroche » n'ont pas de règle : elles sont dans
+**toutes** les défaites. Une partie abandonnée n'est pas comptée.
 
-Un réglage bouge d'**un pas au plus par partie**, dans le sens de la majorité des votes, dans des
-bornes fixes (ex. seuil d'achat 56, de −4 à +3 ; sécurité boss 0,70, de −0,05 à +0,15). Après une
-victoire, chaque réglage revient d'un pas vers sa valeur de `config.lua`. Les 10 dernières
-modifications sont gardées avec leurs causes et affichées dans le bilan (« Ce que je change pour
-la prochaine partie »). Les valeurs ajustées s'appliquent par dessus `config.lua` dans
-`engine/advice.lua` et `engine/skip.lua`.
+**Mesures qui ont imposé cette forme** (TRAINING.md, mise blanche, mêmes graines 201-220, sans
+recalcul : 9 victoires sur 20, ante moyenne 7,0) :
+* version 1 (toutes les causes de chaque défaite, appliquées tout de suite) : réglages à leurs
+  bornes en 5 parties, 1 victoire sur 10 (graines 201-210, contre 4 sans recalcul) ;
+* version 2 (seulement les causes qui distinguent les défaites, appliquées tout de suite) :
+  6 sur 20 ; chaque mécanisme seul (réglages : 7 sur 20 ; leçons de la 1.0.7 qui pesaient
+  directement sur le plan : 7 sur 20) fait moins bien que sans recalcul, jamais mieux ;
+* d'où la version livrée : un changement n'est **gardé que si les parties suivantes ne sont pas
+  moins bonnes**. Les leçons de la 1.0.7 (×Mult, planètes) passent par les mêmes essais au lieu de
+  peser d'office sur le plan.
+
+Les valeurs ajustées s'appliquent par dessus `config.lua` dans `engine/advice.lua`,
+`engine/skip.lua` et `engine/plan.lua`.

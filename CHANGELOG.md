@@ -25,16 +25,19 @@ indiquer, recalcul du copilote après chaque partie, toutes les mises et tous le
   (boutique) font de même : Hanging Chad n'est plus sous-évalué.
 * Étiquettes voisines décalées d'une rangée quand elles se chevauchent.
 
-### Après chaque partie : le copilote recalcule ses réglages (`learning/adapt.lua`)
-* Les causes trouvées par le bilan (argent dormant, ×Mult manquants, trop peu de jokers, marge,
-  boss, défaite juste après un passage…) déplacent ses seuils d'achat, d'épargne, de sécurité et de
-  passage : un pas au plus par partie, dans des bornes fixes ; une victoire ramène d'un pas vers la
-  base. Chaque changement est affiché dans le bilan (« Ce que je change pour la prochaine
-  partie ») avec sa cause. Nouvelle cause du bilan : défaite dans l'ante d'un passage de blinde.
-* Seule une cause qui **distingue vos défaites de vos victoires** (2 défaites au moins, nettement
-  plus fréquente que dans les victoires) déplace un réglage. Mesuré sur le simulateur : la première
-  version, qui réagissait à toutes les causes de chaque défaite, poussait les réglages à leurs
-  bornes en 5 parties et gagnait 1 partie sur 10 contre 4 sans recalcul, sur les mêmes graines.
+### Après chaque partie : le copilote recalcule son développement (`learning/adapt.lua`)
+* Après une défaite, il **essaie un changement** demandé par la cause qui revient le plus dans vos
+  défaites (×Mult manquants → ×Mult plus urgents en boutique ; argent dormant → dépenser plus tôt ;
+  marge ou boss → plus de sécurité ; défaite juste après un passage → passer moins…), le joue
+  3 parties, puis le **garde** si ces parties ne sont pas moins bonnes que les précédentes, sinon
+  l'**annule**. Chaque étape est affichée dans le bilan (« Ce que je change pour la prochaine
+  partie ») avec sa cause et les moyennes comparées. Nouvelle cause du bilan : défaite dans l'ante
+  d'un passage de blinde.
+* Pourquoi des essais : mesuré sur le simulateur, appliquer directement les leçons d'une défaite
+  faisait **moins bien** que ne rien changer (1 victoire sur 10 au lieu de 4, puis 6 sur 20 au lieu
+  de 9 avec seulement les causes qui distinguent les défaites ; les leçons de la 1.0.7, qui
+  pesaient d'office sur le plan, aussi : 7 sur 20). « Main sous la mise » et « décrochage », présentes
+  dans toutes les défaites, ne changent plus rien.
 
 ### Mises et decks (erreurs trouvées en faisant jouer le copilote à toutes les mises)
 * **Location** (mise or) : un joker loué coûte 1 $ puis 3 $ à chaque manche ; il était noté comme un

@@ -264,16 +264,26 @@ function RV.build(run, profile)
 end
 
 -- Panel lines for the game-over phase.
--- One adjustment of learning/adapt.lua, in words: what changes, from / to, and why.
+-- One adjustment of learning/adapt.lua, in words: its verdict (on trial, kept, undone), what
+-- changes, from / to, and why.
+local function AD_TRIAL_RUNS()
+    local ok, AD = pcall(BSC.require, 'learning/adapt')
+    return ok and AD and AD.TRIAL_RUNS or 3
+end
 local function fmt_val(v)
     if math.abs(v - math.floor(v + 0.5)) < 1e-9 then return string.format('%+d', math.floor(v + 0.5)) end
     return string.format('%+.2f', v)
 end
+local function fmt_mean(v) return v and string.format('%.1f', v):gsub('%.', ',') or '?' end
 function RV.adapt_text(ch)
     local why = {}
     for _, c in ipairs(ch.causes or {}) do why[#why + 1] = I.T('cause_' .. c) end
-    local reason = ch.won and I.T('adapt_win') or table.concat(why, ', ')
-    return I.T('adapt_' .. ch.key) .. ' : ' .. fmt_val(ch.from) .. ' → ' .. fmt_val(ch.to)
+    local reason = table.concat(why, ', ')
+    local head = ''
+    if ch.verdict == 'trial' then head = I.T('adapt_trial', AD_TRIAL_RUNS())
+    elseif ch.verdict == 'kept' then head = I.T('adapt_kept', fmt_mean(ch.trial_mean), fmt_mean(ch.base_mean))
+    elseif ch.verdict == 'undone' then head = I.T('adapt_undone', fmt_mean(ch.trial_mean), fmt_mean(ch.base_mean)) end
+    return (head ~= '' and (head .. ' — ') or '') .. I.T('adapt_' .. ch.key) .. ' : ' .. fmt_val(ch.from) .. ' → ' .. fmt_val(ch.to)
         .. (reason ~= '' and (' (' .. reason .. ')') or '')
 end
 

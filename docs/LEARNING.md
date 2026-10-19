@@ -34,7 +34,7 @@ résumés restent dans le profil.
 | Précision des scores | erreur relative ; nombre de prédictions « exactes » démenties | diagnostic de compatibilité |
 | Suivi des recommandations | Bêta-binomiale, stratifiée par niveau de danger, avec intervalles | descriptif uniquement |
 | Résultats par deck/mise | Bêta-binomiale | descriptif |
-| **Réglages du copilote** (1.0.9, `learning/adapt.lua`) | causes comptées dans les défaites et les victoires ; une cause qui distingue les défaites déplace d'un pas au plus les seuils d'achat, d'épargne, de sécurité et de passage, dans des bornes fixes ; une victoire les ramène d'un pas vers `config.lua` ; 10 dernières modifications gardées avec leurs causes | conseils des parties suivantes ; affiché dans le bilan (« Ce que je change pour la prochaine partie ») — détails : [MATHS.md](MATHS.md) §10 |
+| **Développement du copilote** (1.0.9, `learning/adapt.lua`) | causes comptées dans les défaites et les victoires, résultat des 20 dernières parties ; un changement à l'essai pendant 3 parties, gardé seulement si les résultats ne baissent pas ; 10 dernières étapes gardées avec leurs causes et verdicts | conseils des parties suivantes ; affiché dans le bilan (« Ce que je change pour la prochaine partie ») — détails : [MATHS.md](MATHS.md) §10 |
 
 ## 3. Garde-fous
 
@@ -50,23 +50,25 @@ résumés restent dans le profil.
   base, ×Mult manquants, argent dormant, planètes dispersées, trop peu de jokers, boss non préparé,
   marge trop faible (une blinde perdue à 85 % = 15 % de risque accepté). Ces causes visent aussi
   le plan du copilote lui-même, pas seulement le joueur.
-* **Leçons retenues** : les causes des 10 dernières défaites sont gardées dans le profil ; quand la
-  même revient, le plan lui donne plus de poids (×1 à ×1,5 : par exemple, l'urgence des ×Mult).
+* **Leçons retenues** : les causes des 10 dernières défaites sont gardées dans le profil. Jusqu'à
+  la 1.0.8, la même cause revenue donnait d'office plus de poids au plan (×1 à ×1,5) ; depuis la
+  1.0.9, ce poids passe par un essai (ci-dessous) et n'est gardé que s'il paie.
 * **Un succès ne valide pas une stratégie** : les taux sont affichés avec leur intervalle ; la
   comparaison « parties anciennes / récentes » n'est déclarée significative que si les
   intervalles ne se recouvrent pas, et seulement à partir de 20 parties.
 * **Pas de contrefactuel inventé** : le résultat d'une option non choisie n'est jamais affirmé ;
   seules les estimations au moment de la décision sont comparées.
 * **Idempotence** : une partie n'est comptée qu'une fois (même après import ou redémarrage).
-* **Réglages recalculés, pas réécrits** (1.0.9) : après chaque partie, le copilote ajuste ses
-  propres seuils selon les causes trouvées (argent dormant → dépenser plus tôt ; marge trop
-  faible → exiger plus de sécurité ; défaite juste après un passage → passer moins…), **d'un pas
-  au plus par partie et dans des bornes fixes**, et **seulement pour une cause qui distingue vos
-  défaites de vos victoires** (vue dans 2 défaites au moins, nettement plus fréquente que dans les
-  victoires) : une cause présente partout n'apprend rien. Une victoire ramène chaque réglage d'un
-  pas vers sa valeur de base ; une même partie n'est jamais comptée deux fois. Chaque changement
-  est écrit dans le bilan avec sa cause. Les réglages de `config.lua` restent la base : effacer le
-  profil remet tout à zéro.
+* **Développement recalculé, mais seulement ce qui paie** (1.0.9) : après une défaite, le
+  copilote essaie **un** changement (urgence des ×Mult, poids des planètes, seuils d'achat,
+  d'épargne, de sécurité ou de passage) demandé par la cause qui revient le plus dans vos
+  défaites et qui les distingue des victoires ; il le joue 3 parties et ne le **garde** que si
+  ces parties ne sont pas moins bonnes que les précédentes, sinon il l'**annule** et ne le réessaie
+  pas avant 10 parties. Un pas à la fois, dans des bornes fixes ; une même partie n'est jamais
+  comptée deux fois ; une partie abandonnée ne compte pas. Chaque étape est écrite dans le bilan.
+  Les réglages de `config.lua` restent la base : effacer le profil remet tout à zéro. Pourquoi :
+  sur le simulateur, appliquer directement les leçons d'une défaite faisait **moins bien** que ne
+  rien changer (MATHS.md §10).
 * **Poids de la note non auto-ajustés** : écarté volontairement (attribution trop bruitée).
 
 ## 4. Évaluation objective

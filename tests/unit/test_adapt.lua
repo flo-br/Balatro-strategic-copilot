@@ -13,50 +13,69 @@ local function review(...)
     return { causes = causes, result = 'loss' }
 end
 
-function S.losses_move_settings_one_bounded_step(T)
+local function loss(id, ante) return { id = id, won = false, final_ante = ante or 5 } end
+local function win(id) return { id = id, won = true, final_ante = 8 } end
+
+function S.a_change_is_tried_only_after_a_repeated_cause(T)
     local AD, LE = env()
     local prof = LE.new_profile(0)
-    -- one loss is not a pattern: nothing moves
-    local ch = AD.update(prof, review('idle_money', 'deficit'), { id = 'r1', won = false })
-    T.eq(#ch, 0, 'a single loss changes nothing')
-    -- the same cause in a second loss: one step on its settings
-    ch = AD.update(prof, review('idle_money', 'deficit', 'power_drop'), { id = 'r2', won = false })
+    -- "hand below the blind" and "power drop" are in every loss: they have no rule
+    T.eq(AD.RULES.deficit, nil); T.eq(AD.RULES.power_drop, nil)
+    -- one loss is not a pattern, and 3 runs are needed as a comparison point
+    T.eq(#AD.update(prof, review('few_jokers', 'deficit', 'power_drop'), loss('r1')), 0)
+    T.eq(#AD.update(prof, review('few_jokers', 'deficit', 'power_drop'), loss('r2')), 0, 'no comparison point yet')
+    -- the cause keeps coming back in the losses: ONE change on trial
+    local ch = AD.update(prof, review('few_jokers', 'deficit', 'power_drop'), loss('r3'))
+    T.ok(#ch >= 1 and ch[1].verdict == 'trial', 'on trial')
     local d = AD.deltas(prof)
-    T.eq(d.excess_note, -2); T.eq(d.excess_reserve, -2); T.eq(d.idle_reserve, -4)
-    T.eq(#ch, 3, 'three settings changed')
-    T.eq(ch[1].causes[1], 'idle_money')
-    -- "a hand below the blind" and "power drop" are in every loss: they move nothing
-    T.eq(d.safe_next, nil); T.eq(d.buy_note, nil); T.eq(d.save_from_ante, nil)
+    T.eq(d.first_jokers, 1); T.eq(d.buy_note, -1)
+    T.eq(d.safe_next, nil); T.eq(d.save_from_ante, nil)
+    T.ok(prof.adapt.trial and prof.adapt.trial.cause == 'few_jokers')
     -- the same run is never counted twice
-    AD.update(prof, review('idle_money'), { id = 'r2', won = false })
-    T.eq(AD.deltas(prof).excess_note, -2)
-    -- bounded
-    for i = 3, 20 do AD.update(prof, review('idle_money'), { id = 'r' .. i, won = false }) end
-    T.eq(AD.deltas(prof).excess_note, -8, 'never below the bound')
-    T.eq(#prof.adapt.history, AD.HISTORY_KEPT)
+    AD.update(prof, review('few_jokers'), loss('r3'))
+    T.eq(#prof.adapt.trial.scores, 0)
+    -- an abandoned run says nothing
+    T.eq(#AD.update(prof, review('few_jokers'), { id = 'ab', won = false, final_ante = 1, end_reason = 'abandoned' }), 0)
+    T.eq(#prof.adapt.trial.scores, 0)
 end
 
-function S.causes_also_seen_in_wins_move_nothing(T)
-    -- idle money in the wins as often as in the losses: not what loses the runs
+function S.a_trial_is_kept_only_if_the_results_are_not_worse(T)
     local AD, LE = env()
-    local prof = LE.new_profile(0)
-    for i = 1, 3 do AD.update(prof, review('idle_money'), { id = 'w' .. i, won = true }) end
-    for i = 1, 3 do AD.update(prof, review('idle_money'), { id = 'l' .. i, won = false }) end
-    T.eq(AD.deltas(prof).excess_note, nil, 'not discriminating: no change')
-    -- few jokers only in losses: it moves
-    for i = 4, 5 do AD.update(prof, review('few_jokers'), { id = 'l' .. i, won = false }) end
-    T.eq(AD.deltas(prof).first_jokers, 1)
+    -- results before the trial: ante 5, 5, 5 -> the trial must do at least as well
+    local function start(prof)
+        AD.update(prof, review('few_jokers'), loss('a1', 5))
+        AD.update(prof, review('few_jokers'), loss('a2', 5))
+        AD.update(prof, review('few_jokers'), loss('a3', 5))
+        return prof.adapt.trial
+    end
+    local good = LE.new_profile(0)
+    T.ok(start(good), 'trial started')
+    AD.update(good, review(), win('g1'))
+    AD.update(good, review(), loss('g2', 6))
+    local ch = AD.update(good, review(), loss('g3', 6))
+    T.eq(ch[1].verdict, 'kept')
+    T.eq(AD.deltas(good).first_jokers, 1, 'kept')
+    T.eq(good.adapt.trial, nil)
+    local bad = LE.new_profile(0)
+    start(bad)
+    AD.update(bad, review(), loss('b1', 3))
+    AD.update(bad, review(), loss('b2', 2))
+    ch = AD.update(bad, review('few_jokers'), loss('b3', 3))
+    T.eq(ch[1].verdict, 'undone')
+    T.eq(AD.deltas(bad).first_jokers, nil, 'back to config.lua')
+    T.ok(bad.adapt.cooldown.few_jokers, 'not tried again for a while')
+    -- the next loss with the same cause does not start the same trial again
+    AD.update(bad, review('few_jokers'), loss('b4', 3))
+    T.eq(bad.adapt.trial, nil)
 end
 
-function S.a_win_moves_back_toward_base(T)
+function S.bounds_are_never_crossed(T)
     local AD, LE = env()
     local prof = LE.new_profile(0)
-    AD.update(prof, review('few_jokers'), { id = 'a1', won = false })
-    AD.update(prof, review('few_jokers'), { id = 'a2', won = false })
-    T.eq(AD.deltas(prof).first_jokers, 1)
-    local ch = AD.update(prof, { causes = {}, result = 'win' }, { id = 'b', won = true })
-    T.eq(AD.deltas(prof).first_jokers, 0)
-    T.ok(ch[1] and ch[1].won, 'shown as a return toward base')
+    for i = 1, 60 do AD.update(prof, review('idle_money'), loss('r' .. i, 5)) end
+    T.ok(AD.deltas(prof).excess_note >= AD.PARAMS.excess_note.lo, 'never below the bound')
+    T.ok(#prof.adapt.history <= AD.HISTORY_KEPT)
+    T.ok(#prof.adapt.results <= AD.RESULTS_KEPT)
 end
 
 function S.adjustments_apply_to_the_advice_and_skips(T)
@@ -74,10 +93,18 @@ function S.adjustments_apply_to_the_advice_and_skips(T)
     local r = SK.evaluate(s, { current = { slot = 'Small', reward = 3, chips = 300 }, p_following = 0.97, p_boss = 0.95,
         median = 200, plan = { gaps = {} } }, cfg)
     T.ok(r.margin ~= nil)
-    -- the review shows what changed and why
+    -- the plan's x Mult urgency follows the trial (engine/plan.lua)
+    local PL = BSCopilot.require('engine/plan')
+    BSCopilot.learning_runtime = { adapt_deltas = function() return { xmult_urgency = 0.25 } end }
+    T.near(PL.lesson('xmult'), 1.25, 1e-9)
+    BSCopilot.learning_runtime = nil
+    T.eq(PL.lesson('xmult'), 1)
+    -- the review shows what changed, why, and the verdict
     local RV = BSCopilot.require('learning/review')
-    local txt = RV.adapt_text({ key = 'excess_note', from = 0, to = -2, causes = { 'idle_money' } })
-    T.ok(txt:find('argent dormant', 1, true) and txt:find('-2', 1, true), txt)
+    local txt = RV.adapt_text({ key = 'excess_note', from = 0, to = -2, causes = { 'idle_money' }, verdict = 'trial' })
+    T.ok(txt:find('argent dormant', 1, true) and txt:find('-2', 1, true) and txt:find('essai', 1, true), txt)
+    txt = RV.adapt_text({ key = 'excess_note', from = -2, to = 0, causes = { 'idle_money' }, verdict = 'undone', trial_mean = 4.3, base_mean = 5.7 })
+    T.ok(txt:find('annulé', 1, true) and txt:find('4,3', 1, true) and txt:find('5,7', 1, true), txt)
 end
 
 return S
