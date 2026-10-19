@@ -151,3 +151,55 @@ estimée par une simulation complète de la manche (100 % ici).
 Causes des 24 défaites de la 1.0.8 d'après le bilan du mod : main typique sous la mise de base
 (24), puissance qui décroche (21), boss (21), ×Mult manquants (20), argent dormant (17), planètes
 dispersées (13).
+
+## Résultats 1.0.9 (2026-10-19, toutes les mises, 15 decks)
+
+Réglages du simulateur : `rollouts=24 shop_samples=60` (plus rapide que le mod en jeu). « Avant » =
+la version de travail du début de cette série (ordre des cartes affiché, capture des cartes jouées
+corrigée, simulateur multi-mises), **avant** les corrections trouvées en faisant jouer le copilote à
+toutes les mises ; « après » = 1.0.9 livrée. Mêmes graines des deux côtés.
+
+| Deck rouge | Avant | Après |
+|---|---|---|
+| Mise blanche (1), graines 1-5 | 2 / 5 victoires, ante moyenne 7,8 | **3 / 5**, ante moyenne 7,4 |
+| Mise bleue (5), graines 1-6 | 0 / 6, ante moyenne 5,33 | 0 / 6, ante moyenne 5,17 |
+| Mise or (8), graines 1-10 | 0 / 10, ante moyenne 4,1 ; **312 $ de loyers** payés, argent négatif dans 4 parties | 0 / 10, ante moyenne 4,2 ; **128 $ de loyers**, jokers loués revendus |
+
+**15 decks à la mise noire (4)**, graines 101-103, 1.0.9 livrée : **1 victoire sur 45** (deck
+Zodiaque), ante moyenne 5,22 ; ante 5 atteinte 76 %, ante 6 31 %, ante 8 9 %.
+
+| Deck | Victoires | Ante moyenne | | Deck | Victoires | Ante moyenne |
+|---|---|---|---|---|---|---|
+| Rouge | 0 / 3 | 5,00 | | Abandonné | 0 / 3 | 5,67 |
+| Bleu | 0 / 3 | 6,00 | | Damier | 0 / 3 | 4,67 |
+| Jaune | 0 / 3 | 4,33 | | Zodiaque | 1 / 3 | 5,33 |
+| Vert | 0 / 3 | 5,33 | | Peint | 0 / 3 | 4,67 |
+| Noir | 0 / 3 | 5,00 | | Anaglyphe | 0 / 3 | 6,00 |
+| Magique | 0 / 3 | 4,67 | | Plasma | 0 / 3 | 6,00 |
+| Nébuleuse | 0 / 3 | 5,67 | | Erratique | 0 / 3 | 5,00 |
+| Fantôme | 0 / 3 | 5,00 | | | | |
+
+Trois parties par deck ne suffisent pas à classer les decks entre eux ; ce tableau montre surtout
+qu'aucun deck ne fait planter le copilote ni le simulateur (0 erreur sur 45 parties).
+
+**Ce que ces parties ont fait trouver et corriger** (détails : MATHS.md §8, « Mises ») :
+* deux jokers **loués** à 1 $ pris à l'ante 1 vidaient l'argent de toute la partie (location
+  comptée comme 1 $) ;
+* un paquet Bouffon acheté pour une « meilleure carte attendue 97/100 » à la mise or, puis tous ses
+  jokers refusés (autocollants ignorés dans l'estimation) ;
+* jokers qui grandissent achetés pour leur croissance puis revendus dans la même boutique
+  (sur 22 parties, 33 jokers revendus dans la manche même de leur achat ou la suivante, toutes
+  raisons confondues) ;
+* Baron (seul ×Mult) vendu à l'ante 3 pour Crafty Joker ;
+* 50 à 75 $ gardés aux antes 6-7 alors que le boss était perdu d'avance ;
+* bons presque jamais achetés (3 en 22 parties) ;
+* une Double paire gagnante seulement avec un Roi en tête écartée (jeux évalués dans l'ordre de
+  l'écran).
+
+**Ce qui reste** (bilan du mod sur les 44 défaites des 15 decks) : main typique sous la mise (44),
+×Mult manquants (39), puissance qui décroche (32), boss (27), main principale peu montée (17),
+planètes dispersées (15), marge (13). La plupart des parties s'arrêtent à l'ante 5 (20 sur 45) :
+aux mises 3 et plus, les blindes de l'ante 5 (20 000 à 30 000) demandent un plateau à ×Mult que le
+copilote ne réunit pas encore à temps. Les boss qui cachent des cartes (The House, The Fish,
+The Mark) terminent 10 parties sur 44. Aux mises 5 et 8, le copilote ne gagne aucune partie
+simulée : il n'est pas au niveau des meilleurs joueurs sur ces mises.
