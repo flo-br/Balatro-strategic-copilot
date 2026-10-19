@@ -16,14 +16,17 @@ function EF.detect()
     return 'polling'
 end
 
--- Called at every poll (also during animations): remember the cards being scored.
+-- Called at every poll (also during animations): remember the cards being scored. The played
+-- cards reach the play area ONE BY ONE (one per animation step), then leave it one by one
+-- after scoring: the capture keeps the largest set seen for this hand (before 1.0.9 it kept
+-- the first frame, often a single card: wrong predictions, plays always "not followed").
 function EF.capture()
     local G = rawget(_G, 'G')
     if not (G and G.STATES and G.GAME and G.play and type(G.play.cards) == 'table') then return end
     if G.STATE ~= G.STATES.HAND_PLAYED or #G.play.cards == 0 then return end
     local cr = G.GAME.current_round or {}
-    local key = tostring(G.GAME.round) .. ':' .. tostring(cr.hands_left) .. ':' .. tostring(G.play.cards[1].sort_id)
-    if EF.captured_key == key then return end
+    local key = tostring(G.GAME.round) .. ':' .. tostring(cr.hands_left)
+    if EF.captured_key == key and EF.pending_play and #G.play.cards <= #EF.pending_play.uids then return end
     EF.captured_key = key
     local uids = {}
     for i, c in ipairs(G.play.cards) do uids[i] = tostring(c.sort_id) end

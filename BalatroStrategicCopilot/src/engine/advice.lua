@@ -37,16 +37,32 @@ A.DEFAULTS = {
     rich_reserve = 10,             -- money above the interest cap + this: rerolled to fill the plan's gaps
     replace_note = 60,             -- replacing a joker (sell + buy) needs a clear gain: no churn
     danger_rerolls = 2,            -- rerolls per shop when the next blinds are in danger (a budget)
+    critical_p = 0.5,              -- next blind or boss below 50 %: no reroll budget, the savings go in
+    rental_max_contribution = 0.15, -- a rental is sold (when the next blinds stay safe) if it brings at most 15 % of the score
     excess_note = 54,              -- with money left above the cap after buying, any real improvement is bought
     excess_reserve = 5,            -- ... keeping this much above the cap
     idle_reserve = 20,             -- money above the cap + this: rerolled even without a gap (idle money)
     first_jokers = 3,              -- antes 1-2: the first jokers fill empty slots from excess_note, savings or not
 }
 
+-- adjustments the copilot made to itself after its past runs (learning/adapt.lua); cfg.adapt_deltas
+-- (trainer) or the learning runtime of the game
+local function adapt_deltas(cfg)
+    if cfg and cfg.adapt_deltas then return cfg.adapt_deltas end
+    local lr = BSC.learning_runtime
+    return lr and lr.adapt_deltas and lr.adapt_deltas() or nil
+end
+A.adapt_deltas = adapt_deltas
+
 local function settings(cfg)
     local a = (cfg and cfg.advice) or {}
     local out = {}
     for k, v in pairs(A.DEFAULTS) do out[k] = (a[k] ~= nil) and a[k] or v end
+    local d = adapt_deltas(cfg)
+    if d then
+        local AD = BSC.require('learning/adapt')
+        for k, v in pairs(out) do out[k] = AD.apply(k, v, d) end
+    end
     return out
 end
 A.settings = settings
@@ -396,11 +412,27 @@ function A.hand_step(state, r, cfg)
             target = rec.ref and rec.ref.target, p_complete = rec.ref and rec.ref.p_complete, p = p, p_text = T('p_blind'),
             cls = 'mid', approx = approx, lo = r.round and r.round.lo, hi = r.round and r.round.hi, method = r.round and r.round.method }
     end
+    -- order of the cards when it changes the score: JOUER 1, 2, 3 (left to right), and the
+    -- held cards GARDER 1, 2... (HA.best_order)
+    local order = rec.order
+    if step and step.action == 'play' and order and order.play then
+        step.target_labels = {}
+        for i, c in ipairs(order.play) do step.target_labels[c.uid] = T('lbl_play_n', i) end
+        if order.held then
+            step.hold_labels = {}
+            for i, c in ipairs(order.held) do step.hold_labels[c.uid] = T('lbl_hold_n', i) end
+        end
+        step.order_gain = order.gain
+        step.hint = T(order.held and 'hint_order_held' or 'hint_order', math.floor(order.gain * 100 + 0.5))
+    end
     -- Cerulean Bell: the forced card is already selected and goes with the play or the discard
     if step then
-        for _, c in ipairs(step.cards) do
+        for i, c in ipairs(step.cards) do
             if c.forced then
-                step.target_labels = { [c.uid] = T('lbl_forced', step.label) }
+                step.target_labels = step.target_labels or {}
+                local n
+                for k, oc in ipairs((order and order.play) or {}) do if oc == c then n = k end end
+                step.target_labels[c.uid] = n and T('lbl_forced_n', n) or T('lbl_forced')
                 step.why = T(step.action == 'play' and 'why_forced_play' or 'why_forced_discard', c.name or C.label(c))
             end
         end
@@ -448,6 +480,9 @@ local function required_note(o, money, pol, S, state)
     local cost = o.cost or 0
     -- selling a joker to replace it loses its sale value and its growth: a clear gain only
     if o.kind == 'replace' then return math.max(S.replace_note, base) end
+    -- a rental ($3 every round): only a strong joker, or one needed to survive the next blinds;
+    -- never the "spend the excess" / "fill an empty slot" shortcuts
+    if o.rental then return pol.safe and math.max(base, S.strong_note) or base end
     -- money above the interest cap earns nothing: once the purchase still leaves the cap (and a
     -- little more), any real improvement is worth it (top players: "don't get rich")
     if pol.cap and money - cost >= math.max(pol.target, pol.cap) + S.excess_reserve then
@@ -491,6 +526,22 @@ function A.shop_step(state, r, cfg, partial)
         if j.perishable and sellable(j) and (EF.perish_left(j) or 1) <= 0 then
             return { action = 'sell', label = T('lbl_sell'), targets = { j.uid }, text = T('step_sell', j.name or '?'),
                 why = T('why_perished'), cls = 'mid' }
+        end
+    end
+    -- 2c. a rental joker ($3 every round) the next blinds no longer need: selling it stops the
+    -- rent (gold stake); kept while the next blind or the boss would become unsafe without it,
+    -- and kept when it carries the score (a strong rental is bought on purpose: no churn)
+    local base = r.base or {}
+    for _, sl in ipairs(r.sells or {}) do
+        local j = state.jokers and state.jokers[sl.index]
+        if j and j.uid == sl.uid and j.rental and sellable(j) and base.p_next and sl.d_next
+            and (sl.contribution or 1) <= S.rental_max_contribution then
+            local pn = base.p_next + sl.d_next
+            local pb = (base.p_boss and sl.d_boss) and (base.p_boss + sl.d_boss) or pn
+            if pn >= S.safe_next and pb >= S.safe_boss and not (r.plan and r.plan.falling_behind) then
+                return { action = 'sell', label = T('lbl_sell'), targets = { j.uid }, text = T('step_sell', j.name or '?'),
+                    why = T('why_rental_sell', I.pct(math.min(pn, pb))), cls = 'mid' }
+            end
         end
     end
     -- 3. the best purchase worth making (replacement first needs a sale)
@@ -562,8 +613,15 @@ function A.shop_step(state, r, cfg, partial)
         if not early_cap and (plan.gaps.xmult or plan.gaps.power) and money - rcost >= math.max(keep, cap) + S.rich_reserve then
             return reroll(T('why_reroll_rich', money - cap, plan.gaps.xmult and T('gap_xmult') or T('gap_power')), rr and rr.p_improve)
         end
-        if plan.gaps.power and not pol.safe and rerolls_done(econ) < S.danger_rerolls and money - rcost >= floor + 10 then
-            return reroll(T('why_reroll_danger'), rr and rr.p_improve)
+        -- in danger: a budget of rerolls; when the next blind or the boss is more likely lost
+        -- than won (critical), the savings go into rerolls: interest kept is worth nothing after
+        -- a loss (simulated runs lost at antes 6-7 with $50-75 unspent before 1.0.9)
+        local b = r.base or {}
+        local critical = (b.p_next or 1) < S.critical_p or (b.p_boss or 1) < S.critical_p
+        local budget = critical and math.huge or S.danger_rerolls
+        if (plan.gaps.power or plan.gaps.xmult) and not pol.safe and rerolls_done(econ) < budget
+            and money - rcost >= floor + (critical and 4 or 10) then
+            return reroll(T(critical and 'why_reroll_critical' or 'why_reroll_danger'), rr and rr.p_improve)
         end
         -- idle money far above the cap: look for any improvement
         if not early_cap and money - rcost >= math.max(keep, cap) + S.idle_reserve and (not rr or (rr.p_improve or 0) >= 0.2) then

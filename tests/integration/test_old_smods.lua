@@ -89,11 +89,16 @@ function S.hand_and_discard_detected_without_events(T)
     local FG = boot({ required = 300 })
     local Ctl = BSCopilot.controller
     T.ok(settle(FG, function() return Ctl.results.hand and not Ctl.partial.hand end))
-    -- the player plays the pair of aces: cards go to G.play during HAND_PLAYED
+    -- the player plays the pair of aces: the cards reach G.play ONE BY ONE during HAND_PLAYED
+    -- (as in the game), then leave it one by one after scoring
     local played = { G.hand.cards[1], G.hand.cards[2] }
-    G.play = { cards = played }
+    G.play = { cards = { played[1] } }
     G.STATE = G.STATES.HAND_PLAYED
-    FG.frames(4)
+    FG.frames(2)
+    G.play.cards = { played[1], played[2] }
+    FG.frames(2)
+    G.play.cards = { played[2] }
+    FG.frames(2)
     table.remove(G.hand.cards, 1); table.remove(G.hand.cards, 1)
     G.play.cards = {}
     G.GAME.chips = 64
@@ -103,6 +108,7 @@ function S.hand_and_discard_detected_without_events(T)
     local run = BSCopilot.learning_runtime.rec.run
     T.ok(run and #run.hands == 1, 'hand recorded without Steamodded events')
     T.eq(run.hands[1].predicted, 64); T.eq(run.hands[1].actual, 64)
+    T.eq(run.hands[1].n_cards, 2, 'both played cards captured, not only the first one')
     -- discard two cards (no hand used)
     T.ok(settle(FG, function() return Ctl.results.hand and not Ctl.partial.hand end))
     table.remove(G.hand.cards, 1); table.remove(G.hand.cards, 1)

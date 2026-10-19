@@ -1,7 +1,8 @@
 # Système d'apprentissage
 
 L'apprentissage est **local, hors ligne, automatique et progressif**. Il améliore les
-estimations ; il ne modifie jamais le jeu et ne prend jamais de décision.
+estimations et, depuis 1.0.9, recalcule après chaque partie les seuils des conseils (bornés,
+expliqués) ; il ne modifie jamais le jeu et ne joue jamais à la place du joueur.
 
 ## 1. Données enregistrées (journal brut)
 
@@ -33,6 +34,7 @@ résumés restent dans le profil.
 | Précision des scores | erreur relative ; nombre de prédictions « exactes » démenties | diagnostic de compatibilité |
 | Suivi des recommandations | Bêta-binomiale, stratifiée par niveau de danger, avec intervalles | descriptif uniquement |
 | Résultats par deck/mise | Bêta-binomiale | descriptif |
+| **Réglages du copilote** (1.0.9, `learning/adapt.lua`) | après chaque partie, les causes du bilan déplacent d'un pas au plus les seuils d'achat, d'épargne, de sécurité et de passage, dans des bornes fixes ; une victoire les ramène d'un pas vers `config.lua` ; 10 dernières modifications gardées avec leurs causes | conseils des parties suivantes ; affiché dans le bilan (« Ce que je change pour la prochaine partie ») — détails : [MATHS.md](MATHS.md) §10 |
 
 ## 3. Garde-fous
 
@@ -56,6 +58,13 @@ résumés restent dans le profil.
 * **Pas de contrefactuel inventé** : le résultat d'une option non choisie n'est jamais affirmé ;
   seules les estimations au moment de la décision sont comparées.
 * **Idempotence** : une partie n'est comptée qu'une fois (même après import ou redémarrage).
+* **Réglages recalculés, pas réécrits** (1.0.9) : après chaque partie, le copilote ajuste ses
+  propres seuils selon les causes trouvées (argent dormant → dépenser plus tôt ; marge trop
+  faible → exiger plus de sécurité ; défaite juste après un passage → passer moins…), **d'un pas
+  au plus par partie et dans des bornes fixes** ; une victoire ramène chaque réglage d'un pas vers
+  sa valeur de base ; une même partie n'est jamais comptée deux fois. Chaque changement est écrit
+  dans le bilan avec sa cause. Les réglages de `config.lua` restent la base : effacer le profil
+  remet tout à zéro.
 * **Poids de la note non auto-ajustés** : écarté volontairement (attribution trop bruitée).
 
 ## 4. Évaluation objective

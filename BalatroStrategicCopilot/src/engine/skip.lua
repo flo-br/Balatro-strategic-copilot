@@ -90,8 +90,12 @@ SK.DEFAULTS = {
 
 local function setting(cfg, k)
     local a = cfg and cfg.advice
-    if a and a[k] ~= nil then return a[k] end
-    return SK.DEFAULTS[k]
+    local v = SK.DEFAULTS[k]
+    if a and a[k] ~= nil then v = a[k] end
+    -- adjustments learned from past runs (learning/adapt.lua)
+    local d = (cfg and cfg.adapt_deltas) or (BSC.learning_runtime and BSC.learning_runtime.adapt_deltas and BSC.learning_runtime.adapt_deltas())
+    if d and type(v) == 'number' then v = BSC.require('learning/adapt').apply(k, v, d) end
+    return v
 end
 
 local function free_slots(state)
@@ -319,6 +323,13 @@ function SK.evaluate(state, ctx, cfg)
         ctx.other_tag_value = (SK.tag_value(other, state, ctx))
     end
     local value, vwhy, vdetail = SK.tag_value(tag, state, ctx)
+    -- Double Tags already held copy this tag (Anaglyph Deck stacks them)
+    local doubles = 0
+    for _, t in ipairs(state.tags_held or {}) do if t == 'tag_double' then doubles = doubles + 1 end end
+    if doubles > 0 and tag ~= 'tag_double' then
+        value = value * (1 + doubles)
+        res.doubles = doubles
+    end
     local cost, parts = SK.cost(state, ctx, cfg)
     res.tag_value, res.value_why, res.value_detail = value, vwhy, vdetail
     res.lost, res.parts = cost, parts

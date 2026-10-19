@@ -235,14 +235,69 @@ function HA.structural_candidates(hand, rules, opts)
 end
 
 -- Fast best play (simulation inner loop)
+-- Effects that make the score depend on the order of the played cards: a x Mult given by a
+-- scored card (Glass, Polychrome, Photograph, Triboulet, The Idol, Ancient Joker, Bloodstone)
+-- multiplies the +Mult of the cards scored before it; Hanging Chad retriggers the first card.
+local ORDER_JOKERS = { j_photograph = true, j_hanging_chad = true, j_triboulet = true, j_idol = true,
+    j_ancient = true, j_bloodstone = true }
+
+function HA.order_sensitive(P, cards)
+    for _, j in ipairs(P.jokers or {}) do
+        if not j.debuff and ORDER_JOKERS[j.key] then return true end
+    end
+    for _, c in ipairs(cards or {}) do
+        if (c.x_mult or 1) > 1 or (c.perma_x_mult or 0) > 0 or c.edition == 'e_polychrome' then return true end
+    end
+    return false
+end
+
+-- Orders worth trying for one play (the player can arrange the cards freely): the current one,
+-- each card moved to the front, each card moved to the back. Cheap (at most 9 orders for 5
+-- cards) and enough to find the right first card (Hanging Chad, Photograph) and to put the x Mult
+-- cards after the +Mult ones; the recommended play then gets the full search (best_order).
+local function order_variants(cards)
+    local out = { cards }
+    local n = #cards
+    for i = 2, n do
+        local t = { cards[i] }
+        for k = 1, n do if k ~= i then t[#t + 1] = cards[k] end end
+        out[#out + 1] = t
+    end
+    for i = 1, n - 1 do
+        local t = {}
+        for k = 1, n do if k ~= i then t[#t + 1] = cards[k] end end
+        t[#t + 1] = cards[i]
+        out[#out + 1] = t
+    end
+    return out
+end
+
 function HA.best_play_fast(P, hand, rng, opts)
     local cands = HA.structural_candidates(hand, P.rules, opts)
     local best, best_score, best_hand
+    local second, second_score
     for _, cand in ipairs(cands) do
         local held = minus(hand, cand)
         local s, hname = Score.quick(P, cand, held, rng, 1)
         if not best or s > best_score or (s == best_score and #cand > #best) then
+            second, second_score = best, best_score
             best, best_score, best_hand = cand, s, hname
+        elseif not second or s > second_score then
+            second, second_score = cand, s
+        end
+    end
+    -- order-sensitive board (opts.order): the player arranges the cards, so the two best plays
+    -- are also scored in their other useful orders
+    if opts and opts.order and best then
+        for _, cand in ipairs({ best, second }) do
+            if #cand >= 2 then
+                local held = minus(hand, cand)
+                local vs = order_variants(cand)
+                for i = 2, #vs do
+                    local s, hname = Score.quick(P, vs[i], held, rng, 1)
+                    if s > best_score then best, best_score, best_hand = vs[i], s, hname end
+                end
+            end
         end
     end
     return best, best_score or 0, best_hand
@@ -449,7 +504,7 @@ end
 -- forced: the card Cerulean Bell forces in this simulated hand (nil otherwise).
 function HA.policy(P, hand, h, d, remaining, deck_rest, rng, ctx, forced)
     local popts = ctx.play_opts
-    if ctx.forced_rule then popts = { forced = forced, min_cards = popts and popts.min_cards } end
+    if ctx.forced_rule then popts = { forced = forced, min_cards = popts and popts.min_cards, order = popts and popts.order } end
     local best, best_score = HA.best_play_fast(P, hand, rng, popts)
     if not best then
         local any = { forced or hand[1] }
@@ -791,7 +846,8 @@ function HA.analyse_hidden(state, opts, task, P, hand, visible, hidden, forced)
 
     -- rest of the round, simulated for every candidate (same hidden identities per run)
     local ctx = { state = state, forced = forced, forced_rule = forced ~= nil or P.boss == 'bl_final_bell',
-        serpent = P.boss == 'bl_serpent', hand_size = round.hand_size or 8, play_opts = { forced = forced, min_cards = min_cards } }
+        serpent = P.boss == 'bl_serpent', hand_size = round.hand_size or 8,
+        play_opts = { forced = forced, min_cards = min_cards, order = HA.order_sensitive(P, hand) or HA.order_sensitive({}, deck) } }
     local n = opts.rollouts or 64
     local function run(c, from, to)
         for i = from, to do
@@ -834,6 +890,89 @@ function HA.analyse_hidden(state, opts, task, P, hand, visible, hidden, forced)
     return res
 end
 
+-- Order of the cards ------------------------------------------------------------------------
+-- The game scores the played cards from LEFT to RIGHT, then the cards held in hand from left
+-- to right (the order they have in the hand: the player arranges it by dragging). It changes
+-- the score: Photograph doubles the FIRST face card scored, Hanging Chad retriggers the FIRST
+-- card, +Mult added before a x1.5 / x2 card (Glass, Polychrome, Photograph) is multiplied,
+-- Shoot the Moon's Queens held left of Baron's Kings are multiplied by them.
+-- best_order tries every order of the played cards (5 cards: 120) and, for the held cards,
+-- additive held effects first. Returns { play = {cards in order}, held = {cards in order} or
+-- nil, gain = best / current - 1, current, best } or nil when the order does not matter.
+local function perms(list)
+    local out = {}
+    local n = #list
+    local a = {}
+    for i = 1, n do a[i] = list[i] end
+    local function rec(k)
+        if k > n then local t = {} for i = 1, n do t[i] = a[i] end out[#out + 1] = t; return end
+        for i = k, n do
+            a[k], a[i] = a[i], a[k]
+            rec(k + 1)
+            a[k], a[i] = a[i], a[k]
+        end
+    end
+    rec(1)
+    return out
+end
+
+function HA.best_order(P, cards, held, check)
+    check = check or noop
+    if not cards or #cards == 0 then return nil end
+    local function mean(play, hold)
+        local r = Score.evaluate_prepared(P, play, hold, { max_branches = 16, samples = 48, seed = 'order' })
+        return r.mean or 0
+    end
+    -- the order they have now on screen (left to right)
+    local function by_x(list)
+        local t, all = {}, true
+        for i, c in ipairs(list or {}) do t[i] = c; if c.pos_x == nil then all = false end end
+        if all then table.sort(t, function(a, b) return a.pos_x < b.pos_x end) end
+        return t
+    end
+    cards, held = by_x(cards), by_x(held)
+    local current = mean(cards, held)
+    local best, best_play = current, cards
+    if #cards >= 2 then
+        for _, p in ipairs(perms(cards)) do
+            check()
+            local v = mean(p, held)
+            if v > best * (1 + 1e-9) then best, best_play = v, p end
+        end
+    end
+    -- held cards: additive effects (Shoot the Moon's Queens, +Mult cards) before multiplicative
+    -- ones (Steel, Baron's Kings), the rest in between
+    local stm, baron = false, false
+    for _, j in ipairs(P.jokers or {}) do
+        if not j.debuff and j.key == 'j_shoot_the_moon' then stm = true end
+        if not j.debuff and j.key == 'j_baron' then baron = true end
+    end
+    local function rank(c)
+        if (c.h_mult or 0) > 0 or (stm and c.id == 12) then return 0 end
+        if (c.h_x_mult or 1) > 1 or (baron and c.id == 13) then return 2 end
+        return 1
+    end
+    local best_held
+    if held and #held >= 2 then
+        local sorted = {}
+        for i, c in ipairs(held) do sorted[i] = { c = c, i = i } end
+        table.sort(sorted, function(a, b)
+            local ra, rb = rank(a.c), rank(b.c)
+            if ra ~= rb then return ra < rb end
+            return a.i < b.i
+        end)
+        local h2, moved = {}, false
+        for i, e in ipairs(sorted) do h2[i] = e.c; if e.i ~= i then moved = true end end
+        if moved then
+            check()
+            local v = mean(best_play, h2)
+            if v > best * (1 + 1e-9) then best, best_held = v, h2 end
+        end
+    end
+    if current <= 0 or best <= current * 1.005 then return nil end
+    return { play = best_play, held = best_held, gain = best / current - 1, current = current, best = best }
+end
+
 function HA.analyse(state, opts, task)
     opts = opts or {}
     local check = (task and task.check) or noop
@@ -863,6 +1002,7 @@ function HA.analyse(state, opts, task)
     if #visible == 0 then res.empty = true; return res end
 
     -- 1. every legal play, exact distributions
+    local sensitive = HA.order_sensitive(P, visible)
     local subsets = U.subsets(#visible, 1, math.min(5, #visible))
     local seen = {}
     for _, idx in ipairs(subsets) do
@@ -877,6 +1017,14 @@ function HA.analyse(state, opts, task)
         if min_cards and #cards < min_cards and #visible >= min_cards then legal = false end
         if legal then
             local held = minus(hand, cards)
+            if sensitive and #cards >= 2 then
+                -- score the play in its best order, not only in the order it has on screen
+                local best_v
+                for _, o in ipairs(order_variants(cards)) do
+                    local q = Score.evaluate_prepared(P, o, held, { max_branches = 16, samples = 48, seed = 'order' })
+                    if best_v == nil or (q.mean or 0) > best_v * (1 + 1e-9) then best_v, cards = q.mean or 0, o end
+                end
+            end
             local r = Score.evaluate_prepared(P, cards, held, { max_branches = opts.max_branches or 48, samples = opts.samples or 160, seed = 'play' })
             local entry = { cards = cards, uids = {}, hand = r.hand, mean = r.mean, min = r.min, max = r.max,
                 p_win = (remaining > 0) and r.p_at_least(remaining) or 1, method = r.method, exact = r.exact,
@@ -910,7 +1058,8 @@ function HA.analyse(state, opts, task)
     -- 3. round simulation for candidate actions
     local wins_now = res.best_play and res.best_play.p_win >= 1 - 1e-12
     local ctx = { state = state, forced = forced, forced_rule = forced ~= nil or P.boss == 'bl_final_bell',
-        serpent = P.boss == 'bl_serpent', hand_size = round.hand_size or 8, play_opts = { forced = forced, min_cards = min_cards } }
+        serpent = P.boss == 'bl_serpent', hand_size = round.hand_size or 8,
+        play_opts = { forced = forced, min_cards = min_cards, order = sensitive or HA.order_sensitive({}, deck) } }
     local candidates = {}
     local by_mean = {}
     for i, p in ipairs(res.plays) do by_mean[i] = p end
@@ -961,7 +1110,20 @@ function HA.analyse(state, opts, task)
             cand.hands_used = wins > 0 and cand.used / wins or math.huge
             if cand.ref then cand.ref.p_clear = p; cand.ref.p_lo = lo; cand.ref.p_hi = hi; cand.ref.sim_n = cand.n end
         end
-        for _, cand in ipairs(candidates) do simulate(cand, 1, n) end
+        -- by chunks: when no candidate has won a single rollout out of 32, the round is lost
+        -- whatever is played and more rollouts would not change the choice (a hopeless round
+        -- used to cost seconds of CPU before the advice appeared)
+        local done_n = 0
+        while done_n < n do
+            local count = math.min(16, n - done_n)
+            for _, cand in ipairs(candidates) do simulate(cand, done_n + 1, count) end
+            done_n = done_n + count
+            if done_n >= 32 and done_n < n then
+                local any = false
+                for _, cand in ipairs(candidates) do if (cand.wins or 0) > 0 then any = true; break end end
+                if not any then res.hopeless = true; break end
+            end
+        end
         -- second pass: the best options are often within a few rollouts of each other (all
         -- near 100 %); more rollouts for the closest ones, so that noise does not decide
         table.sort(candidates, function(a, b) return a.p_clear > b.p_clear end)
@@ -994,6 +1156,15 @@ function HA.analyse(state, opts, task)
                 lo = best.lo, hi = best.hi, method = 'monte_carlo', n = best.n }
         end
         res.candidates = candidates
+    end
+    -- the order to give the played (and held) cards when it changes the score
+    local rec = res.recommendation
+    if rec and rec.type == 'play' then
+        local play = (rec.ref and rec.ref.cards) or rec.cards
+        if play and #play > 0 then
+            local ok, order = pcall(HA.best_order, P, play, minus(hand, play), check)
+            if ok and order then rec.order = order end
+        end
     end
     res.total_ms = (U.now() - t0) * 1000
     return res

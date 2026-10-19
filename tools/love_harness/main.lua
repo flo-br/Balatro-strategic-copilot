@@ -49,6 +49,13 @@ function love.load()
         opts.jokers = { FG.joker('j_joker', 'Joker', { mult = 4 }) }
         opts.required = 1200
     end
+    if scenario == 'order' then
+        -- Photograph + Hanging Chad: the King must be played FIRST (numbers on the cards)
+        opts.hand = { '7s', '7h', 'Ks', 'Kh', '9d', '4c', '2s', '3d' }
+        opts.jokers = { FG.joker('j_photograph', 'Photograph', { extra = 2 }), FG.joker('j_hanging_chad', 'Hanging Chad', { extra = 2 }) }
+        -- 1000: the Pair of Kings (800) is not enough, Two Pair wins only with a King first (1184)
+        opts.required = 1000
+    end
     if scenario == 'effects' then
         -- cards with modifiers and jokers with stickers: what the copilot shows about them
         opts.hand = { 'Ks', 'Kh', 'Qs', 'Ah', '9d', '7c', '4h', '2s' }

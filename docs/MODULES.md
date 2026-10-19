@@ -24,7 +24,7 @@ Tous les fichiers sont dans `BalatroStrategicCopilot/`. Seuls `game/state_reader
 | `src/engine/poker_eval.lua` | **RulesEngine** : identification des mains (Four Fingers, Shortcut, Smeared, Wild, Pierre, Splash) |
 | `src/engine/score.lua` | **ScoreEvaluator** : pipeline de score complet, aléas énumérés / Monte-Carlo, couverture |
 | `src/engine/probability.lua` | **ProbabilityEngine** : hypergéométrique, inclusion-exclusion, Wilson |
-| `src/engine/hand_advisor.lua` | **HandAdvisor** : jeux, défausses, simulation de manche, recommandation |
+| `src/engine/hand_advisor.lua` | **HandAdvisor** : jeux (évalués dans leur meilleur ordre quand l'ordre compte), défausses, simulation de manche, recommandation, **ordre des cartes** jouées et gardées (`HA.best_order`) |
 | `src/engine/synergy.lua` | **JokerSynergyAnalyzer** : thèmes, synergies, contributions, ordre des jokers |
 | `src/engine/economy.lua` | intérêts, revenus, coût d'opportunité |
 | `src/engine/strategy.lua` | **StrategyEngine** : puissance, P(blinde), perspectives de victoire, danger |
@@ -37,7 +37,8 @@ Tous les fichiers sont dans `BalatroStrategicCopilot/`. Seuls `game/state_reader
 | `src/learning/recorder.lua` | journal brut des parties |
 | `src/learning/calibration.lua` | calibration et métriques (Brier, log-loss, ECE) |
 | `src/learning/learning.lua` | **LearningEngine** : profil appris |
-| `src/learning/review.lua` | bilan de partie : erreurs au moment de la décision et causes de la défaite (toute partie est jouable) |
+| `src/learning/review.lua` | bilan de partie : erreurs au moment de la décision et causes de la défaite (toute partie est jouable) ; affiche les réglages recalculés |
+| `src/learning/adapt.lua` | recalcul des réglages après chaque partie : causes du bilan → pas bornés sur les seuils d'achat, d'épargne, de sécurité et de passage ; retour vers la base après une victoire |
 | `src/learning/runtime.lua` | liaison enregistreur / apprentissage / stockage, export, import, réinitialisation |
 | `src/io/persistence.lua` | **PersistenceManager** : JSON versionné A/B, sommes de contrôle, migrations, quarantaine |
 | `src/game/state_reader.lua` | **GameStateReader** : seul lecteur de `G` (connu / déduit / inconnu) |
@@ -68,5 +69,6 @@ Outils hors du mod (non chargés en jeu) :
 |---|---|
 | `tools/trainer/rules.lua`, `sim.lua` | Balatro simplifié pour l'entraînement (docs/TRAINING.md) |
 | `tools/trainer/player.lua` | joueur qui suit exactement l'étape « À FAIRE » du copilote |
-| `tools/trainer/run.lua`, `report.lua` | parties simulées en série, rapport avec le bilan du mod |
+| `tools/trainer/run.lua`, `report.lua` | parties simulées en série (`stake=1..8`, `deck=…`, `learn=1` : profil partagé et réglages recalculés après chaque partie), rapport avec le bilan du mod |
+| `tools/trainer/bridge.lua` | convertit une partie simulée en journal de partie du mod (pour le bilan et le recalcul des réglages) |
 | `tools/love_harness/` | rendu réel du panneau avec LÖVE 11.5 sur un état simulé |

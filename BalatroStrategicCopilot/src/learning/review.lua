@@ -99,6 +99,15 @@ function RV.build(run, profile)
         end
         local prep = RV.BOSS_PREP[lost_blind.key]
         if prep then rv.causes[#rv.causes + 1] = { key = 'boss', text = string.format('%s : %s.', tostring(bname), prep) } end
+        -- a blind skipped in the same ante: its shop was missing to beat this one
+        for _, d in ipairs(run.decisions or {}) do
+            if d.kind == 'skip_blind' and d.ante == lost_blind.ante and d.followed ~= false then
+                rv.causes[#rv.causes + 1] = { key = 'skip_lost', text = string.format(
+                    'Une blinde a été passée à l\'ante %d : la boutique sautée a manqué pour battre %s. Le copilote exigera plus de marge avant de passer.',
+                    lost_blind.ante or 0, tostring(bname)) }
+                break
+            end
+        end
         if lost_blind.p_pred and lost_blind.p_pred >= 0.5 then
             -- not "bad luck": a risk that was accepted, the margin is built in the antes before
             rv.causes[#rv.causes + 1] = { key = 'margin', text = string.format(
@@ -255,6 +264,19 @@ function RV.build(run, profile)
 end
 
 -- Panel lines for the game-over phase.
+-- One adjustment of learning/adapt.lua, in words: what changes, from / to, and why.
+local function fmt_val(v)
+    if math.abs(v - math.floor(v + 0.5)) < 1e-9 then return string.format('%+d', math.floor(v + 0.5)) end
+    return string.format('%+.2f', v)
+end
+function RV.adapt_text(ch)
+    local why = {}
+    for _, c in ipairs(ch.causes or {}) do why[#why + 1] = I.T('cause_' .. c) end
+    local reason = ch.won and I.T('adapt_win') or table.concat(why, ', ')
+    return I.T('adapt_' .. ch.key) .. ' : ' .. fmt_val(ch.from) .. ' → ' .. fmt_val(ch.to)
+        .. (reason ~= '' and (' (' .. reason .. ')') or '')
+end
+
 function RV.panel(state, rv, detail)
     local function seg(t, c) return { t = t, c = c or 'text' } end
     local lines = {}
@@ -276,6 +298,14 @@ function RV.panel(state, rv, detail)
     section('review_mistakes', rv.mistakes, 'mid', detail and 6 or 3)
     section('review_tips', rv.tips, 'accent', 3)
     section('review_good', rv.successes, 'good', detail and 5 or 2)
+    -- what the copilot changes in itself for the next run (learning/adapt.lua)
+    if rv.adapt then
+        lines[#lines + 1] = { seg(I.T('review_adapt'), 'title') }
+        if #rv.adapt == 0 then
+            lines[#lines + 1] = { seg('- ' .. I.T(rv.result == 'win' and 'adapt_none_win' or 'adapt_none'), 'dim') }
+        end
+        for _, ch in ipairs(rv.adapt) do lines[#lines + 1] = { seg('- ' .. RV.adapt_text(ch), 'accent') } end
+    end
     if detail then section('review_decisions', rv.major, 'text', 6) end
     local l = rv.learning
     if l and l.runs and l.runs > 0 then

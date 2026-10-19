@@ -19,7 +19,7 @@ local files = {
     'unit/test_util', 'unit/test_json', 'unit/test_rng', 'unit/test_scheduler',
     'unit/test_poker_eval', 'unit/test_score', 'unit/test_score_reference', 'unit/test_jokers',
     'unit/test_probability', 'unit/test_hand_advisor', 'unit/test_economy', 'unit/test_synergy',
-    'unit/test_shop', 'unit/test_advice', 'unit/test_plan', 'unit/test_builds', 'unit/test_skip', 'unit/test_strategy', 'unit/test_persistence', 'unit/test_learning',
+    'unit/test_shop', 'unit/test_advice', 'unit/test_plan', 'unit/test_builds', 'unit/test_skip', 'unit/test_strategy', 'unit/test_persistence', 'unit/test_learning', 'unit/test_adapt',
     'unit/test_recorder', 'unit/test_format',
     -- integration
     'integration/test_mod_load', 'integration/test_state_reader', 'integration/test_compat', 'integration/test_full_flow', 'integration/test_old_smods', 'integration/test_standalone', 'integration/test_steps_ui',

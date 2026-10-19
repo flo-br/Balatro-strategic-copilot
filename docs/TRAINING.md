@@ -21,7 +21,12 @@ luajit tools/trainer/report.lua sortie.jsonl [autre.jsonl ...]
 ```
 
 * Réglages : `rollouts=32` et `shop_samples=80` par défaut (le mod utilise 64 et 120 : plus lent),
-  `deck=b_red`, et tout réglage de la section `advice` de `config.lua` (ex. `buy_note=58`).
+  `deck=b_red` (15 decks, ci-dessous), `stake=1` à `8` (1.0.9), et tout réglage de la section
+  `advice` de `config.lua` (ex. `buy_note=58`).
+* `learn=1` (1.0.9) : les parties de la série partagent **un profil**, comme les parties du joueur
+  dans le jeu : après chaque partie, le bilan du mod trouve les causes, les leçons nourrissent le
+  plan et le copilote recalcule ses réglages (`learning/adapt.lua`) pour la partie suivante ; la
+  ligne JSON contient alors `adapt` (changements) et `adapt_deltas` (écarts cumulés).
 * `BSC_MOD_ROOT=<dossier>` : évaluer une autre version du mod (ex. une copie de la 1.0.6).
 * `BSC_TRAIN_VERBOSE=1` : chaque main jouée ou défaussée est affichée.
 * Une ligne JSON par partie : résultat, ante atteinte, blinde perdue, historique des manches,
@@ -34,6 +39,17 @@ luajit tools/trainer/report.lua sortie.jsonl [autre.jsonl ...]
 * Mise blanche, deck rouge par défaut (+1 défausse), 4 mains, taille de main 8, 5 jokers,
   2 consommables, 4 $ au départ ; tailles de blindes vanilla, boss tirés selon leur ante minimale,
   sans répétition avant d'avoir tout vu, boss final à l'ante 8.
+* **Mises** (1.0.9, cumulatives) : 2 rouge, Small Blind sans récompense ; 3 verte, blindes plus
+  grosses (échelle 2) ; 4 noire, jokers de boutique et de paquet **éternels** (30 %) ; 5 bleue,
+  une défausse de moins ; 6 violette, échelle 3 ; 7 orange, **périssables** (30 %, 5 manches) ;
+  8 or, **location** (30 %, 1 $ à l'achat, 3 $ par manche, l'argent peut devenir négatif).
+* **Decks** (1.0.9) : rouge (+1 défausse), bleu (+1 main), jaune (+10 $), vert (2 $ par main et
+  1 $ par défausse restantes, pas d'intérêts), noir (+1 joker, −1 main), magique (Crystal Ball,
+  2 The Fool), nébuleuse (Telescope, −1 consommable), fantôme (spectrales en boutique, Hex),
+  abandonné (40 cartes, sans figures), damier (26 Piques, 26 Cœurs), zodiaque (Tarot Merchant,
+  Planet Merchant, Overstock), peint (+2 taille de main, −1 joker), anaglyphe (Double Tag après
+  chaque boss), plasma (jetons et multi équilibrés, blindes ×2), erratique (rangs et couleurs au
+  hasard).
 * Effets de boss simulés : couleurs et figures affaiblies, The Pillar, The Needle, The Water,
   The Manacle, The Psychic, The Eye, The Mouth (via le moteur de score), The Hook, The Arm, The Ox,
   The Tooth, The Serpent, The Flint, cartes face cachée (The House, The Wheel, The Mark, The Fish),
@@ -65,10 +81,12 @@ luajit tools/trainer/report.lua sortie.jsonl [autre.jsonl ...]
 
 ## Simplifications connues
 
-* Pas d'autocollants (mises supérieures), pas de déblocages ni de « portes » d'apparition des
-  jokers (le pool vient de la base du mod), pas d'exclusion des cartes déjà vues dans les paquets.
+* Pas de déblocages ni de « portes » d'apparition des jokers (le pool vient de la base du mod),
+  pas d'exclusion des cartes déjà vues dans les paquets ; autocollants tirés indépendamment (30 %)
+  et non selon les règles exactes du jeu.
+* Madness et Ceremonial Dagger détruisent désormais un joker au choix de la blinde (1.0.9).
 * Jokers dont les effets hors score ne sont pas simulés : Fortune Teller (compte des tarots),
-  Hologram (cartes ajoutées), Madness, Ceremonial Dagger, Riff-raff, Cartomancer, 8 Ball,
+  Hologram (cartes ajoutées), Riff-raff, Cartomancer, 8 Ball,
   Superposition, Séance, Sixth Sense, Certificate, Marble Joker, Vagabond, Matador, Hallucination,
   Perkeo, To Do List, Obelisk / Card Sharp hors de la main jouée, et quelques autres.
 * Tags non simulés : ceux qui ne figurent pas dans `rules.lua` ne sont pas proposés.

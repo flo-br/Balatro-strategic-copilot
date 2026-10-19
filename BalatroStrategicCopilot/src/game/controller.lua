@@ -261,9 +261,10 @@ function Ctl.update(dt)
     Ctl.poll_timer = Ctl.poll_timer + (dt or 0)
     local c = cfg()
     local interval = (c.compute and c.compute.poll_interval) or 0.15
+    -- every frame (cheap): the played cards stay in the play area only during the scoring
+    guarded('capture', EF.capture)
     if Ctl.poll_timer >= interval then
         Ctl.poll_timer = 0
-        guarded('capture', EF.capture)
         guarded('refresh', Ctl.refresh)
         guarded('selection', Ctl.update_selection)
         Ctl.process_events()
@@ -552,6 +553,7 @@ function Ctl.ui_model()
             for _, uid in ipairs(step.targets or {}) do
                 on_uid(uid, (step.target_labels and step.target_labels[uid]) or text, step.cls or 'good', { strong = true })
             end
+            for uid, lbl in pairs(step.hold_labels or {}) do on_uid(uid, lbl, 'accent', { strong = true }) end
             for _, uid in ipairs(step.use_on or {}) do
                 on_uid(uid, (step.use_labels and step.use_labels[uid]) or I.T('lbl_target'), 'accent', { strong = true })
             end

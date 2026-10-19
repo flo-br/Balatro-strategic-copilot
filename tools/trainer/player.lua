@@ -86,6 +86,28 @@ function Player:decision(g, kind, data)
 end
 
 -- One blind: the copilot plays it to the end. Returns 'won' | 'lost'.
+-- Reorder the simulated hand as the step numbers say: played cards in the order given, the
+-- held cards in theirs (only the relative orders matter for scoring).
+function Player:arrange(g, step, res)
+    local order = res and res.recommendation and res.recommendation.order
+    if not order then return end
+    local hand = g.blind.hand
+    local by_uid = {}
+    for _, c in ipairs(hand) do by_uid[tostring(c.uid)] = c end
+    local out, used = {}, {}
+    for _, c in ipairs(order.play or {}) do
+        local hc = by_uid[tostring(c.uid)]
+        if hc and not used[hc] then out[#out + 1] = hc; used[hc] = true end
+    end
+    for _, c in ipairs(order.held or {}) do
+        local hc = by_uid[tostring(c.uid)]
+        if hc and not used[hc] then out[#out + 1] = hc; used[hc] = true end
+    end
+    for _, c in ipairs(hand) do if not used[c] then out[#out + 1] = c end end
+    g.blind.hand = out
+    self.arranged = (self.arranged or 0) + 1
+end
+
 function Player:play_blind(g)
     local reorders = 0
     for _ = 1, 80 do
@@ -116,6 +138,8 @@ function Player:play_blind(g)
                         tostring(step.score and step.score.mean or (res.recommendation and res.recommendation.ref and res.recommendation.ref.mean)),
                         tostring(step.p)))
                 end
+                -- the player arranges the hand as numbered (JOUER 1, 2, 3 then GARDER 1, 2...)
+                if step.target_labels or step.hold_labels then self:arrange(g, step, res) end
                 local s = g:play(step.targets)
                 if os.getenv('BSC_TRAIN_VERBOSE') then io.stderr:write('   -> scored ' .. tostring(s) .. '\n') end
                 done = s ~= nil

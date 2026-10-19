@@ -45,6 +45,18 @@ function S.bonus_by_phase(T)
     T.ok(PL.joker_bonus(DB.get('j_golden'), early) > PL.joker_bonus(DB.get('j_golden'), late), 'economy early, not late')
 end
 
+function S.needed_multiplier_not_traded_for_chips(T)
+    -- ante 3: one x Mult due at ante 4; Baron is the only one: replacing it by Crafty Joker
+    -- (+80 chips) costs the multiplier of the next ante
+    local F, PL, DB = env()
+    local p = PL.analyse(F.state({ ante = 3, jokers = { F.joker('j_baron'), F.joker('j_joker') } }))
+    T.eq(p.xmult, 1); T.eq(p.next_target, 1)
+    local pen, why = PL.replace_penalty(DB.get('j_baron'), DB.get('j_crafty'), p)
+    T.ok(pen > 0 and why, 'penalty')
+    T.eq(PL.replace_penalty(DB.get('j_baron'), DB.get('j_duo'), p), 0, 'x Mult for x Mult: no penalty')
+    T.eq(PL.replace_penalty(DB.get('j_joker'), DB.get('j_crafty'), p), 0, '+Mult replaced: no penalty')
+end
+
 function S.plan_shown_in_the_shop(T)
     local F, PL = env()
     local FS = BSCopilot.require('ui/format_strategy')

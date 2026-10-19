@@ -57,21 +57,25 @@ IT.SPECTRALS = {
     c_black_hole = { v = 8, sim = { level_all = 1 } },
 }
 
+-- v: value in $ (heuristic); per_ante: value in $ for EACH ante left in the run (a voucher is
+-- permanent: Overstock or Clearance Sale bought in ante 2 pays for itself many times, in ante 8
+-- it barely matters); sim: effect measured by the simulation of the hands
 IT.VOUCHERS = {
-    v_overstock_norm = { v = 8 }, v_overstock_plus = { v = 8 },
-    v_clearance_sale = { v = 8 }, v_liquidation = { v = 9 },
-    v_hone = { v = 5 }, v_glow_up = { v = 6 },
-    v_reroll_surplus = { v = 6 }, v_reroll_glut = { v = 6 },
-    v_crystal_ball = { v = 5 }, v_omen_globe = { v = 3 },
-    v_telescope = { v = 6 }, v_observatory = { v = 8, ctx = { planets_held = 3 } },
+    v_overstock_norm = { v = 8, per_ante = 3 }, v_overstock_plus = { v = 8, per_ante = 3 },
+    v_clearance_sale = { v = 8, per_ante = 4 }, v_liquidation = { v = 9, per_ante = 4 },
+    v_hone = { v = 5, per_ante = 1.5 }, v_glow_up = { v = 6, per_ante = 2 },
+    v_reroll_surplus = { v = 6, per_ante = 2.5 }, v_reroll_glut = { v = 6, per_ante = 2.5 },
+    v_crystal_ball = { v = 5, per_ante = 1.5 }, v_omen_globe = { v = 3, per_ante = 0.8 },
+    v_telescope = { v = 6, per_ante = 2.5 }, v_observatory = { v = 8, ctx = { planets_held = 3 } },
     v_grabber = { v = 10, sim = { hands = 1 } }, v_nacho_tong = { v = 10, sim = { hands = 1 } },
     v_wasteful = { v = 7, sim = { discards = 1 } }, v_recyclomancy = { v = 7, sim = { discards = 1 } },
-    v_tarot_merchant = { v = 3 }, v_tarot_tycoon = { v = 3 }, v_planet_merchant = { v = 4 }, v_planet_tycoon = { v = 4 },
+    v_tarot_merchant = { v = 3, per_ante = 1 }, v_tarot_tycoon = { v = 3, per_ante = 1 },
+    v_planet_merchant = { v = 4, per_ante = 1.2 }, v_planet_tycoon = { v = 4, per_ante = 1.2 },
     v_seed_money = { v = 6, sim = { interest_cap = 25 } }, v_money_tree = { v = 7, sim = { interest_cap = 50 } },
-    v_blank = { v = 1 }, v_antimatter = { v = 14, sim = { slot = 1 } },
-    v_magic_trick = { v = 2 }, v_illusion = { v = 3 },
+    v_blank = { v = 1, per_ante = 0.3 }, v_antimatter = { v = 14, sim = { slot = 1 } },
+    v_magic_trick = { v = 2, per_ante = 0.5 }, v_illusion = { v = 3, per_ante = 0.8 },
     v_hieroglyph = { v = 12, sim = { ante = -1, hands = -1 } }, v_petroglyph = { v = 12, sim = { ante = -1, discards = -1 } },
-    v_directors_cut = { v = 4 }, v_retcon = { v = 4 },
+    v_directors_cut = { v = 4, per_ante = 1.2 }, v_retcon = { v = 4, per_ante = 1.2 },
     v_paint_brush = { v = 9, sim = { hand_size = 1 } }, v_palette = { v = 9, sim = { hand_size = 1 } },
 }
 

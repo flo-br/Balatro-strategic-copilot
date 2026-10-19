@@ -173,6 +173,21 @@ function S.blind_play_or_skip(T)
     T.eq(A().blind_step(state({ phase = 'blind_select' }), r).action, 'select_blind', 'a boss cannot be skipped')
 end
 
+function S.play_order_numbers(T)
+    local a, k, q = card('a', 7, 'Spades'), card('k', 13, 'Hearts'), card('q', 12, 'Clubs')
+    local s0 = state({ phase = 'hand', hand = { a, k, q } })
+    local r = { remaining = 500, round = { p_clear = 0.8 }, recommendation = { type = 'play', ref = { cards = { a, k } },
+        order = { play = { k, a }, held = { q }, gain = 0.3 } } }
+    local st = A().hand_step(s0, r)
+    T.eq(st.action, 'play')
+    T.eq(st.target_labels.k, 'JOUER 1'); T.eq(st.target_labels.a, 'JOUER 2')
+    T.eq(st.hold_labels.q, 'GARDER 1')
+    T.ok(st.hint and st.hint:find('+30 %', 1, true), st.hint)
+    r.recommendation.order = nil
+    st = A().hand_step(s0, r)
+    T.eq(st.target_labels, nil, 'no numbers when the order does not matter')
+end
+
 function S.order_marks_only_when_wrong(T)
     local s = state({ jokers = { { uid = 'duo', name = 'The Duo' }, { uid = 'jk', name = 'Joker' } } })
     local om = A().order_marks(s, { order = { 2, 1 }, gain = 0.25, names = { 'Joker', 'The Duo' } })
@@ -404,9 +419,37 @@ function S.no_churn_and_reroll_budget(T)
     opts[1].note = 64
     T.eq(A().shop_step(state({ dollars = 40, jokers = jokers }), shop_result({ options = opts })).action, 'sell')
     local res = shop_result({ reroll = { cost = 5, worth = false, p_improve = 0.4 } })
-    res.base.p_boss = 0.3; res.plan = { gaps = { power = true } }
+    res.base.p_boss = 0.6; res.plan = { gaps = { power = true } }
     T.eq(A().shop_step(state({ dollars = 20, ante = 5, rerolls = 1 }), res).action, 'reroll', 'danger: reroll')
     T.eq(A().shop_step(state({ dollars = 20, ante = 5, rerolls = 2 }), res).action, 'next_round', 'budget of 2 rerolls')
+    -- critical (boss more likely lost than won), missing a x Mult: the savings go into rerolls
+    res.base.p_boss = 0.3; res.plan = { gaps = { xmult = true } }
+    local st = A().shop_step(state({ dollars = 20, ante = 5, rerolls = 4 }), res)
+    T.eq(st.action, 'reroll', 'critical: no budget')
+    T.ok(st.why:find('perdue'), st.why)
+    T.eq(A().shop_step(state({ dollars = 8, ante = 5, rerolls = 4 }), res).action, 'next_round', 'a little money kept')
+end
+
+function S.rentals_bought_only_when_strong_and_sold_when_not_needed(T)
+    -- a rental ($3 every round) is not an "empty slot" joker: only strong or needed to survive
+    local opts = { { kind = 'joker', uid = 'r', name = 'Lusty Joker', cost = 1, note = 64, affordable = true, rental = true } }
+    T.ok(A().shop_step(state({ dollars = 6, rerolls = 1 }), shop_result({ options = opts })).action ~= 'buy', 'safe: not bought')
+    local danger = shop_result({ options = opts })
+    danger.base = { p_next = 0.5, p_boss = 0.3 }
+    T.eq(A().shop_step(state({ dollars = 6, rerolls = 1 }), danger).action, 'buy', 'in danger: bought')
+    -- owned rental, next blinds still safe without it: sold (stops the rent)
+    local jokers = { { uid = 'r', key = 'j_lusty_joker', name = 'Lusty Joker', rental = true, sell_cost = 0 } }
+    local res = shop_result({ sells = { { index = 1, uid = 'r', name = 'Lusty Joker', sell = 0, note = 50, d_next = -0.02, d_boss = 0, contribution = 0.1 } } })
+    local st = A().shop_step(state({ dollars = 2, jokers = jokers }), res)
+    T.eq(st.action, 'sell'); T.eq(st.targets[1], 'r')
+    T.ok(st.why:find('location'), st.why)
+    -- carries the score (strong rental bought on purpose): kept
+    res.sells[1].contribution = 0.4
+    T.ok(A().shop_step(state({ dollars = 2, jokers = jokers }), res).action ~= 'sell', 'strong rental: kept')
+    res.sells[1].contribution = 0.1
+    -- needed: kept
+    res.sells[1].d_boss = -0.4
+    T.ok(A().shop_step(state({ dollars = 2, jokers = jokers }), res).action ~= 'sell', 'needed for the boss: kept')
 end
 
 return S

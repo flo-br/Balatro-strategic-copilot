@@ -61,7 +61,7 @@ function B.base_amount(ante, scaling)
     return amount
 end
 
--- What each boss demands, and how top players prepare for it (docs/PRO_LESSONS.md §8)
+-- What each boss demands, and how top players prepare for it (docs/PRO_LESSONS_SOURCES.md §8)
 B.PREP = {
     bl_wall = 'blinde ×4 : il faut une marge de puissance (multiplicateurs) avant d\'y arriver',
     bl_final_vessel = 'blinde ×6 : seul un build à plusieurs ×Mult (ou qui grandit) passe, à préparer dès l\'ante 5',

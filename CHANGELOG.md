@@ -1,5 +1,62 @@
 # Historique des versions
 
+## 1.0.9 — 2026-10-19
+
+Retours des parties réelles (journaux fournis) : erreurs à trouver sans aide, ordre des cartes à
+indiquer, recalcul du copilote après chaque partie, toutes les mises et tous les decks.
+
+### Erreurs trouvées dans les parties réelles (journaux de la 1.0.6)
+* **Cartes jouées mal capturées sans événements Steamodded** (mode autonome / ancien Steamodded) :
+  les cartes arrivent dans la zone de jeu **une par une** ; seule la première était lue, d'où des
+  scores prévus faux (16 au lieu de 64) et des conseils marqués « non suivis ». La plus grande
+  sélection vue pendant la main est gardée, à chaque image.
+* Madness (détruit un joker à chaque blinde) était noté comme un simple ×Mult : mesuré désormais
+  sur les plateaux qu'il laisse.
+* Mises verte à or : les ×Mult sont attendus une à deux antes plus tôt (blindes plus grosses).
+
+### Ordre des cartes
+* Numéros **JOUER 1, 2, 3…** sur les cartes à jouer et **GARDER 1, 2…** sur les cartes gardées en
+  main quand l'ordre change le score (Photograph, Hanging Chad, verre, polychrome, Triboulet,
+  The Idol, Ancient Joker, Bloodstone ; Shoot the Moon + Baron en main), avec le gain dans le
+  panneau ; carte imposée de Cerulean Bell : « IMPOSÉE n ».
+* Chaque jeu possible est évalué **dans son meilleur ordre** (avant : dans l'ordre de l'écran ; une
+  Double paire gagnante seulement avec un Roi en tête, 1 184 au lieu de 272, était écartée au
+  profit d'une Paire perdante) ; la simulation de la fin de manche et l'estimation de puissance
+  (boutique) font de même : Hanging Chad n'est plus sous-évalué.
+* Étiquettes voisines décalées d'une rangée quand elles se chevauchent.
+
+### Après chaque partie : le copilote recalcule ses réglages (`learning/adapt.lua`)
+* Les causes trouvées par le bilan (argent dormant, puissance qui décroche, ×Mult manquants, marge,
+  boss, défaite juste après un passage…) déplacent ses seuils d'achat, d'épargne, de sécurité et de
+  passage : un pas au plus par partie, dans des bornes fixes ; une victoire ramène d'un pas vers la
+  base. Chaque changement est affiché dans le bilan (« Ce que je change pour la prochaine
+  partie ») avec sa cause. Nouvelle cause du bilan : défaite dans l'ante d'un passage de blinde.
+
+### Mises et decks (erreurs trouvées en faisant jouer le copilote à toutes les mises)
+* **Location** (mise or) : un joker loué coûte 1 $ puis 3 $ à chaque manche ; il était noté comme un
+  joker à 1 $ (deux locations prises à l'ante 1 vidaient l'argent de toute la partie : −5 $ à la
+  fin). Coût compté sur deux antes, pris seulement s'il est fort ou nécessaire, **revendu** dès que
+  la suite reste sûre sans lui (sauf s'il porte le score : plus de 15 %). Paquets Bouffon et relances estimés avec les autocollants que leurs
+  jokers peuvent porter (éternel, périssable, location).
+* **Joker qui grandit** : sa revente compte ce qu'il deviendra (Runner, Hologram, Glass Joker
+  étaient achetés pour leur croissance puis revendus dans la même boutique, « 0 % du score »).
+* **Remplacer le seul ×Mult** attendu à l'ante suivante par un joker sans ×Mult est pénalisé.
+* **Danger critique** (prochaine blinde ou boss sous 50 %) : l'argent gardé ne vaut rien après une
+  défaite, les relances ne sont plus limitées (parties perdues aux antes 6-7 avec 50 à 75 $).
+* **Bons** : valeur par ante restante (Overstock, Clearance Sale, Reroll Surplus, Telescope…) ;
+  avant, une valeur fixe toujours sous leur prix les faisait presque toujours refuser (3 achetés
+  en 22 parties) ; les bons +1 main / +1 défausse / +1 taille de main comptent pour toutes les
+  antes restantes.
+* Tags Double cumulés : un tag passé vaut plus quand des tags Double sont déjà en attente.
+* Une manche sans issue (aucune option ne gagne une seule simulation sur 32) n'est plus simulée
+  jusqu'au bout : conseil en ≈ 3 s de calcul au lieu de ≈ 7 s.
+
+### Entraînement
+* Simulateur : mises 1 à 8 (Small Blind sans récompense, échelles 2 et 3, autocollants éternel /
+  périssable / location, une défausse de moins), 15 decks de départ, Madness et Ceremonial Dagger,
+  tags Double cumulés ; option `learn=1` (profil partagé, réglages recalculés après chaque partie).
+* Résultats des parties simulées par mise et par deck : [docs/TRAINING.md](docs/TRAINING.md).
+
 ## 1.0.8 — 2026-10-19
 
 Retours de la partie de test : boss qui impose une carte mal pris en compte, plus aucune blinde

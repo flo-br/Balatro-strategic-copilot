@@ -191,6 +191,15 @@ function UI.draw(model)
 
     -- badges over cards (drawn after the panel: never hidden by it)
     if model.badges then
+        -- badges of neighbouring cards (JOUER 1, JOUER 2...) can be wider than the cards: one that
+        -- would cover a badge already drawn goes one row further from the card
+        local placed = {}
+        local function overlaps(x, y, w, h)
+            for _, r in ipairs(placed) do
+                if x < r.x + r.w and r.x < x + w and y < r.y + r.h and r.y < y + h then return true end
+            end
+            return false
+        end
         for _, b in ipairs(model.badges) do
             -- strong = the step to do now (bigger, thicker frame); pos = 'below' for order numbers
             local f = b.strong and font or small
@@ -208,6 +217,11 @@ function UI.draw(model)
                 if by < 0 then by = math.floor(b.y + 2) end
             end
             bx = math.max(2, math.min(bx, W - tw - 2))
+            for _ = 1, 3 do
+                if not overlaps(bx, by, tw, th) then break end
+                if b.pos == 'below' then by = by + th + 2 else by = by - th - 2 end
+            end
+            placed[#placed + 1] = { x = bx, y = by, w = tw, h = th }
             g.setColor(colour('badge_bg'))
             g.rectangle('fill', bx, by, tw, th, 4, 4)
             g.setColor(colour(b.class or 'text'))

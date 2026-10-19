@@ -29,6 +29,8 @@ for i = 4, #arg do
         local num = tonumber(v)
         if v == 'true' then num = true elseif v == 'false' then num = false end
         if k == 'deck' then opts.deck = v
+        elseif k == 'stake' then opts.stake = tonumber(v)
+        elseif k == 'learn' then opts.learn = (v == '1' or v == 'true')
         elseif cfg.compute[k] ~= nil then cfg.compute[k] = num
         else cfg.advice[k] = (num ~= nil) and num or v end
     end
@@ -37,6 +39,19 @@ end
 local Sim = dofile(TRAINER_DIR .. '/sim.lua')
 local Player = dofile(TRAINER_DIR .. '/player.lua')
 
+-- learn=1: the runs of the batch share one profile, as the player's runs do in the game: after
+-- each run the mod's review finds the causes, the lessons feed the plan and the copilot
+-- recalculates its own settings (learning/adapt.lua) for the next run
+local profile, RV, LE, AD, BR
+if opts.learn then
+    RV = BSCopilot.require('learning/review')
+    LE = BSCopilot.require('learning/learning')
+    AD = BSCopilot.require('learning/adapt')
+    BR = dofile(TRAINER_DIR .. '/bridge.lua')
+    profile = LE.new_profile(0)
+    BSCopilot.learning_runtime = { profile = function() return profile end, adapt_deltas = function() return AD.deltas(profile) end }
+end
+
 local fh = assert(io.open(out, 'a'))
 local wins, antes = 0, 0
 for seed = first, first + n - 1 do
@@ -44,6 +59,13 @@ for seed = first, first + n - 1 do
     local g = Sim.new(seed, opts)
     local p = Player.new(cfg, opts)
     local ok, summary = pcall(function() return p:play_run(g) end)
+    if ok and profile then
+        local run = BR.to_run(summary)
+        local rv = RV.build(run, profile)
+        if not run.won and rv.lessons and #rv.lessons > 0 then LE.add_lessons(profile, rv.lessons, run.id) end
+        summary.adapt = AD.update(profile, rv, run)
+        summary.adapt_deltas = AD.deltas(profile)
+    end
     if not ok then
         summary = { seed = tostring(seed), error = tostring(summary), ante = g.ante, history = g.history, decisions = p.decisions,
             anomalies = p.anomalies }

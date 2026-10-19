@@ -67,12 +67,22 @@
   indépendantes, boss inconnus ~15 % plus durs) → **confiance limitée** par construction.
 * Tarots, spectrales, paquets, tags : simulés seulement pour les améliorations / changements de
   couleur / niveaux ; le reste est heuristique (affiché comme tel).
-* Pas de réglage automatique des poids de la note (choix délibéré, voir LEARNING.md).
+* Pas de réglage automatique des poids de la note (choix délibéré, voir LEARNING.md) ; seuls les
+  seuils des conseils sont recalculés (1.0.9).
 * Blindes passées : valeurs des tags et de la boutique sautée **estimées** (synthèse des avis des
   meilleurs joueurs, PRO_SKIPS_SOURCES.md), pas mesurées ; le joker qu'un tag donnera est inconnu.
-* Synergies des builds : bonus estimés (paires notées S / A / B / C), ajoutés au gain mesuré ;
-  l'ordre des cartes tenues en main (Dames avant Rois avec Shoot the Moon et Baron) n'est pas
-  conseillé.
+* Synergies des builds : bonus estimés (paires notées S / A / B / C), ajoutés au gain mesuré.
+* Ordre des cartes (1.0.9) : tous les ordres des cartes jouées sont essayés pour le jeu conseillé,
+  mais les autres jeux candidats ne sont évalués que dans 9 ordres au plus (chaque carte en premier
+  / en dernier) ; les cartes gardées sont rangées par une règle (additif, neutre, multiplicatif),
+  pas par recherche exhaustive. Les numéros supposent que vous déplacez les cartes **avant** de
+  jouer (le jeu compte de gauche à droite).
+* Réglages recalculés après chaque partie (1.0.9) : pas bornés choisis à la main, pas
+  d'apprentissage statistique des seuils ; l'effet a été mesuré sur le simulateur seulement
+  (TRAINING.md).
+* Mises 2 à 8 et decks (1.0.9) : la stratégie s'adapte à ce qui est **lu** (récompense nulle,
+  taille des blindes, autocollants, défausses, cartes du deck) ; il n'y a pas de règle propre à
+  chaque deck (par exemple pas de plan spécifique au deck Plasma ou au deck Damier).
 
 ## Interface
 
@@ -83,6 +93,8 @@
 
 ## Performances
 
-* Analyse de main complète ≈ 0,3 s CPU, boutique ≈ 0,6 s CPU (mesurées sous LuaJIT, voir
+* Analyse de main complète ≈ 0,65 s CPU, boutique ≈ 0,55 s CPU (mesurées sous LuaJIT, voir
   TESTS.md), réparties par tranches de 4 ms par image : les résultats apparaissent
-  progressivement (« Analyse en cours… »).
+  progressivement (« Analyse en cours… »). Une manche sans issue (aucune option ne gagne une seule
+  simulation sur 32) coûtait jusqu'à 7 s CPU ; depuis 1.0.9 les simulations s'arrêtent alors à
+  32 par option (≈ 3 s CPU, soit une dizaine de secondes avant le conseil définitif).

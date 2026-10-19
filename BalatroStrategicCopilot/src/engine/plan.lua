@@ -97,18 +97,28 @@ end
 PL.lesson = lesson
 
 -- The plan. base (optional): { p_next, p_boss, p_win, median = score of a typical hand }.
+-- Blinds grow faster from Green Stake (scaling 2) and Purple Stake (scaling 3): the build must
+-- be one or two antes ahead (lesson of real runs lost at Orange Stake with +Mult jokers only).
+function PL.stake_shift(state)
+    local scaling = (state.run and state.run.scaling) or 1
+    return math.max(0, math.min(2, scaling - 1))
+end
+
 function PL.analyse(state, base)
     base = base or {}
     local ante = (state.run and state.run.ante) or 1
+    local shift = PL.stake_shift(state)
+    local eff = ante + shift -- the ante the build must be ready for
     local x, list = PL.xmult_sources(state)
-    local target = PL.XMULT_TARGET[math.min(#PL.XMULT_TARGET, math.max(1, ante))] or 3
-    local plan = { ante = ante, phase = PL.phase(ante), xmult = x, xmult_list = list, xmult_target = target,
-        main_hand = PL.main_hand(state), gaps = {} }
+    local target = PL.XMULT_TARGET[math.min(#PL.XMULT_TARGET, math.max(1, eff))] or 3
+    local plan = { ante = ante, eff_ante = eff, stake_shift = shift, phase = PL.phase(eff), xmult = x, xmult_list = list,
+        xmult_target = target, main_hand = PL.main_hand(state), gaps = {} }
     local kinds = { xmult = 0, scaling = 0, econ = 0, additive = 0, retrigger = 0, utility = 0, unknown = 0 }
     for _, j in ipairs(state.jokers or {}) do kinds[PL.joker_kind(DB.get(j.key, j.name))] = (kinds[PL.joker_kind(DB.get(j.key, j.name))] or 0) + 1 end
     plan.kinds = kinds
     -- the next multiplier is due one ante early: prepare it before the board falls behind
-    local next_target = PL.XMULT_TARGET[math.min(#PL.XMULT_TARGET, ante + 1)] or 3
+    local next_target = PL.XMULT_TARGET[math.min(#PL.XMULT_TARGET, eff + 1)] or 3
+    plan.next_target = next_target
     if x < next_target then plan.gaps.xmult = next_target - x end
     if plan.phase ~= 'late' and kinds.scaling == 0 then plan.gaps.scaling = true end
     if (base.p_next or 1) < 0.8 or (base.p_boss or 1) < 0.6 then plan.gaps.power = true end
@@ -139,7 +149,7 @@ function PL.joker_bonus(def, plan)
     local kind = PL.joker_kind(def)
     local v, why = 0, nil
     if kind == 'xmult' then
-        v = 0.1 + 0.07 * math.max(0, plan.ante - 2)
+        v = 0.1 + 0.07 * math.max(0, (plan.eff_ante or plan.ante) - 2)
         if plan.gaps.xmult then
             v = v + 0.3 * (plan.xmult_weight or 1)
             why = string.format('multiplicateur ×Mult : %d sur %d attendus à cette ante', plan.xmult, plan.xmult_target)
@@ -156,6 +166,18 @@ function PL.joker_bonus(def, plan)
         v = (plan.phase == 'early') and 0.15 or ((plan.phase == 'late') and -0.2 or 0)
     end
     return v, why
+end
+
+-- Replacing a x Mult joker by a joker that is not one: the board loses a multiplier it needs
+-- for the next ante (seen in simulated runs: Baron sold in ante 3 for Crafty Joker, the run then
+-- lost at ante 6 without any x Mult). Returns the extra loss in "potential" units, reason.
+function PL.replace_penalty(old_def, new_def, plan)
+    if not plan or not old_def then return 0, nil end
+    if PL.joker_kind(old_def) ~= 'xmult' or (new_def and PL.joker_kind(new_def) == 'xmult') then return 0, nil end
+    if (plan.xmult or 0) - 1 < (plan.next_target or 0) then
+        return 0.3 * (plan.xmult_weight or 1), 'perd un multiplicateur ×Mult nécessaire à l\'ante suivante'
+    end
+    return 0, nil
 end
 
 return PL

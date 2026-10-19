@@ -69,21 +69,35 @@ function Sim.new(seed, opts)
     g.rng = Rng.new('sim:' .. g.seed)
     g.uid_counter = 700000
     g.deck_key = opts.deck or 'b_red'
+    g.stake = math.max(1, math.min(8, tonumber(opts.stake) or 1))
     local d = RU.DECKS[g.deck_key] or {}
+    g.deck_rules = d
     g.dollars = RU.START.dollars + (d.dollars or 0)
     g.round_hands = RU.START.hands + (d.hands or 0)
-    g.round_discards = RU.START.discards + (d.discards or 0)
-    g.hand_size = RU.START.hand_size
-    g.joker_slots = RU.START.joker_slots
-    g.consumable_slots = RU.START.consumable_slots
+    g.round_discards = RU.START.discards + (d.discards or 0) - ((g.stake >= 5) and 1 or 0)
+    g.hand_size = RU.START.hand_size + (d.hand_size or 0)
+    g.joker_slots = RU.START.joker_slots + (d.joker_slots or 0)
+    g.consumable_slots = RU.START.consumable_slots + (d.consumable_slots or 0)
     g.interest_cap = RU.START.interest_cap
     g.reroll_base = RU.START.reroll_cost
     g.shop_slots = 2
     g.discount = 0
     g.edition_rate = 1
     g.rates = copy(RU.SHOP_RATES)
+    if d.spectral_rate then g.rates.spectral = d.spectral_rate end
+    g.scaling = (g.stake >= 6) and 3 or ((g.stake >= 3) and 2 or 1)
+    g.ante_scaling = d.ante_scaling or 1
     g.ante, g.round = 1, 0
     g.cards = C.standard_deck()
+    if d.cards == 'no_faces' then
+        local keep = {}
+        for _, c in ipairs(g.cards) do if not (c.id >= 11 and c.id <= 13) then keep[#keep + 1] = c end end
+        g.cards = keep
+    elseif d.cards == 'checkered' then
+        for _, c in ipairs(g.cards) do
+            if c.suit == 'Clubs' then c.suit = 'Spades' elseif c.suit == 'Diamonds' then c.suit = 'Hearts' end
+        end
+    end
     for _, c in ipairs(g.cards) do c.uid = g:new_uid() end
     g.hands = H.default_table()
     g.jokers, g.consumables, g.vouchers = {}, {}, {}
@@ -94,6 +108,17 @@ function Sim.new(seed, opts)
     g.events = {}
     g.history = {}
     g.won, g.lost = false, false
+    if d.cards == 'erratic' then
+        for _, c in ipairs(g.cards) do
+            local nc = C.standard_deck()[g.rng:int(1, 52)]
+            set_rank(c, nc.rank); c.suit = nc.suit
+        end
+    end
+    for _, v in ipairs(d.vouchers or {}) do g:apply_voucher(v) end
+    for _, k in ipairs(d.consumables or {}) do
+        local set = (k == 'c_hex') and 'Spectral' or 'Tarot'
+        g.consumables[#g.consumables + 1] = g:make_consumable(k, set)
+    end
     g:new_ante()
     return g
 end
@@ -125,11 +150,12 @@ function Sim:pick_tag()
 end
 
 function Sim:new_ante()
-    local amount = BL.base_amount(self.ante, 1)
+    local amount = BL.base_amount(self.ante, self.scaling or 1) * (self.ante_scaling or 1)
     local boss = self:pick_boss()
     local bb = BL.get(boss)
     self.upcoming = {
-        { slot = 'Small', key = 'bl_small', name = 'Small Blind', boss = false, chips = math.floor(amount * 1), reward = RU.BLIND_REWARD.Small, state = 'Select' },
+        { slot = 'Small', key = 'bl_small', name = 'Small Blind', boss = false, chips = math.floor(amount * 1),
+            reward = (self.stake >= 2) and 0 or RU.BLIND_REWARD.Small, state = 'Select' },
         { slot = 'Big', key = 'bl_big', name = 'Big Blind', boss = false, chips = math.floor(amount * 1.5), reward = RU.BLIND_REWARD.Big, state = 'Upcoming' },
         { slot = 'Boss', key = boss, name = bb.name, boss = true, chips = math.floor(amount * (bb.mult or 2)), reward = RU.BLIND_REWARD.Boss, state = 'Upcoming' },
     }
@@ -182,10 +208,10 @@ end
 
 function Sim:snapshot(phase)
     local s = { phase = phase, errors = {}, knowledge = {} }
-    s.run = { ante = self.ante, round = self.round, win_ante = RU.START.win_ante, stake = 1, deck_key = self.deck_key,
+    s.run = { ante = self.ante, round = self.round, win_ante = RU.START.win_ante, stake = self.stake, deck_key = self.deck_key,
         hands_played = self.stats.hands_played, skips = self.stats.skips, tarots_used = self.stats.tarots_used,
         planets_used = self.stats.planets_used, planet_types_used = 0,
-        scaling = 1, ante_scaling = 1, endless = false }
+        scaling = self.scaling or 1, ante_scaling = self.ante_scaling or 1, endless = false }
     local nt = 0
     for _ in pairs(self.stats.planet_types) do nt = nt + 1 end
     s.run.planet_types_used = nt
@@ -193,8 +219,9 @@ function Sim:snapshot(phase)
     for _, j in ipairs(self.jokers) do if j.key == 'j_credit_card' and not j.debuff then credit = credit - 20 end end
     local free = 0
     for _, j in ipairs(self.jokers) do if j.key == 'j_chaos' and not j.debuff then free = free + 1 end end
-    s.econ = { dollars = self.dollars, interest_cap = self.interest_cap, interest_amount = 1, no_interest = false,
-        money_per_hand = 1, money_per_discard = 0,
+    local dr = self.deck_rules or {}
+    s.econ = { dollars = self.dollars, interest_cap = self.interest_cap, interest_amount = 1, no_interest = dr.no_interest and true or false,
+        money_per_hand = dr.money_per_hand or 1, money_per_discard = dr.money_per_discard or 0,
         reroll_cost = self.shop and self.shop.reroll_cost or self.reroll_base,
         free_rerolls = self.shop and self.shop.free_rerolls or free, base_reroll_cost = self.reroll_base,
         temp_reroll_cost = self.shop and self.shop.temp_reroll_cost or nil,
@@ -225,7 +252,7 @@ function Sim:snapshot(phase)
     for i, c in ipairs(self.consumables) do s.consumables[i] = copy(c) end
     s.consumable_slots = self.consumable_slots
     s.vouchers = copy(self.vouchers)
-    s.flags = { observatory_x = 1.5, plasma = false }
+    s.flags = { observatory_x = 1.5, plasma = (self.deck_rules and self.deck_rules.plasma) and true or false }
     s.hand_cards, s.deck = {}, {}
     if self.blind then
         for i, c in ipairs(self.blind.hand) do s.hand_cards[i] = mask(c, i) end
@@ -249,6 +276,9 @@ function Sim:snapshot(phase)
         for i, it in ipairs(self.pack.items) do s.pack.cards[i] = copy(it) end
     end
     s.blind_tags = copy(self.blind_tags or {})
+    s.tags_held = {}
+    for _ = 1, (self.double_next or 0) do s.tags_held[#s.tags_held + 1] = 'tag_double' end
+    for _, t in ipairs(self.tags or {}) do s.tags_held[#s.tags_held + 1] = t end
     s.orbital_hands = copy(self.orbital_hands or {})
     local idol = self.targets or {}
     s.targets = { ancient_suit = idol.ancient_suit, castle_suit = idol.castle_suit, idol = idol.idol, mail_id = idol.mail_id,
@@ -305,6 +335,28 @@ function Sim:make_joker(key, opts)
     j.sell_cost = math.max(1, math.floor(j.cost / 2))
     if key == 'j_invisible' then j.ability.invis_rounds = 0 end
     if key == 'j_yorick' and type(j.ability.extra) == 'table' then j.ability.yorick_discards = j.ability.extra.discards end
+    return j
+end
+
+-- Stake stickers on shop and pack jokers (vanilla create_card): Black Stake +: Eternal 30 %;
+-- Orange Stake +: Perishable 30 % (when not Eternal); Gold Stake: Rental 30 % ($1 to buy).
+local NO_ETERNAL = { decaying = true, fragile = true, joker_dup = true, boss_disable = true, tag_gen = true, survival = true }
+function Sim:roll_stickers(j)
+    if (self.stake or 1) < 4 then return j end
+    local def = BSC.require('model/jokers_db').get(j.key)
+    local tags = {}
+    for _, t in ipairs((def and def.tags) or {}) do tags[t] = true end
+    local r = self.rng:float()
+    local eternal_ok = true
+    for t in pairs(NO_ETERNAL) do if tags[t] then eternal_ok = false end end
+    if r > 0.7 and eternal_ok then
+        j.eternal = true
+    elseif self.stake >= 7 and r > 0.4 and r <= 0.7 and not tags.scaling then
+        j.perishable = true; j.perish_tally = 5
+    end
+    if self.stake >= 8 and self.rng:float() > 0.7 then
+        j.rental = true; j.cost = 1; j.sell_cost = 1
+    end
     return j
 end
 
@@ -467,6 +519,31 @@ function Sim:start_blind()
     end
     -- Blind:set_blind debuffs every playing card at once (draw pile included)
     for _, c in ipairs(self.cards) do self:apply_debuff(c) end
+    -- "when Blind is selected" jokers (vanilla): Madness (Small / Big Blind only) gains x0.5 and
+    -- destroys a random other joker that is not Eternal; Ceremonial Dagger destroys the joker to
+    -- its right and gains twice its sell value as Mult
+    local i = 1
+    while i <= #self.jokers do
+        local j = self.jokers[i]
+        if not j.debuff and j.key == 'j_madness' and not b.boss then
+            j.ability.x_mult = (j.ability.x_mult or 1) + (tonumber(j.ability.extra) or 0.5)
+            local pool = {}
+            for _, o in ipairs(self.jokers) do if o ~= j and not o.eternal then pool[#pool + 1] = o end end
+            if #pool > 0 then
+                local victim = pool[self.rng:int(1, #pool)]
+                self:remove_joker(victim)
+                self:event('destroyed', { key = victim.key, by = 'j_madness' })
+            end
+        elseif not j.debuff and j.key == 'j_ceremonial' then
+            local right = self.jokers[i + 1]
+            if right and not right.eternal then
+                j.ability.mult = (j.ability.mult or 0) + 2 * (right.sell_cost or 1)
+                self:remove_joker(right)
+                self:event('destroyed', { key = right.key, by = 'j_ceremonial' })
+            end
+        end
+        i = i + 1
+    end
     b.hands_left = self:round_hands_now()
     b.discards_left = self:round_discards_now()
     b.hand_size = self:hand_size_now() + (self.juggle or 0)
@@ -708,10 +785,12 @@ function Sim:end_round(won)
             end
         end
     end
-    -- interest is computed on the money before the payouts
-    local interest = math.min(math.floor(math.max(0, self.dollars) / 5), self.interest_cap / 5)
+    -- interest is computed on the money before the payouts (none with the Green Deck, which pays
+    -- $2 per hand and $1 per discard left instead)
+    local dr = self.deck_rules or {}
+    local interest = dr.no_interest and 0 or math.min(math.floor(math.max(0, self.dollars) / 5), self.interest_cap / 5)
     local reward = b.skip_reward and 0 or b.reward
-    local hands = b.hands_left
+    local hands = b.hands_left * (dr.money_per_hand or 1) + b.discards_left * (dr.money_per_discard or 0)
     local jinc = 0
     for _, j in ipairs(self.jokers) do
         local ex = j.ability.extra
@@ -781,6 +860,7 @@ end
 
 function Sim:after_boss()
     if self.ante >= RU.START.win_ante then self.won = true; return end
+    if self.deck_rules and self.deck_rules.double_after_boss then self.double_next = (self.double_next or 0) + 1 end
     self.ante = self.ante + 1
     self:new_ante()
 end
@@ -804,8 +884,9 @@ function Sim:shop_card()
     local kind = kinds[self.rng:weighted(weights)]
     if kind == 'joker' then
         local key = self:random_joker_key()
-        local j = self:make_joker(key, { edition = self:roll_edition() })
-        return { uid = j.uid, key = key, name = j.name, set = 'Joker', area = 'shop', cost = j.cost, edition = j.edition, joker = j }
+        local j = self:roll_stickers(self:make_joker(key, { edition = self:roll_edition() }))
+        return { uid = j.uid, key = key, name = j.name, set = 'Joker', area = 'shop', cost = j.cost, edition = j.edition, joker = j,
+            eternal = j.eternal, perishable = j.perishable, rental = j.rental }
     elseif kind == 'tarot' or kind == 'planet' or kind == 'spectral' then
         local set = (kind == 'tarot') and 'Tarot' or (kind == 'planet') and 'Planet' or 'Spectral'
         local key = (kind == 'tarot') and self:random_tarot() or (kind == 'planet') and self:random_planet() or self:random_spectral()
@@ -943,6 +1024,16 @@ function Sim:apply_voucher(key)
     if key == 'v_magic_trick' then self.rates.playing_card = 4 end
     if key == 'v_hieroglyph' then self.ante = math.max(1, self.ante - 1); self.round_hands = self.round_hands - 1 end
     if key == 'v_petroglyph' then self.ante = math.max(1, self.ante - 1); self.round_discards = self.round_discards - 1 end
+    if (key == 'v_hieroglyph' or key == 'v_petroglyph') and self.upcoming then
+        -- the blinds of the ante are sized from the (lower) ante when they are played
+        local amount = BL.base_amount(self.ante, self.scaling or 1) * (self.ante_scaling or 1)
+        for _, b in ipairs(self.upcoming) do
+            if b.state ~= 'Defeated' and b.state ~= 'Skipped' then
+                local mult = (b.slot == 'Small') and 1 or ((b.slot == 'Big') and 1.5 or ((BL.get(b.key) or {}).mult or 2))
+                b.chips = math.floor(amount * mult)
+            end
+        end
+    end
     if key == 'v_paint_brush' or key == 'v_palette' then self.hand_size = self.hand_size + 1 end
 end
 
@@ -999,7 +1090,7 @@ function Sim:open_pack(it)
     for i = 1, it.pack_size or 3 do
         if it.kind == 'Buffoon' then
             local key = uniq(function() return self:random_joker_key() end)
-            local j = self:make_joker(key, { edition = self:roll_edition() })
+            local j = self:roll_stickers(self:make_joker(key, { edition = self:roll_edition() }))
             items[i] = { uid = j.uid, key = key, name = j.name, set = 'Joker', area = 'pack', cost = 0, joker = j }
         elseif it.kind == 'Arcana' then
             local key = self.rng:chance(RU.SOUL_ODDS) and 'c_soul' or uniq(function() return self:random_tarot() end)
@@ -1264,9 +1355,9 @@ function Sim:apply_tag(tag)
         self.upcoming[3].key = self:pick_boss()
         local bb = BL.get(self.upcoming[3].key)
         self.upcoming[3].name = bb.name
-        self.upcoming[3].chips = math.floor(BL.base_amount(self.ante, 1) * (bb.mult or 2))
+        self.upcoming[3].chips = math.floor(BL.base_amount(self.ante, self.scaling or 1) * (self.ante_scaling or 1) * (bb.mult or 2))
     elseif tag == 'tag_double' then
-        self.double_next = true
+        self.double_next = (self.double_next or 0) + 1
     elseif tag == 'tag_charm' or tag == 'tag_meteor' or tag == 'tag_ethereal' or tag == 'tag_buffoon' or tag == 'tag_standard' then
         local kind = ({ tag_charm = 'Arcana', tag_meteor = 'Celestial', tag_ethereal = 'Spectral', tag_buffoon = 'Buffoon', tag_standard = 'Standard' })[tag]
         local size = ({ Arcana = 5, Celestial = 5, Spectral = 2, Buffoon = 4, Standard = 5 })[kind]
@@ -1275,9 +1366,11 @@ function Sim:apply_tag(tag)
     elseif tag then
         self.tags[#self.tags + 1] = tag
     end
-    if self.double_next and tag ~= 'tag_double' then
-        self.double_next = nil
-        self:apply_tag(tag)
+    -- every Double Tag held copies the next tag (they stack, e.g. Anaglyph Deck)
+    if (self.double_next or 0) > 0 and tag ~= 'tag_double' then
+        local n = self.double_next
+        self.double_next = 0
+        for _ = 1, n do self:apply_tag(tag) end
     end
 end
 

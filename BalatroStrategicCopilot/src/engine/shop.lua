@@ -223,6 +223,9 @@ local function risk_of(def, joker)
     return U.clamp(r, 0, 1), notes
 end
 
+-- rounds a rental joker is expected to be kept (two antes): its rent counts as part of its price
+SH.RENT_HORIZON = 6
+
 local function has_tag(def, tag)
     for _, t in ipairs((def and def.tags) or {}) do if t == tag then return true end end
     return false
@@ -366,6 +369,13 @@ function SH.analyse(state, opts, task)
             local j = it.joker
             local def = DB.get(j.key, j.name)
             opt.kind = 'joker'
+            -- rental (gold stake): $1 now, then $3 at the end of EVERY round it is kept. Priced
+            -- as what it costs over the rounds it is expected to be kept, not as $1: two cheap
+            -- rentals in ante 1 eat all the money of the run (seen in the simulated gold stake)
+            if j.rental then
+                opt.rental = true
+                cc = cost_component(cost + 3 * SH.RENT_HORIZON)
+            end
             opt.name = j.name or opt.name
             local need_slot = (j.edition ~= 'e_negative')
             if not need_slot or slots_free > 0 then
@@ -373,6 +383,26 @@ function SH.analyse(state, opts, task)
                 local m = measure(ctx, st)
                 local pot = 0
                 local gj = grown(j, 3)
+                -- Madness destroys a random other joker (not Eternal) every time a Small or Big Blind
+                -- is selected: measured on the boards it leaves after its first destruction
+                -- (average over the jokers it can destroy), and no growth counted (it eats the board)
+                local destroyed = 0
+                if j.key == 'j_madness' then
+                    local acc = { ratio = 0, p_next = 0, p_boss = 0, p_win = 0 }
+                    for k, o in ipairs(state.jokers or {}) do
+                        if not o.eternal then
+                            check()
+                            local mk = measure(ctx, SH.variant(state, { replace_joker = k, with = j, dollars = -cost }))
+                            destroyed = destroyed + 1
+                            for f in pairs(acc) do acc[f] = acc[f] + (mk[f] or 0) end
+                        end
+                    end
+                    if destroyed > 0 then
+                        for f in pairs(acc) do m[f] = acc[f] / destroyed end
+                        gj = nil
+                        opt.risks[#opt.risks + 1] = 'détruit un joker au hasard à chaque blinde'
+                    end
+                end
                 if gj then
                     local st2 = SH.variant(state, { add_joker = gj, dollars = -cost })
                     local m2 = measure(ctx, st2)
@@ -385,6 +415,8 @@ function SH.analyse(state, opts, task)
                 for _, r in ipairs(rnotes) do opt.risks[#opt.risks + 1] = r end
                 local ev, ewhy = econ_of(def, j, state)
                 if ewhy then opt.reasons[#opt.reasons + 1] = ewhy end
+                -- the rent is already in the cost (cost_component above)
+                if j.rental then ev = ev + 3 end
                 if not def then opt.risks[#opt.risks + 1] = 'joker non reconnu : effet non simulé'; opt.method = 'partial' end
                 local pb, pwhy = PL.joker_bonus(def, plan)
                 if pwhy then opt.reasons[#opt.reasons + 1] = pwhy end
@@ -415,17 +447,27 @@ function SH.analyse(state, opts, task)
                     for _, r in ipairs(why) do opt.reasons[#opt.reasons + 1] = r end
                     local risk, rnotes = risk_of(def, j)
                     for _, r in ipairs(rnotes) do opt.risks[#opt.risks + 1] = r end
-                    local cc2 = cost_component(math.max(0, opt.cost))
+                    local cc2 = cost_component(math.max(0, opt.cost) + (j.rental and 3 * SH.RENT_HORIZON or 0))
                     local ev = econ_of(def, j, state)
+                    if j.rental then ev = ev + 3 end
                     -- replacing a joker: the plan counts what comes in AND what goes out
                     local pb, pwhy = PL.joker_bonus(def, plan)
                     local pout = PL.joker_bonus(DB.get(best.owned.key, best.owned.name), plan)
                     if pwhy then opt.reasons[#opt.reasons + 1] = pwhy end
+                    local pen, penwhy = PL.replace_penalty(DB.get(best.owned.key, best.owned.name), def, plan)
+                    pout = pout + pen
+                    if penwhy then opt.risks[#opt.risks + 1] = penwhy end
                     -- synergies: those of the new joker with the rest, minus those lost with the old one
                     local sb, swhy = BD.joker_bonus(j.key, state, best.owned)
                     local sout = BD.joker_bonus(best.owned.key, state, best.owned)
                     if swhy then opt.reasons[#opt.reasons + 1] = swhy end
                     opt.synergy_bonus = sb - sout
+                    -- a scaling joker replaced loses what it would have become
+                    local gown = grown(best.owned, 3)
+                    if gown then
+                        local mg = measure(ctx, SH.variant(state, { replace_joker = best.k, with = gown }))
+                        sout = sout + U.clamp(math.log(math.max(1e-6, mg.ratio)) / math.log(2), 0, 1)
+                    end
                     local comp = components(best.m, { potential = pb - pout + sb - sout, synergy = fit, econ = U.clamp(ev * 3 / 20, -1, 1), cost = cc2, risk = risk,
                         reliability = def and 1 or 0.5 })
                     finish(opt, best.m, comp)
@@ -508,6 +550,9 @@ function SH.analyse(state, opts, task)
             opt.kind = 'voucher'
             local info = IT.VOUCHERS[it.key] or {}
             local sim = info.sim
+            -- antes left in the run (a voucher is permanent)
+            local run = state.run or {}
+            local antes_left = math.max(1, (run.win_ante or 8) - (run.ante or 1) + 1)
             if sim and (sim.hands or sim.discards or sim.hand_size or sim.slot or sim.interest_cap or sim.ante) then
                 local ch = { dollars = -cost, hands = sim.hands, discards = sim.discards, hand_size = sim.hand_size, slots = sim.slot,
                     interest_cap = sim.interest_cap }
@@ -524,9 +569,14 @@ function SH.analyse(state, opts, task)
                 if sim.slot then extra.potential = 0.4; opt.reasons[#opt.reasons + 1] = 'emplacement de joker supplémentaire' end
                 -- Seed Money / Money Tree: only worth it with money to keep above the cap ($40+)
                 if sim.interest_cap then extra.econ = U.clamp((dollars >= 40) and 0.5 or ((dollars >= 25) and 0.2 or 0), 0, 1); opt.reasons[#opt.reasons + 1] = 'plafond d\'intérêts relevé' end
-                if sim.hands then opt.reasons[#opt.reasons + 1] = '+1 main par manche' end
-                if sim.discards then opt.reasons[#opt.reasons + 1] = '+1 défausse par manche' end
+                if sim.hands and sim.hands > 0 then opt.reasons[#opt.reasons + 1] = '+1 main par manche' end
+                if sim.discards and sim.discards > 0 then opt.reasons[#opt.reasons + 1] = '+1 défausse par manche' end
                 if sim.hand_size then opt.reasons[#opt.reasons + 1] = '+1 taille de main' end
+                -- a permanent hand, discard or card in hand helps every blind left, not only the
+                -- next ones measured here
+                if (sim.hands or 0) > 0 or (sim.discards or 0) > 0 or sim.hand_size then
+                    extra.potential = (extra.potential or 0) + 0.3 * math.min(1, antes_left / 4)
+                end
                 extra.cost = cc
                 extra.reliability = 0.9
                 opt.method = 'simulation'
@@ -534,6 +584,10 @@ function SH.analyse(state, opts, task)
             else
                 opt.method = 'heuristic'
                 local v = info.v or 4
+                if info.per_ante then
+                    v = info.per_ante * antes_left
+                    opt.reasons[#opt.reasons + 1] = string.format('permanent : ~%d $ sur les %d antes restantes (estimation)', math.floor(v + 0.5), antes_left)
+                end
                 finish(opt, nil, { econ = U.clamp((v - cost) / 12, -1, 1), potential = 0.2, cost = cc * 0.6, reliability = 0.6 })
             end
         elseif it.set == 'Booster' then
@@ -582,13 +636,25 @@ function SH.analyse(state, opts, task)
             local ev = econ_of(def, j, state)
             -- a piece of a build keeps what it will bring with the others (engine/builds.lua)
             local sout = BD.joker_bonus(j.key, state, j)
-            local comp = components(m, { econ = U.clamp(((j.sell_cost or 0) - ev * 2) / 15, -1, 1), potential = -sout,
+            -- a scaling joker is bought for what it becomes: its sale counts that too (before
+            -- 1.0.9 Runner, Hologram, Glass Joker... were bought "for their growth", then sold
+            -- in the same shop as "bringing 0 %")
+            local contribution, pot = 1 - m.ratio, 0
+            local gj = grown(j, 3)
+            if gj then
+                local mg = measure(ctx, SH.variant(state, { replace_joker = k, with = gj }))
+                if mg.ratio > 0 then
+                    contribution = math.max(contribution, 1 - m.ratio / mg.ratio)
+                    pot = U.clamp(math.log(math.max(1e-6, mg.ratio)) / math.log(2), 0, 1)
+                end
+            end
+            local comp = components(m, { econ = U.clamp(((j.sell_cost or 0) - ev * 2) / 15, -1, 1), potential = -sout - pot,
                 reliability = def and 1 or 0.5 })
             local note = SH.note(comp, w)
             res.sells[#res.sells + 1] = { index = k, name = j.name, uid = j.uid, sell = j.sell_cost or 0, note = note, ratio = m.ratio,
-                synergy = sout,
+                synergy = sout, growth = (pot > 0) and pot or nil,
                 d_next = (m.p_next and p_next) and (m.p_next - p_next) or nil, d_boss = (m.p_boss and p_boss) and (m.p_boss - p_boss) or nil,
-                contribution = 1 - m.ratio }
+                contribution = contribution }
         end
     end
     table.sort(res.sells, function(a, b) return a.note > b.note end)
@@ -770,6 +836,17 @@ function SH.joker_samples(state, ctx, res, w, task)
             local j = joker_entry_from_def(key)
             local note
             local weakest = (slots_free <= 0) and SH.weakest_joker(state, ctx, task) or nil
+            -- stickers of the higher stakes, as the game rolls them for shop and pack jokers:
+            -- Eternal 30 % (Black Stake), else Perishable 30 % (Orange), and Rental 30 % (Gold).
+            -- Before 1.0.9 a Buffoon Pack was bought at gold stake for an expected 97/100, then
+            -- every joker in it was a rental or weak and the pack was skipped.
+            local stake = (state.run and state.run.stake) or 1
+            local r1, r2 = 0, 0
+            if stake >= 4 then r1, r2 = rng:float(), rng:float() end
+            local eternal = stake >= 4 and r1 > 0.7
+            local perishable = not eternal and stake >= 7 and r1 > 0.4 and r1 <= 0.7
+            local rental = stake >= 8 and r2 > 0.7
+            if rental then j.cost = 1; j.rental = true end
             if slots_free > 0 or weakest then
                 -- full slots: the new joker would replace the weakest sellable one
                 local st = weakest and SH.variant(state, { replace_joker = weakest.k, with = j, dollars = -(j.cost or 5) + (weakest.j.sell_cost or 0) })
@@ -782,7 +859,8 @@ function SH.joker_samples(state, ctx, res, w, task)
                 local comp = { impact = U.clamp((0.5 * dn + 0.5 * db) * 5, -1.5, 1.5),
                     power = U.clamp(math.log(math.max(1e-6, m.ratio)) / math.log(2), -1, 1), synergy = fit,
                     potential = (PL.joker_bonus(DB.get(key), ctx.plan)) + (BD.joker_bonus(key, state, weakest and weakest.j)),
-                    cost = U.clamp((j.cost or 5) / math.max(10, (econ.dollars or 0) + 10), 0, 1.5), reliability = 1 }
+                    cost = U.clamp(((j.cost or 5) + (rental and 3 * SH.RENT_HORIZON or 0)) / math.max(10, (econ.dollars or 0) + 10), 0, 1.5),
+                    risk = (perishable and 0.3 or 0) + (eternal and 0.1 or 0), reliability = 1 }
                 note = SH.note(comp, w)
             else
                 note = 40

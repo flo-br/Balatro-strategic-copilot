@@ -1,6 +1,6 @@
 # Leçons des meilleurs joueurs appliquées par le copilote
 
-Synthèse des règles que le copilote applique (version 1.0.8), tirées de recherches sourcées sur
+Synthèse des règles que le copilote applique (version 1.0.9), tirées de recherches sourcées sur
 les guides, le wiki officiel (balatrowiki.org) et les forums de joueurs expérimentés. Les recherches
 complètes, en anglais, avec l'adresse de chaque source et les désaccords entre sources, sont dans
 [PRO_LESSONS_SOURCES.md](PRO_LESSONS_SOURCES.md) (les numéros § y renvoient),
@@ -152,10 +152,20 @@ Règles générales retenues : une base de jetons et de +Mult d'abord, puis des 
 7-8 ; une ou deux mains, montées par les planètes ; ne pas forcer un build tôt ; les effets de
 cartes tenues demandent des cartes en main (pas de Stuntman avec Baron).
 
-## 8. Ce qui n'est pas (encore) appliqué
+## 8. Ajouts 1.0.9 : ordre des cartes et erreurs trouvées en simulation
 
-* L'ordre des cartes **tenues en main** (Dames de Shoot the Moon à gauche des Rois de Baron) n'est
-  pas conseillé ; seul l'ordre des jokers l'est.
+* **Ordre des cartes** (règle du jeu : cartes comptées de gauche à droite) : numéros JOUER 1, 2… et
+  GARDER 1, 2… quand l'ordre change le score (Photograph et Hanging Chad sur la bonne carte, +Mult
+  avant les cartes ×Mult, Dames de Shoot the Moon à gauche des Rois de Baron).
+* Les règles suivantes ne viennent **pas** des sources ci-dessus mais des défaites du copilote
+  sur le simulateur, à toutes les mises (TRAINING.md) : un joker loué se paie 3 $ à chaque manche
+  et se revend dès qu'il n'est plus nécessaire ; un joker qui grandit se juge sur ce qu'il
+  deviendra ; on ne remplace pas le seul ×Mult attendu à l'ante suivante par des jetons ; en
+  danger critique, l'argent gardé ne sert à rien ; un bon est permanent et vaut plus tôt dans la
+  partie.
+
+## 9. Ce qui n'est pas (encore) appliqué
+
 * Préparation explicite d'un boss connu à l'avance (garder Justice / Chariot pour The Needle ou The
   Eye, Luchador, Director's Cut) : seulement à travers la probabilité de battre le boss.
 * Choix de la main principale selon la mise (paire / carte haute aux mises élevées).

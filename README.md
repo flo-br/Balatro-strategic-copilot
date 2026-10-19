@@ -5,7 +5,7 @@ partie, calcule les scores exacts, les probabilités, évalue la boutique, conse
 défausses, et **apprend de vos parties**. **Il ne joue jamais à votre place** : il n'effectue
 aucune action (sélection, jeu, défausse, achat, vente, relance).
 
-> Statut : version 1.0.8. Développée **hors du jeu** (aucune installation de Balatro n'était
+> Statut : version 1.0.9. Développée **hors du jeu** (aucune installation de Balatro n'était
 > disponible dans l'environnement de développement), puis essayée par l'utilisateur dans le vrai
 > jeu (mode copier-coller). Validée par des tests automatisés, un environnement Balatro/Steamodded
 > simulé, le vrai runtime LÖVE 11.5 et des parties complètes simulées ([entraînement](docs/TRAINING.md)).
@@ -17,7 +17,7 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 
 | Domaine | Ce que fait le copilote |
 |---|---|
-| Mains | Évalue les 218 combinaisons jouables (≤ 5 cartes parmi 8), score **exact** quand tout est déterministe, distribution énumérée des aléas (Lucky, Misprint, Bloodstone, Space Joker…), probabilité de réussite immédiate |
+| Mains | Évalue les 218 combinaisons jouables (≤ 5 cartes parmi 8), score **exact** quand tout est déterministe, distribution énumérée des aléas (Lucky, Misprint, Bloodstone, Space Joker…), probabilité de réussite immédiate ; chaque main est évaluée **dans son meilleur ordre** et l'**ordre des cartes** est affiché (JOUER 1, 2, 3…, GARDER 1, 2…) quand il change le score (Photograph, Hanging Chad, verre, polychrome, Baron + Shoot the Moon) |
 | Défausses | Cibles (couleur, suite, brelan, full…) avec **probabilité exacte** de complétion sur la composition connue du deck |
 | Manche | Probabilité de battre la blinde pour chaque action candidate, par simulation de la fin de manche avec une politique explicite |
 | Sélection | Score exact des cartes que **vous** sélectionnez, en direct, contrôlé par l'identification de main du jeu |
@@ -27,7 +27,8 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 | Risque | Pondérations qui dépendent continûment du danger (survie quand la situation est critique, investissement quand elle est confortable) |
 | Effets | Améliorations, éditions, sceaux et autocollants des jokers affichés et pris en compte (garder l'acier et l'or en main, défausser le sceau violet, jamais vendre un éternel…) |
 | Plan de partie | Leçons des meilleurs joueurs ([sources](docs/PRO_LESSONS.md)) : main principale, ×Mult attendus par ante, argent au-delà des intérêts réinvesti, boss à préparer |
-| Apprentissage | Journal local des parties, calibration validée des probabilités, croissance de puissance, contributions des jokers, bilan après chaque partie qui cherche **pourquoi** le build n'a pas suffi (jamais « malchance »), causes retenues pour les parties suivantes |
+| Apprentissage | Journal local des parties, calibration validée des probabilités, croissance de puissance, contributions des jokers, bilan après chaque partie qui cherche **pourquoi** le build n'a pas suffi (jamais « malchance ») ; après chaque partie, le copilote **recalcule ses propres réglages** (achats, épargne, sécurité, passages) selon les erreurs trouvées, par pas bornés et expliqués dans le bilan |
+| Mises et decks | Mises 1 à 8 lues dans le jeu (Small Blind sans récompense, blindes plus grosses, autocollants éternel / périssable / **location** comptée sur toute sa durée, une défausse de moins) : ×Mult attendus plus tôt aux mises verte et violette, joker loué revendu dès qu'il n'est plus nécessaire ; decks de départ pris en compte via l'état réel (cartes, bons, consommables) |
 | Compatibilité | Détection des mods, éléments inconnus signalés comme « partiel », contrôle croisé avec le jeu, dégradation contrôlée |
 
 ## Installation rapide (Windows)
@@ -35,7 +36,7 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 **Méthode sans programme (recommandée, 1.0.4+)** — ni Lovely, ni Steamodded, ni script, ni DLL ;
 fonctionne aussi sur un PC protégé (contrôle parental, antivirus strict) :
 
-1. Extraire l'archive `BalatroStrategicCopilot-1.0.8.zip`.
+1. Extraire l'archive `BalatroStrategicCopilot-1.0.9.zip`.
 2. Copier le **contenu** du dossier `COPIER_DANS_AppData_Balatro` (`main.lua` + `Mods`) dans
    `%AppData%\Balatro\` (touche Windows + R, `%AppData%\Balatro`).
 3. Lancer Balatro : bandeau vert « … actif — touche C : panneau (mode autonome, sans Steamodded) ».
@@ -47,7 +48,7 @@ Balatro tourne sur LÖVE 11, qui lit `main.lua` d'abord dans le dossier de sauve
 **Avec Lovely + Steamodded** : copier le dossier `BalatroStrategicCopilot` dans
 `%AppData%\Balatro\Mods\` (de sorte que `Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json`
 existe ; une archive `.zip` déposée telle quelle est ignorée par les anciens Steamodded). L'archive
-`BalatroStrategicCopilot-1.0.8-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
+`BalatroStrategicCopilot-1.0.9-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
 répare toute la chaîne (dossier du jeu, Lovely, Steamodded, copilote) puis confirme que tout s'est
 chargé. Un **bandeau vert « actif »** s'affiche au lancement ; **aucun bandeau = mod non trouvé**
 ([pièges vérifiés](docs/INSTALL.md)).
@@ -72,6 +73,7 @@ qu'il faut toucher ; dès que vous l'avez faite, il recalcule et montre la suiva
 | Étiquette | Où | Quand |
 |---|---|---|
 | **JOUER** / **DÉFAUSSER** | sur les cartes de la main | la meilleure action de la manche (aussi avec des cartes face cachée, ex. boss The House) ; **IMPOSÉE** sur la carte que Cerulean Bell sélectionne d'office (elle part avec le jeu ou la défausse) |
+| **JOUER 1, 2, 3…** / **GARDER 1, 2…** | sur les cartes de la main | quand l'ordre des cartes change le score : glissez les cartes jouées (et les cartes gardées en main) dans l'ordre des numéros, de gauche à droite ; le gain est écrit dans le panneau |
 | **À PRENDRE** | sur l'objet de boutique ou la carte du paquet | le meilleur achat rentable (avec sa note /100) |
 | **À VENDRE** | sur un joker ou un consommable | pour remplacer un joker par un meilleur, faire de la place, gagner de l'argent avec un joker inutile, ou un effet de vente (Luchador contre un boss dangereux, Invisible Joker prêt) |
 | **RELANCER** | sur le bouton de relance | relance gratuite, meilleure boutique assez probable, ou une relance avant de partir (habitude des meilleurs joueurs), sans casser l'épargne des intérêts |
@@ -122,6 +124,8 @@ Explications détaillées : [docs/PERCENTAGES.md](docs/PERCENTAGES.md).
 ![Boss The House : toutes les cartes face cachée](docs/img/overlay_house.png)
 
 ![Boss Cerulean Bell : la carte imposée part avec le jeu](docs/img/overlay_bell.png)
+
+![Ordre des cartes : Photograph + Hanging Chad, le Roi joué en premier](docs/img/overlay_order.png)
 
 *Captures produites avec le vrai runtime LÖVE 11.5 sur un état de jeu simulé (cartes factices) :
 elles montrent le rendu du mod, pas l'apparence du jeu.*

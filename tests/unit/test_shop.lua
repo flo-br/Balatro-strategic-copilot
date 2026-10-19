@@ -42,6 +42,34 @@ function S.strong_joker_beats_weak(T)
     T.ok(r.base.p_next ~= nil and r.base.p_boss ~= nil)
 end
 
+function S.rental_priced_over_the_rounds_kept(T)
+    -- gold stake: a $1 rental costs $3 at the end of every round; two of them in ante 1 used to
+    -- eat all the money of a simulated run (bought at notes 83 and 64 because they cost "$1")
+    local F, C, SH = env()
+    local plain = joker_item(F, 'j_lusty_joker', 1)
+    local rented = joker_item(F, 'j_lusty_joker', 1)
+    rented.joker.rental = true
+    rented.uid = 'rented'
+    local function board() return { F.joker('j_joker'), F.joker('j_greedy_joker'), F.joker('j_jolly') } end
+    local r1 = SH.analyse(shop_state(F, C, { items = { plain }, dollars = 6, jokers = board() }), { n = 24 })
+    local r2 = SH.analyse(shop_state(F, C, { items = { rented }, dollars = 6, jokers = board() }), { n = 24 })
+    T.ok(r2.options[1].rental, 'flagged as a rental')
+    T.ok(r2.options[1].note + 10 <= r1.options[1].note,
+        string.format('rental note %d well below %d', r2.options[1].note, r1.options[1].note))
+end
+
+function S.scaling_joker_sale_counts_its_growth(T)
+    -- a fresh Runner adds nothing yet (+0 chips) but +15 chips per straight: not "useless"
+    local F, C, SH = env()
+    local s = shop_state(F, C, { jokers = { F.joker('j_joker'), F.joker('j_runner', { extra = { chips = 0 } }) } })
+    local r = SH.analyse(s, { n = 24 })
+    local runner
+    for _, sl in ipairs(r.sells) do if sl.name == 'Runner' then runner = sl end end
+    T.ok(runner, 'Runner in the sales')
+    T.ok(runner.growth and runner.growth > 0, 'growth counted')
+    T.ok(runner.contribution > 0.03, string.format('contribution with growth %.3f', runner.contribution))
+end
+
 function S.unaffordable_is_flagged(T)
     local F, C, SH = env()
     local s = shop_state(F, C, { items = { joker_item(F, 'j_duo', 8) }, dollars = 3 })
@@ -131,6 +159,20 @@ function S.boosters_valued_by_content(T)
     T.ok(by.arc.note > by.std.note, 'Arcana above Standard')
     T.ok(by.mega.note >= by.buf.note - 5, 'Mega Buffoon: 2 jokers among 4')
     T.ok(by.buf.note >= 52, 'a Buffoon pack is worth buying with free slots')
+end
+
+function S.buffoon_pack_counts_the_stake_stickers(T)
+    -- gold stake: pack jokers can be rentals / perishable / eternal; the pack is worth less
+    local F, C, SH = env()
+    local function note(stake)
+        local s = shop_state(F, C, { dollars = 8, jokers = { F.joker('j_joker'), F.joker('j_greedy_joker') },
+            boosters = { { uid = 'buf', set = 'Booster', key = 'p_buffoon', name = 'Buffoon Pack', kind = 'Buffoon', cost = 4, pack_size = 2, choose = 1 } } })
+        s.run.stake = stake
+        local r = SH.analyse(s, { n = 16 })
+        for _, o in ipairs(r.options) do if o.uid == 'buf' then return o.note end end
+    end
+    local white, gold = note(1), note(8)
+    T.ok(gold < white, string.format('gold %d below white %d', gold, white))
 end
 
 -- Playing cards are worth their modifiers; Judgement with full slots is measured as a swap.

@@ -448,6 +448,15 @@ function SR.snapshot(opts)
                 s.blind_tag_names[slot] = get(function() return G.localization.descriptions.Tag[key].name end, nil)
             end
         end
+        -- tags already held (Double Tags copy the next tag obtained)
+        local held = get(function() return G.GAME.tags end, nil)
+        if type(held) == 'table' then
+            s.tags_held = {}
+            for _, t in ipairs(held) do
+                local k = type(t) == 'table' and t.key
+                if type(k) == 'string' then s.tags_held[#s.tags_held + 1] = k end
+            end
+        end
         -- the poker hand an Orbital Tag would level up (shown on the tag; nil when unknown)
         local ante = get(function() return G.GAME.round_resets.ante end, nil)
         local oc = ante and get(function() return G.GAME.orbital_choices[ante] end, nil)

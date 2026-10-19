@@ -13,7 +13,25 @@ R.DECKS = {
     b_red = { discards = 1 },          -- Red Deck: +1 discard every round
     b_blue = { hands = 1 },            -- Blue Deck: +1 hand
     b_yellow = { dollars = 10 },       -- Yellow Deck: +$10 at the start
+    b_green = { no_interest = true, money_per_hand = 2, money_per_discard = 1 }, -- $2 / hand, $1 / discard left, no interest
+    b_black = { joker_slots = 1, hands = -1 },                                    -- +1 joker slot, -1 hand
+    b_magic = { vouchers = { 'v_crystal_ball' }, consumables = { 'c_fool', 'c_fool' } },
+    b_nebula = { vouchers = { 'v_telescope' }, consumable_slots = -1 },
+    b_ghost = { spectral_rate = 2, consumables = { 'c_hex' } },                   -- spectral cards in the shop
+    b_abandoned = { cards = 'no_faces' },                                         -- 40 cards, no J / Q / K
+    b_checkered = { cards = 'checkered' },                                        -- 26 Spades, 26 Hearts
+    b_zodiac = { vouchers = { 'v_tarot_merchant', 'v_planet_merchant', 'v_overstock_norm' } },
+    b_painted = { hand_size = 2, joker_slots = -1 },
+    b_anaglyph = { double_after_boss = true },                                    -- a Double Tag after each boss
+    b_plasma = { plasma = true, ante_scaling = 2 },                               -- chips and mult balanced, blinds x2
+    b_erratic = { cards = 'erratic' },                                            -- random ranks and suits
 }
+
+-- Stakes (cumulative): 2 Red: Small Blind gives no money; 3 Green: blinds scale faster
+-- (scaling 2); 4 Black: shop jokers can be Eternal (30 %); 5 Blue: -1 discard; 6 Purple:
+-- scaling 3; 7 Orange: shop jokers can be Perishable (30 %); 8 Gold: shop jokers can be Rental
+-- (30 %, $1 to buy, $3 per round).
+R.STAKE_NAMES = { 'White', 'Red', 'Green', 'Black', 'Blue', 'Purple', 'Orange', 'Gold' }
 
 R.BLIND_REWARD = { Small = 3, Big = 4, Boss = 5 }
 

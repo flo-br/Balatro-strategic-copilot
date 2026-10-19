@@ -166,6 +166,58 @@ function S.bosses_that_change_between_hands(T)
     T.ok(J ~= nil)
 end
 
+function S.card_order_when_it_changes_the_score(T)
+    local F, C, HA = env()
+    local Score = BSCopilot.require('engine/score')
+    local function prep(jokers, hand)
+        local s = F.state({ hand_cards = hand, jokers = jokers, required = 100000 })
+        return Score.prepare(s)
+    end
+    -- Photograph + Hanging Chad: the King must be scored FIRST (x2 three times)
+    local cards = C.parse_list('7s 7h Ks Kh')
+    for i, c in ipairs(cards) do c.pos_x = i end
+    local P = prep({ F.joker('j_photograph'), F.joker('j_hanging_chad') }, cards)
+    local o = HA.best_order(P, cards, {})
+    T.ok(o and o.gain > 0.5, 'large gain')
+    T.eq(o.play[1].id, 13, 'a King leads')
+    -- a Mult card (+4) before a Glass card (x2): the +4 is doubled
+    local g, m = C.parse_list('8s')[1], C.parse_list('8h')[1]
+    g.enh, g.x_mult, g.pos_x = 'm_glass', 2, 1
+    m.enh, m.mult, m.pos_x = 'm_mult', 4, 2
+    P = prep({}, { g, m })
+    o = HA.best_order(P, { g, m }, {})
+    T.ok(o, 'order matters')
+    T.eq(o.play[1], m, 'Mult card first')
+    -- Shoot the Moon + Baron: the Queen held LEFT of the King
+    local a, k, q = C.parse_list('As')[1], C.parse_list('Kc')[1], C.parse_list('Qd')[1]
+    a.pos_x, k.pos_x, q.pos_x = 1, 2, 3
+    P = prep({ F.joker('j_shoot_the_moon'), F.joker('j_baron') }, { a, k, q })
+    o = HA.best_order(P, { a }, { k, q })
+    T.ok(o and o.held, 'held order matters')
+    T.eq(o.held[1], q); T.eq(o.held[2], k)
+    -- nothing order-dependent: no numbers
+    local plain = C.parse_list('9s 9h 4c')
+    for i, c in ipairs(plain) do c.pos_x = i end
+    P = prep({ F.joker('j_joker') }, plain)
+    T.eq(HA.best_order(P, { plain[1], plain[2] }, { plain[3] }), nil)
+end
+
+function S.play_scored_in_its_best_order(T)
+    -- Photograph + Hanging Chad, the Kings on the right: Two Pair wins (1184) only with a King
+    -- played first; in the order on screen it scores 272, the Pair of Kings 800
+    local F, C, HA = env()
+    local hand = C.parse_list('7s 7h Ks Kh 9d 4c 2s 3d')
+    for i, c in ipairs(hand) do c.pos_x = i end
+    local s = F.state({ hand_cards = hand, deck = deck_without(C, hand), required = 1000,
+        jokers = { F.joker('j_photograph'), F.joker('j_hanging_chad') } })
+    local r = HA.analyse(s, { rollouts = 16 })
+    local rec = r.recommendation
+    T.eq(rec.type, 'play')
+    T.ok(rec.p_clear >= 1 - 1e-9, 'wins now: ' .. tostring(rec.p_clear))
+    T.eq(r.best_play.hand, 'Two Pair')
+    T.ok(rec.order and rec.order.play[1].id == 13, 'a King first')
+end
+
 function S.face_down_cards_winning_visible_play(T)
     local F, C, HA = env()
     local hand = C.parse_list('Ah Ad 7c 2s')

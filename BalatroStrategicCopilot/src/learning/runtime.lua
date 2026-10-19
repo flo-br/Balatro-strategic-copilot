@@ -9,6 +9,7 @@ local L = BSC.require('core/log')
 local LE = BSC.require('learning/learning')
 local Rec = BSC.require('learning/recorder')
 local RV = BSC.require('learning/review')
+local AD = BSC.require('learning/adapt')
 
 local RT = {}
 
@@ -49,6 +50,11 @@ function RT.calibrator(kind)
 end
 
 function RT.weights() return RT.profile_data and RT.profile_data.weights end
+-- settings the copilot adjusted after its past runs (learning/adapt.lua)
+function RT.adapt_deltas()
+    if cfg().enabled == false or not RT.profile_data then return nil end
+    return AD.deltas(RT.profile_data)
+end
 
 -- Learned score multipliers for jokers the engine does not know (modded), if any data.
 function RT.unknown_multipliers(state)
@@ -105,7 +111,13 @@ function RT.finish_run(run)
     RT.last_review = RV.build(run, RT.profile_data)
     -- the causes of a loss feed the plan of the next runs (engine/plan.lua)
     if not run.won and cfg().enabled ~= false and RT.last_review.lessons and #RT.last_review.lessons > 0 then
-        if LE.add_lessons(RT.profile_data, RT.last_review.lessons, run.id) then save(RT.PROFILE, LE.SCHEMA, RT.profile_data) end
+        LE.add_lessons(RT.profile_data, RT.last_review.lessons, run.id)
+    end
+    -- and the copilot recalculates its own settings (learning/adapt.lua), shown in the review
+    if cfg().enabled ~= false then
+        local okA, changes = pcall(AD.update, RT.profile_data, RT.last_review, run)
+        if okA then RT.last_review.adapt = changes end
+        save(RT.PROFILE, LE.SCHEMA, RT.profile_data)
     end
     L.info('learning', 'run %s finished (%s, ante %s)', run.id, tostring(run.end_reason), tostring(run.final_ante))
     return RT.last_review

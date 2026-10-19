@@ -263,6 +263,50 @@ Pendant une main, un tarot n'est proposé que si la cible est clairement utile.
 seulement si l'ordre actuel n'est pas le bon et que le bon ordre marque ≥ 1 % de plus ; chaque
 ordre calculé est lié à la disposition exacte des jokers pour laquelle il a été calculé.
 
+**Ordre des cartes (1.0.9)** : le jeu compte les cartes jouées de gauche à droite, puis les
+cartes gardées en main de gauche à droite. L'ordre change le score quand une carte donne un ×Mult
+(verre, polychrome, Photograph sur la première figure, Triboulet, The Idol, Ancient Joker,
+Bloodstone : les +Mult comptés **avant** elle sont multipliés) ou avec Hanging Chad (la première
+carte est redéclenchée), et en main avec Shoot the Moon + Baron (les Dames à gauche des Rois).
+* Pendant l'énumération des 218 jeux, quand le plateau a l'un de ces effets, chaque jeu est évalué
+  dans le meilleur de ses ordres utiles (l'ordre actuel, chaque carte placée en premier, chaque
+  carte placée en dernier : 9 ordres au plus pour 5 cartes) ; avant 1.0.9 il l'était dans l'ordre
+  de l'écran, et une Double paire gagnante seulement avec un Roi en tête (1 184 contre 272) était
+  écartée. La politique de la fin de manche fait de même sur ses deux meilleurs jeux.
+* Pour le jeu conseillé, tous les ordres des cartes jouées sont essayés (120 pour 5 cartes) et les
+  cartes gardées sont rangées « effets additifs, puis neutres, puis multiplicatifs » ; les numéros
+  JOUER 1, 2… / GARDER 1, 2… ne s'affichent que si le bon ordre marque au moins 0,5 % de plus que
+  l'ordre actuel.
+
+**Mises (1.0.9)** :
+* **location** (mise or) : 1 $ à l'achat puis 3 $ à chaque fin de manche. Le coût compté dans la
+  note est `prix + 3 $ × 6 manches` (deux antes de détention), sans les raccourcis « premier
+  joker » ni « dépenser l'excédent » : un joker loué n'est pris que s'il est fort (note ≥ 75) ou si
+  la suite est en danger. Un joker loué qui apporte au plus 15 % du score est **revendu** dès que
+  la prochaine blinde et le boss restent sûrs sans lui (seuils de sécurité ci-dessus). Les paquets
+  Bouffon et les relances sont estimés avec les autocollants que leurs jokers peuvent porter
+  (éternel 30 % dès la mise noire, sinon périssable 30 % dès la mise orange ; location 30 % à la
+  mise or). Sur le simulateur, deux locations prises à
+  l'ante 1 (Mad Joker, Lusty Joker à 1 $) avaient vidé l'argent de toute la partie (−5 $ à la fin) ;
+* **danger critique** : prochaine blinde ou boss sous 50 % et un ×Mult ou de la puissance manque
+  au plan → relancer sans limite de nombre tant qu'il reste 4 $ (l'argent gardé ne vaut rien après
+  une défaite ; parties simulées perdues aux antes 6-7 avec 50 à 75 $ en poche) ; danger simple :
+  2 relances au plus en gardant 10 $ ;
+* **revente d'un joker qui grandit** : sa contribution compte aussi ce qu'il deviendra en 3 manches
+  (`GROWTH`) ; avant 1.0.9, Runner, Hologram ou Glass Joker étaient achetés « pour leur
+  croissance » puis revendus dans la même boutique comme « n'apportant que 0 % » ;
+* **remplacer un ×Mult** par un joker qui n'en est pas un, quand il manquerait alors un ×Mult à
+  l'ante suivante : perte de « potentiel » de 0,3 (×1 à ×1,5 selon les défaites passées) ;
+* **bons** : un bon est permanent ; ceux qui ne se simulent pas valent `valeur par ante × antes
+  restantes` (Overstock 3 $, Clearance Sale 4 $, Reroll Surplus 2,5 $, Telescope 2,5 $, Hone 1,5 $,
+  Crystal Ball 1,5 $, Director's Cut 1,2 $, Planet Merchant 1,2 $…) ; avant 1.0.9 une valeur fixe
+  de 3 à 9 $, toujours sous le prix de 10 $, les faisait presque toujours refuser. Les bons simulés
+  (+1 main, +1 défausse, +1 taille de main) reçoivent en plus `0,3 × min(1, antes restantes / 4)`
+  de potentiel ;
+* blindes plus grosses (mises verte et violette) : les ×Mult sont attendus une ou deux antes plus
+  tôt (`PL.stake_shift`) ; Small Blind sans récompense (lue dans le jeu) ; tags qui donnent un joker
+  moins sûrs avec les autocollants (×0,7 / ×0,6).
+
 ## 9. Heuristiques documentées
 
 Utilisées seulement quand la simulation est impossible, toujours affichées « heuristique » et
@@ -291,3 +335,28 @@ ramenées vers 50 (fiabilité 0,5–0,6) :
 Les tarots qui améliorent ou changent la couleur de cartes sont **simulés** sur des cibles
 probables (les meilleures cartes non améliorées / les cartes de plus faible valeur), d'où la
 mention « simulation approchée ».
+
+## 10. Recalcul des réglages après chaque partie (1.0.9)
+
+`learning/adapt.lua`. Après chaque partie, le bilan (`learning/review.lua`) donne les causes de la
+défaite ; chaque cause vote pour des réglages (table `AD.RULES`) :
+
+| Cause | Réglages déplacés |
+|---|---|
+| argent dormant | seuil « dépenser l'excédent » −2, réserve au-delà du plafond −2, réserve avant relance −4 |
+| puissance qui décroche | seuil « dépenser l'excédent » −2, seuil d'achat −1, épargne une ante plus tard |
+| main typique sous la mise | sécurité exigée +0,02 (prochaine blinde) et +0,03 (boss) |
+| ×Mult manquants | seuil de remplacement −2 |
+| trop peu de jokers | +1 joker pris d'office aux antes 1-2, seuil d'achat −1 |
+| main principale peu montée | seuil « dépenser l'excédent » −2, seuil d'achat −1 |
+| économie | seuil d'achat +1, épargne une ante plus tôt |
+| marge, boss | sécurité exigée et sécurité d'un passage +1 pas |
+| défaite juste après un passage | marge d'un passage +2 $, sécurité d'un passage +0,02 |
+
+Un réglage bouge d'**un pas au plus par partie**, dans le sens de la majorité des votes, dans des
+bornes fixes (ex. seuil d'achat 56 ± 4 / +3, sécurité boss 0,70 de −0,05 à +0,15). Après une
+victoire, chaque réglage revient d'un pas vers sa valeur de `config.lua` (pas de dérive sur un
+coup de chance). Les 10 dernières modifications sont gardées avec leurs causes et affichées dans
+le bilan (« Ce que je change pour la prochaine partie »). Les valeurs ajustées s'appliquent par
+dessus `config.lua` dans `engine/advice.lua` et `engine/skip.lua`.
+

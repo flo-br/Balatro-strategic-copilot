@@ -76,13 +76,15 @@ function ST.power_samples(state, opts)
     local scores, usage = {}, {}
     local plays
     local min_cards = (opts.boss == 'bl_psychic') and 5 or nil
+    -- the player puts the cards in the best order (Hanging Chad, Photograph, Glass...)
+    local order = HA.order_sensitive(P, deck)
     for i = 1, n do
         check()
         local rng = R.new((opts.seed or 'power') .. ':' .. i)
         local hand = rng:sample(deck, math.min(hs, #deck))
         local PP = (h > 0 and i % math.max(1, h) == 0) and P_last or P
         local forced = (opts.boss == 'bl_final_bell' and #hand > 0) and hand[rng:int(1, #hand)] or nil
-        local best, s, hname = HA.best_play_fast(PP, hand, rng, { min_cards = min_cards, forced = forced })
+        local best, s, hname = HA.best_play_fast(PP, hand, rng, { min_cards = min_cards, forced = forced, order = order })
         scores[i] = s or 0
         if hname then usage[hname] = (usage[hname] or 0) + 1 end
         if opts.keep_plays and best then
