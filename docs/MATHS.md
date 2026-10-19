@@ -282,8 +282,10 @@ carte est redéclenchée), et en main avec Shoot the Moon + Baron (les Dames à 
 * **location** (mise or) : 1 $ à l'achat puis 3 $ à chaque fin de manche. Le coût compté dans la
   note est `prix + 3 $ × 6 manches` (deux antes de détention), sans les raccourcis « premier
   joker » ni « dépenser l'excédent » : un joker loué n'est pris que s'il est fort (note ≥ 75) ou si
-  la suite est en danger. Un joker loué qui apporte au plus 15 % du score est **revendu** dès que
-  la prochaine blinde et le boss restent sûrs sans lui (seuils de sécurité ci-dessus). Les paquets
+  la suite est en danger. Un joker loué est **revendu** dès que la prochaine blinde et le boss
+  restent sûrs sans lui (seuils de sécurité ci-dessus), s'il apporte au plus 15 % du score ou,
+  quel que soit son apport, quand il reste moins de 10 $ (le loyer bloque alors tout achat : sur le
+  simulateur, Raised Fist loué a coûté 3 $ par manche pendant 11 manches, argent à 0 $). Les paquets
   Bouffon et les relances sont estimés avec les autocollants que leurs jokers peuvent porter
   (éternel 30 % dès la mise noire, sinon périssable 30 % dès la mise orange ; location 30 % à la
   mise or). Sur le simulateur, deux locations prises à

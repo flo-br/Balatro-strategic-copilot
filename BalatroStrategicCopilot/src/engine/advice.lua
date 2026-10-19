@@ -38,7 +38,8 @@ A.DEFAULTS = {
     replace_note = 60,             -- replacing a joker (sell + buy) needs a clear gain: no churn
     danger_rerolls = 2,            -- rerolls per shop when the next blinds are in danger (a budget)
     critical_p = 0.5,              -- next blind or boss below 50 %: no reroll budget, the savings go in
-    rental_max_contribution = 0.15, -- a rental is sold (when the next blinds stay safe) if it brings at most 15 % of the score
+    rental_max_contribution = 0.15, -- a rental is sold (when the next blinds stay safe) if it brings at most 15 % of the score...
+    rental_tight_money = 10,       -- ... or whatever it brings when the money is below $10 (the rent blocks every purchase)
     excess_note = 54,              -- with money left above the cap after buying, any real improvement is bought
     excess_reserve = 5,            -- ... keeping this much above the cap
     idle_reserve = 20,             -- money above the cap + this: rerolled even without a gap (idle money)
@@ -530,12 +531,15 @@ function A.shop_step(state, r, cfg, partial)
     end
     -- 2c. a rental joker ($3 every round) the next blinds no longer need: selling it stops the
     -- rent (gold stake); kept while the next blind or the boss would become unsafe without it,
-    -- and kept when it carries the score (a strong rental is bought on purpose: no churn)
+    -- and, while there is money to spend, kept when it carries the score (no churn). With little
+    -- money the rent blocks every purchase (simulated gold stake: $0 for 10 rounds while paying
+    -- $3 per round for Raised Fist): sold as soon as the next blinds are safe without it.
     local base = r.base or {}
+    local tight = money < S.rental_tight_money
     for _, sl in ipairs(r.sells or {}) do
         local j = state.jokers and state.jokers[sl.index]
         if j and j.uid == sl.uid and j.rental and sellable(j) and base.p_next and sl.d_next
-            and (sl.contribution or 1) <= S.rental_max_contribution then
+            and (tight or (sl.contribution or 1) <= S.rental_max_contribution) then
             local pn = base.p_next + sl.d_next
             local pb = (base.p_boss and sl.d_boss) and (base.p_boss + sl.d_boss) or pn
             if pn >= S.safe_next and pb >= S.safe_boss and not (r.plan and r.plan.falling_behind) then

@@ -36,7 +36,8 @@ indiquer, recalcul du copilote après chaque partie, toutes les mises et tous le
 * **Location** (mise or) : un joker loué coûte 1 $ puis 3 $ à chaque manche ; il était noté comme un
   joker à 1 $ (deux locations prises à l'ante 1 vidaient l'argent de toute la partie : −5 $ à la
   fin). Coût compté sur deux antes, pris seulement s'il est fort ou nécessaire, **revendu** dès que
-  la suite reste sûre sans lui (sauf s'il porte le score : plus de 15 %). Paquets Bouffon et relances estimés avec les autocollants que leurs
+  la suite reste sûre sans lui (s'il porte le score, plus de 15 %, seulement quand il reste moins
+  de 10 $ : le loyer bloque alors tout achat). Paquets Bouffon et relances estimés avec les autocollants que leurs
   jokers peuvent porter (éternel, périssable, location).
 * **Joker qui grandit** : sa revente compte ce qu'il deviendra (Runner, Hologram, Glass Joker
   étaient achetés pour leur croissance puis revendus dans la même boutique, « 0 % du score »).

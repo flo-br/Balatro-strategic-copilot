@@ -443,9 +443,11 @@ function S.rentals_bought_only_when_strong_and_sold_when_not_needed(T)
     local st = A().shop_step(state({ dollars = 2, jokers = jokers }), res)
     T.eq(st.action, 'sell'); T.eq(st.targets[1], 'r')
     T.ok(st.why:find('location'), st.why)
-    -- carries the score (strong rental bought on purpose): kept
+    -- carries the score (strong rental bought on purpose): kept while there is money to spend
     res.sells[1].contribution = 0.4
-    T.ok(A().shop_step(state({ dollars = 2, jokers = jokers }), res).action ~= 'sell', 'strong rental: kept')
+    T.ok(A().shop_step(state({ dollars = 14, jokers = jokers, rerolls = 1 }), res).action ~= 'sell', 'strong rental: kept')
+    -- ... but with little money the rent blocks everything: sold once the next blinds are safe
+    T.eq(A().shop_step(state({ dollars = 2, jokers = jokers }), res).action, 'sell', 'tight money: sold')
     res.sells[1].contribution = 0.1
     -- needed: kept
     res.sells[1].d_boss = -0.4
