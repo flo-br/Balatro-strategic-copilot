@@ -279,6 +279,8 @@ SH.PACK_JOKERS_FREE = false
 SH.HS_POWER = 0
 -- growth of the jokers drawn for a Buffoon Pack or a reroll counted as in the shop
 SH.SAMPLE_GROWTH = false
+-- danger of the note weights read on the calibrated chances (SH.prior_calibration)
+SH.CAL_DANGER = false
 
 -- Prior calibration of the shop's blind probabilities (piecewise linear, monotone), from the
 -- outcomes of 965 simulated bosses (docs/TRAINING.md); false disables it.
@@ -351,6 +353,9 @@ function SH.analyse(state, opts, task)
         p_next_cal, p_boss_cal = SH.prior_calibration(p_next), SH.prior_calibration(p_boss)
     end
     local danger = ST.danger(p_next, p_boss)
+    -- (SH.CAL_DANGER) the danger read on the calibrated chances, as the advice thresholds: the
+    -- raw estimate plays no discards (bosses announced 0.30-0.90 were won 80-97 % of the time)
+    if SH.CAL_DANGER and not ctx.calibrate then danger = ST.danger(SH.prior_calibration(p_next), SH.prior_calibration(p_boss)) end
     ctx.base = { ps = ps0, ps_boss = ps_boss, p_next = p_next, p_boss = p_boss, p_win = outlook.p_win }
     local w = SH.weights(danger, opts.weights)
     -- high stakes: the blinds outgrow what the next blind shows; the power of the board (median
