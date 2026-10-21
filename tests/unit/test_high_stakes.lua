@@ -185,4 +185,22 @@ function S.stickers_the_game_never_puts(T)
     for k in pairs(RU.NEVER_PERISHABLE) do T.ok(SH.NEVER_PERISHABLE[k], 'mod: ' .. k) end
 end
 
+-- High stakes: "safe" asks 95 % for the next blind and 85 % for the boss (white stake: 85 / 70);
+-- with the same chances, the savings are kept at the White Stake and spent at the Black Stake
+-- (measured on the simulator: +0.43 +- 0.30 blinds per run, docs/TRAINING.md)
+function S.stricter_safety_at_high_stakes(T)
+    local _, _, _, A = env()
+    local function step(stake)
+        local s = { phase = 'shop', econ = { dollars = 30, bankrupt_at = 0, reroll_cost = 6, base_reroll_cost = 5, interest_cap = 25 },
+            run = { ante = 3, stake = stake }, jokers = { { key = 'j_joker', uid = 'a' }, { key = 'j_joker', uid = 'b' }, { key = 'j_joker', uid = 'c' } },
+            joker_slots = 5, consumables = {}, consumable_slots = 2, vouchers = {} }
+        local j = { kind = 'joker', uid = 'n', name = 'Gluttonous Joker', cost = 10, note = 65, affordable = true, interest_loss = 1, joker_kind = 'additive' }
+        return A.shop_step(s, { options = { j }, sells = {}, base = { p_next = 0.90, p_boss = 0.80 }, plan = { gaps = {} } })
+    end
+    T.ok(step(1).action ~= 'buy', 'white stake: next blind 90 % and boss 80 % are safe, the interest is kept')
+    T.eq(step(4).action, 'buy', 'black stake: not safe enough, the joker is bought')
+    local S0 = A.settings()
+    T.eq(S0.hs_safe_next, 0.95); T.eq(S0.hs_safe_boss, 0.85)
+end
+
 return S

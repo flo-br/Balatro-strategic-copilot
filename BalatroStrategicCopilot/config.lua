@@ -50,6 +50,8 @@ return {
         interest_weight = 3,     -- before that, each $ of interest lost raises the required score by 3
         safe_next = 0.85,        -- "safe" = next blind won with at least 85 % ...
         safe_boss = 0.70,        -- ... and the boss with at least 70 %
+        hs_safe_next = 0.95,     -- from the Green Stake: "safe" asks 95 % for the next blind ...
+        hs_safe_boss = 0.85,     -- ... and 85 % for the boss (less money kept, more power; 1.0.10)
         reroll_once = true,      -- nothing worth buying: one reroll per shop before leaving
         reroll_once_max_loss = 1, -- ... if it costs at most 1 $ of interest (before the savings ante)
         rich_reserve = 10,       -- money above the interest cap + this is rerolled to fill the plan's gaps (xMult, power)

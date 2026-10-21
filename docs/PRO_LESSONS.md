@@ -171,13 +171,17 @@ Reddit et les vidéos n'ont pas pu être lus). Chaque règle a été **mesurée*
 d'être gardée (TRAINING.md, « Résultats 1.0.10 ») ; celles qui n'ont rien apporté restent
 coupées et sont listées plus bas.
 
-Gardées (ensemble : +1,5 blinde gagnée par partie à la mise noire, ± 0,7) :
+Gardées (ensemble, sur 60 parties simulées à la mise noire jamais utilisées pour les choisir et 40 qui l'ont été : voir TRAINING.md, « Résultats 1.0.10 ») :
 * **Presque jamais passer une blinde** à partir de la mise verte : la boutique et la récompense
   perdues coûtent plus que presque tous les tags quand les blindes grandissent ×2,5 par ante.
   Exceptions : le tag Investissement aux antes 1-2, le tag Boss quand le boss à venir contre le
   jeu. C'est la règle qui pèse le plus (17 passages sur 20 parties avant, 4 après).
 * **Pas de ×Mult en entrant à l'ante 5** (« ne rattrape presque jamais ») : l'argent n'est plus
   gardé pour les intérêts, tout va à la puissance.
+* **L'épargne demande un plateau vraiment sûr** : l'argent n'est gardé pour les intérêts que si la
+  prochaine blinde est gagnée à 95 % et le boss à 85 % (85 % / 70 % à la mise blanche). Mesuré à
+  part : +0,4 blinde par partie, retrouvé sur deux jeux de graines ; plus strict encore (99 % /
+  95 %) n'apporte rien.
 * **Locations** (mise or) : une seule avant l'ante 6, et seulement pour un joker qui porte le score
   (×Mult, joker qui grandit) ; le loyer passe avant les intérêts (plafond relevé de 3 $ par
   location).
