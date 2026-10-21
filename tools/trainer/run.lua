@@ -32,6 +32,7 @@ for i = 4, #arg do
         elseif k == 'track_scale' then BSCopilot.require('engine/plan').TRACK_SCALE = num
         elseif k == 'future_blend' then BSCopilot.require('engine/shop').FUTURE_BLEND = num
         elseif k == 'main_focus' then BSCopilot.require('engine/shop').MAIN_FOCUS = num
+        elseif k == 'hs_power' then BSCopilot.require('engine/shop').HS_POWER = num
         elseif k == 'pack_free' then BSCopilot.require('engine/shop').PACK_JOKERS_FREE = (num == 1 or num == true)
         elseif k == 'pack_penalty' then BSCopilot.require('engine/shop').PACK_PENALTY = num
         elseif k == 'prior_cal' then BSCopilot.require('engine/shop').PRIOR_CALIBRATION = (num == 1 or num == true)

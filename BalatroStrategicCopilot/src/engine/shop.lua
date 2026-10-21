@@ -275,6 +275,8 @@ SH.MAIN_FOCUS = 0
 SH.PACK_PENALTY = 0
 -- jokers of a Buffoon Pack valued without their shop price (the pack price is paid instead)
 SH.PACK_JOKERS_FREE = false
+-- high stakes: extra weight of the board's power in the notes (0 = off)
+SH.HS_POWER = 0
 
 -- Prior calibration of the shop's blind probabilities (piecewise linear, monotone), from the
 -- outcomes of 965 simulated bosses (docs/TRAINING.md); false disables it.
@@ -349,6 +351,9 @@ function SH.analyse(state, opts, task)
     local danger = ST.danger(p_next, p_boss)
     ctx.base = { ps = ps0, ps_boss = ps_boss, p_next = p_next, p_boss = p_boss, p_win = outlook.p_win }
     local w = SH.weights(danger, opts.weights)
+    -- high stakes: the blinds outgrow what the next blind shows; the power of the board (median
+    -- score: the best predictor of how far simulated runs go) weighs more (SH.HS_POWER)
+    if (SH.HS_POWER or 0) > 0 and PL.high_stakes(state) then w.power = w.power * (1 + SH.HS_POWER) end
     local themes = SY.themes(state, ps0)
     -- the run's plan: multipliers due at this ante, main hand, gaps (engine/plan.lua)
     local plan = PL.analyse(state, { p_next = p_next, p_boss = p_boss, p_win = outlook.p_win, median = ps0.median })
