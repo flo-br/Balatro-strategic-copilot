@@ -258,6 +258,13 @@ local function econ_of(def, joker, state)
     return v, why
 end
 
+-- A stand-in for the mult the board will gain later (future context of the notes).
+SH.FUTURE_BLEND = 0
+function SH.phantom_mult(m)
+    return { key = 'j_joker', name = 'future', ability = { mult = m, x_mult = 1 }, rarity = 1, blueprint_compat = true,
+        sell_cost = 0, uid = 'phantom_future' }
+end
+
 -- Value (dollars-equivalent) of a joker type for the reroll/booster estimates.
 local function joker_entry_from_def(key)
     local def = DB.get(key)
@@ -319,6 +326,32 @@ function SH.analyse(state, opts, task)
     }
     res.plan = plan
     publish(res)
+
+    -- Future context (1.0.10): the board an ante or two later (main hand +2 levels and +10 Mult
+    -- the board does not have yet). An additive joker brings less there, a x Mult just as much:
+    -- the note blends the gain now and the gain then (from ante 2, fully from ante 3). Seen in
+    -- simulated runs at high stakes: the last joker slot went to a +Mult joker scored 94-100 on a
+    -- weak board, the x Mult offered next to it could no longer be bought, and the run hit a wall
+    -- at ante 5. SH.FUTURE_BLEND 0 disables it.
+    local fblend = (SH.FUTURE_BLEND or 0) * U.clamp((((state.run and state.run.ante) or 1) - 1) / 2, 0, 1)
+    local fut, fut_mean
+    local function future_power(ch)
+        if fblend <= 0 then return nil end
+        if not fut then
+            fut = state
+            if plan.main_hand then fut = SH.variant(fut, { level = plan.main_hand, n = 2 }) end
+            fut = SH.variant(fut, { add_joker = SH.phantom_mult(10) })
+            fut_mean = ST.power_samples(fut, { n = ctx.n, seed = 'shop', task = task }).mean
+        end
+        local ps = ST.power_samples(SH.variant(fut, ch), { n = ctx.n, seed = 'shop', task = task })
+        local ratio = (fut_mean and fut_mean > 0) and (ps.mean / fut_mean) or 1
+        return U.clamp(math.log(math.max(1e-6, ratio)) / math.log(2), -1, 1)
+    end
+    local function blend_future(comp, ch)
+        local fp = future_power(ch)
+        if fp then comp.power = (1 - fblend) * (comp.power or 0) + fblend * fp; comp.future = fp end
+        return comp
+    end
 
     local function components(m, extra)
         local c = {}
@@ -426,6 +459,7 @@ function SH.analyse(state, opts, task)
                 opt.synergy_bonus = sb
                 local comp = components(m, { potential = pot + pb + sb, synergy = fit, econ = U.clamp(ev * 3 / 20, -1, 1), cost = cc, risk = risk,
                     reliability = (def and m.complete) and 1 or 0.5 })
+                if j.key ~= 'j_madness' then blend_future(comp, { add_joker = gj or j }) end
                 finish(opt, m, comp)
             else
                 -- no free slot: best replacement
@@ -470,6 +504,7 @@ function SH.analyse(state, opts, task)
                     end
                     local comp = components(best.m, { potential = pb - pout + sb - sout, synergy = fit, econ = U.clamp(ev * 3 / 20, -1, 1), cost = cc2, risk = risk,
                         reliability = def and 1 or 0.5 })
+                    blend_future(comp, { replace_joker = best.k, with = j })
                     finish(opt, best.m, comp)
                 else
                     opt.note = 0; opt.blocked = 'no_slot'; res.options[#res.options + 1] = opt
@@ -553,6 +588,8 @@ function SH.analyse(state, opts, task)
             -- antes left in the run (a voucher is permanent)
             local run = state.run or {}
             local antes_left = math.max(1, (run.win_ante or 8) - (run.ante or 1) + 1)
+            -- vouchers that add score now (hands, discards, hand size, joker slot, smaller blinds)
+            opt.power_voucher = sim and ((sim.hands or 0) > 0 or (sim.discards or 0) > 0 or sim.hand_size or sim.slot or sim.ante) and true or nil
             if sim and (sim.hands or sim.discards or sim.hand_size or sim.slot or sim.interest_cap or sim.ante) then
                 local ch = { dollars = -cost, hands = sim.hands, discards = sim.discards, hand_size = sim.hand_size, slots = sim.slot,
                     interest_cap = sim.interest_cap }

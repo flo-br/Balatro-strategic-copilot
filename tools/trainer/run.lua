@@ -29,6 +29,8 @@ for i = 4, #arg do
         local num = tonumber(v)
         if v == 'true' then num = true elseif v == 'false' then num = false end
         if k == 'deck' then opts.deck = v
+        elseif k == 'track_scale' then BSCopilot.require('engine/plan').TRACK_SCALE = num
+        elseif k == 'future_blend' then BSCopilot.require('engine/shop').FUTURE_BLEND = num
         elseif k == 'stake' then opts.stake = tonumber(v)
         elseif k == 'learn' then
             -- learn=1: lessons + settings; learn=lessons / learn=adapt: one mechanism only

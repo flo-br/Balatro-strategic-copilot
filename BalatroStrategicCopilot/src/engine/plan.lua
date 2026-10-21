@@ -26,6 +26,14 @@ PL.XMULT_TARGET = { 0, 0, 0, 1, 1, 2, 2, 3 }
 -- (docs/TRAINING.md): above 0.5 the ante's boss was beaten 87-100 % of the time, below 0.3
 -- only 55 %.
 PL.BEHIND_RATIO = 0.5
+-- Track of the runs that WIN (1.0.10, simulated runs, docs/TRAINING.md): a typical hand (no
+-- discards) at antes 2-4 stays above 1.2 x the ante's base chips in 3 winning runs out of 4
+-- (q25 1.86 / 1.33 / 1.17), 0.79 at ante 5, 0.47 at ante 6; the median LOSING run is at 1.47 /
+-- 1.31 / 1.00 / 0.62 / 0.46. Below the track, the board is not ready for the next ante (the
+-- base chips grow x2.5 to x3 per ante, faster from the Green Stake): money goes into power
+-- before interest even when the current ante looks safe. TRACK_SCALE 0 disables it.
+PL.TRACK_RATIO = { 0, 1.2, 1.2, 1.1, 0.75, 0.45, 0.35, 0.3 }
+PL.TRACK_SCALE = 1
 
 local function has_tag(def, tag)
     for _, t in ipairs((def and def.tags) or {}) do if t == tag then return true end end
@@ -131,6 +139,9 @@ function PL.analyse(state, base)
     local scaling = (state.run and state.run.scaling) or 1
     plan.base_chips = BL.base_amount(ante, scaling)
     if base.median and base.median < PL.BEHIND_RATIO * plan.base_chips then plan.gaps.power = true; plan.falling_behind = true end
+    local track = (PL.TRACK_RATIO[math.min(#PL.TRACK_RATIO, math.max(1, ante))] or 0) * (PL.TRACK_SCALE or 0)
+    plan.track_chips = track * plan.base_chips
+    if base.median and track > 0 and base.median < plan.track_chips then plan.gaps.power = true; plan.off_track = true end
     -- ante 1-2: the first scoring jokers come before everything else
     if plan.phase == 'early' and (kinds.additive + kinds.xmult + kinds.scaling + kinds.retrigger) <= 1 then plan.gaps.scoring = true end
     if plan.phase == 'early' and kinds.econ == 0 and ((state.econ and state.econ.dollars) or 0) < 10 then plan.gaps.economy = true end

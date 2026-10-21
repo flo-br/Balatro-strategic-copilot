@@ -463,8 +463,9 @@ local function money_policy(state, r, S)
     local ante = (state.run and state.run.ante) or 1
     local b = r.base or {}
     local safe = (b.p_next or 0) >= S.safe_next and (b.p_boss or b.p_next or 0) >= S.safe_boss
-    -- falling behind: a typical hand below the ante's base chips (engine/plan.lua)
-    if r.plan and r.plan.falling_behind then safe = false end
+    -- falling behind: a typical hand below the ante's base chips; off the track of the winning
+    -- runs: not ready for the next ante (engine/plan.lua)
+    if r.plan and (r.plan.falling_behind or r.plan.off_track) then safe = false end
     local cap = econ.no_interest and 0 or (econ.interest_cap or 25)
     local target = (safe and ante >= S.save_from_ante) and cap or 0
     -- last ante: interest no longer pays back, money goes into score (spend for reliability)
@@ -484,6 +485,10 @@ local function required_note(o, money, pol, S, state)
     -- a rental ($3 every round): only a strong joker, or one needed to survive the next blinds;
     -- never the "spend the excess" / "fill an empty slot" shortcuts
     if o.rental then return pol.safe and math.max(base, S.strong_note) or base end
+    -- a voucher that adds no score now (shop, rerolls, money...) waits until the board is safe
+    -- and on track: seen in simulated high-stake runs, Overstock / Clearance Sale bought for $10
+    -- at ante 2 with the boss at 0-4 %, the run lost at ante 3
+    if o.kind == 'voucher' and not o.power_voucher and not pol.safe then return math.max(base, S.strong_note) end
     -- money above the interest cap earns nothing: once the purchase still leaves the cap (and a
     -- little more), any real improvement is worth it (top players: "don't get rich")
     if pol.cap and money - cost >= math.max(pol.target, pol.cap) + S.excess_reserve then
