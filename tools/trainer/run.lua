@@ -32,7 +32,6 @@ for i = 4, #arg do
         elseif k == 'track_scale' then BSCopilot.require('engine/plan').TRACK_SCALE = num
         elseif k == 'future_blend' then BSCopilot.require('engine/shop').FUTURE_BLEND = num
         elseif k == 'main_focus' then BSCopilot.require('engine/shop').MAIN_FOCUS = num
-        elseif k == 'cal_danger' then BSCopilot.require('engine/shop').CAL_DANGER = (num == 1 or num == true)
         elseif k == 'sample_growth' then BSCopilot.require('engine/shop').SAMPLE_GROWTH = (num == 1 or num == true)
         elseif k == 'hs_power' then BSCopilot.require('engine/shop').HS_POWER = num
         elseif k == 'pack_free' then BSCopilot.require('engine/shop').PACK_JOKERS_FREE = (num == 1 or num == true)
