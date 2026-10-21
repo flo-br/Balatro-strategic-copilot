@@ -31,9 +31,11 @@ PL.BEHIND_RATIO = 0.5
 -- (q25 1.86 / 1.33 / 1.17), 0.79 at ante 5, 0.47 at ante 6; the median LOSING run is at 1.47 /
 -- 1.31 / 1.00 / 0.62 / 0.46. Below the track, the board is not ready for the next ante (the
 -- base chips grow x2.5 to x3 per ante, faster from the Green Stake): money goes into power
--- before interest even when the current ante looks safe. TRACK_SCALE 0 disables it.
+-- before interest even when the current ante looks safe. Measured on the simulator (black
+-- stake, 20 paired seeds): no gain (-0.02 +- 0.73 blinds beaten): the money spent instead of
+-- saved went into packs and rerolls, and the interest was lost. Off by default (TRACK_SCALE 0).
 PL.TRACK_RATIO = { 0, 1.2, 1.2, 1.1, 0.75, 0.45, 0.35, 0.3 }
-PL.TRACK_SCALE = 1
+PL.TRACK_SCALE = 0
 -- Rules of the best players at high stakes (Green Stake and up; research 1.0.10, sources in
 -- docs/PRO_HIGH_STAKES_SOURCES.md): almost no skips, an x Mult by ante 4, one rental at most
 -- before ante 6 and only for a joker that carries the score, Eternal only on a joker kept all

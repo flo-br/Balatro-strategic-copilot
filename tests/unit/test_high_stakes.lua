@@ -48,6 +48,9 @@ end
 
 function S.track_of_the_winning_runs(T)
     local F, PL = env()
+    -- off by default (no measured gain); the mechanism stays available
+    T.eq(PL.TRACK_SCALE, 0)
+    PL.TRACK_SCALE = 1
     -- ante 3, White Stake: base 2000; the winners' track is 1.2 x base = 2400
     local p = PL.analyse(F.state({ ante = 3, jokers = { F.joker('j_duo') } }), { median = 2000 })
     T.ok(p.off_track, 'below the track'); T.no(p.falling_behind, 'but not falling behind (0.5 x base)')
@@ -64,6 +67,7 @@ function S.track_of_the_winning_runs(T)
     T.ok(A.shop_step(state({ dollars = 26 }), res).action ~= 'buy', 'on track: the savings are kept')
     res.plan = { gaps = { power = true }, off_track = true }
     T.eq(A.shop_step(state({ dollars = 26 }), res).action, 'buy', 'off track: power first')
+    PL.TRACK_SCALE = 0
 end
 
 function S.rentals_and_eternals_at_high_stakes(T)

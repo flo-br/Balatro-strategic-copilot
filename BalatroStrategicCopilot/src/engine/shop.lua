@@ -272,6 +272,7 @@ end
 SH.FUTURE_BLEND = 0
 -- main hand focus of the planets (1.0.10, measured on the simulator); 0 disables
 SH.MAIN_FOCUS = 0
+SH.PACK_PENALTY = 0
 
 -- Prior calibration of the shop's blind probabilities (piecewise linear, monotone), from the
 -- outcomes of 965 simulated bosses (docs/TRAINING.md); false disables it.
@@ -688,6 +689,10 @@ function SH.analyse(state, opts, task)
             finish(opt, nil, { reliability = 1 })
             local rel = (method == 'simulation') and 0.9 or 0.7
             opt.note = math.floor(U.clamp(50 + (value - 10 * cc - 50) * rel, 0, 100) + 0.5)
+            -- (measured on the simulator: SH.PACK_PENALTY points off Arcana / Standard / Spectral packs)
+            if (SH.PACK_PENALTY or 0) ~= 0 and (it.kind == 'Arcana' or it.kind == 'Standard' or it.kind == 'Spectral') then
+                opt.note = math.max(0, opt.note - SH.PACK_PENALTY)
+            end
             opt.method = method
             opt.reasons[#opt.reasons + 1] = why
             if IT.BOOSTERS[it.kind or ''] and IT.BOOSTERS[it.kind].jokers and slots_free <= 0 then
