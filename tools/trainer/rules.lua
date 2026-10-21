@@ -33,6 +33,15 @@ R.DECKS = {
 -- (30 %, $1 to buy, $3 per round).
 R.STAKE_NAMES = { 'White', 'Red', 'Green', 'Black', 'Blue', 'Purple', 'Orange', 'Gold' }
 
+-- Jokers that never get a sticker (eternal_compat / perishable_compat = false; lists of the
+-- Balatro Wiki, pages Eternal and Perishable). Kept here, independent of the mod, so that an
+-- older version of the mod can be evaluated on the same simulator (BSC_MOD_ROOT).
+R.NEVER_ETERNAL = { j_gros_michel = true, j_ice_cream = true, j_cavendish = true, j_luchador = true, j_turtle_bean = true,
+    j_diet_cola = true, j_popcorn = true, j_ramen = true, j_selzer = true, j_mr_bones = true, j_invisible = true }
+R.NEVER_PERISHABLE = { j_ceremonial = true, j_ride_the_bus = true, j_runner = true, j_constellation = true, j_green_joker = true,
+    j_red_card = true, j_madness = true, j_square = true, j_vampire = true, j_hologram = true, j_rocket = true, j_obelisk = true,
+    j_lucky_cat = true, j_flash = true, j_trousers = true, j_castle = true, j_glass = true, j_wee = true }
+
 R.BLIND_REWARD = { Small = 3, Big = 4, Boss = 5 }
 
 -- Shop card slots: weights of each kind (G.GAME.*_rate)

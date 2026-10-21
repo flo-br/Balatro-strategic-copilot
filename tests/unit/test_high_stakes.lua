@@ -177,6 +177,12 @@ function S.stickers_the_game_never_puts(T)
     local DB = BSCopilot.require('model/jokers_db')
     for k in pairs(SH.NEVER_PERISHABLE) do T.ok(DB.get(k), k) end
     for k in pairs(SH.NEVER_ETERNAL) do T.ok(DB.get(k), k) end
+    -- the simulator keeps its own copy (it must also run older versions of the mod): the same
+    local RU = dofile(T.REPO_ROOT .. '/tools/trainer/rules.lua')
+    for k in pairs(SH.NEVER_ETERNAL) do T.ok(RU.NEVER_ETERNAL[k], 'simulator: ' .. k) end
+    for k in pairs(RU.NEVER_ETERNAL) do T.ok(SH.NEVER_ETERNAL[k], 'mod: ' .. k) end
+    for k in pairs(SH.NEVER_PERISHABLE) do T.ok(RU.NEVER_PERISHABLE[k], 'simulator: ' .. k) end
+    for k in pairs(RU.NEVER_PERISHABLE) do T.ok(SH.NEVER_PERISHABLE[k], 'mod: ' .. k) end
 end
 
 return S

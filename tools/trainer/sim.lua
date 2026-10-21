@@ -340,13 +340,13 @@ end
 
 -- Stake stickers on shop and pack jokers (vanilla create_card): Black Stake +: Eternal 30 %;
 -- Orange Stake +: Perishable 30 % (when not Eternal); Gold Stake: Rental 30 % ($1 to buy).
--- Jokers that cannot carry a sticker: SH.sticker_compat (lists of the Balatro Wiki; before
--- 1.0.10 approximated by the joker tags: Cavendish and Turtle Bean could be Eternal, Campfire
--- and Hit the Road never Perishable)
+-- Jokers that cannot carry a sticker: RU.NEVER_ETERNAL / RU.NEVER_PERISHABLE (lists of the
+-- Balatro Wiki; before 1.0.10 approximated by the joker tags: Cavendish and Turtle Bean could be
+-- Eternal, Campfire and Hit the Road never Perishable)
 function Sim:roll_stickers(j)
     if (self.stake or 1) < 4 then return j end
     local r = self.rng:float()
-    local eternal_ok, perishable_ok = SH.sticker_compat(j.key)
+    local eternal_ok, perishable_ok = not RU.NEVER_ETERNAL[j.key], not RU.NEVER_PERISHABLE[j.key]
     if r > 0.7 and eternal_ok then
         j.eternal = true
     elseif self.stake >= 7 and r > 0.4 and r <= 0.7 and perishable_ok then
