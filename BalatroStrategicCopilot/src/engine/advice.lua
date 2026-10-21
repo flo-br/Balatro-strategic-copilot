@@ -33,6 +33,8 @@ A.DEFAULTS = {
     interest_weight = 3,           -- before that, each $ of interest lost raises the required note by 3
     safe_next = 0.85,              -- "safe": next blind won with at least 85 % ...
     safe_boss = 0.70,              -- ... and the boss with at least 70 %
+    hs_safe_next = 0.85,           -- high stakes (green and above): the same, stricter if measured better
+    hs_safe_boss = 0.70,
     reroll_once = true,            -- nothing worth buying: one reroll per shop before leaving
     reroll_once_max_loss = 1,      -- ... if it costs at most 1 $ of interest (before the savings ante)
     rich_reserve = 10,             -- money above the interest cap + this: rerolled to fill the plan's gaps
@@ -465,7 +467,12 @@ local function money_policy(state, r, S)
     local econ = state.econ or {}
     local ante = (state.run and state.run.ante) or 1
     local b = r.base or {}
-    local safe = (b.p_next or 0) >= S.safe_next and (b.p_boss or b.p_next or 0) >= S.safe_boss
+    -- high stakes: "safe" asks more (the blinds grow x2 to x3 per ante: money kept for the
+    -- interest buys less power than the same money spent now; measured on the simulator)
+    local high = PL.high_stakes(state)
+    local sn, sb = S.safe_next, S.safe_boss
+    if high then sn, sb = math.max(sn, S.hs_safe_next or sn), math.max(sb, S.hs_safe_boss or sb) end
+    local safe = (b.p_next or 0) >= sn and (b.p_boss or b.p_next or 0) >= sb
     -- falling behind: a typical hand below the ante's base chips; off the track of the winning
     -- runs: not ready for the next ante (engine/plan.lua)
     if r.plan and (r.plan.falling_behind or r.plan.off_track) then safe = false end
@@ -481,7 +488,7 @@ local function money_policy(state, r, S)
     for _, u in ipairs(state.upcoming or {}) do
         if u.boss and u.key == 'bl_ox' and u.state ~= 'Defeated' then target = 0 end
     end
-    return { safe = safe, ante = ante, target = target, cap = cap, rentals = rentals, high = PL.high_stakes(state) }
+    return { safe = safe, ante = ante, target = target, cap = cap, rentals = rentals, high = high }
 end
 
 local function required_note(o, money, pol, S, state)
