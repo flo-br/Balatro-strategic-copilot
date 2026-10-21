@@ -34,6 +34,15 @@ PL.BEHIND_RATIO = 0.5
 -- before interest even when the current ante looks safe. TRACK_SCALE 0 disables it.
 PL.TRACK_RATIO = { 0, 1.2, 1.2, 1.1, 0.75, 0.45, 0.35, 0.3 }
 PL.TRACK_SCALE = 1
+-- Rules of the best players at high stakes (Green Stake and up; research 1.0.10, sources in
+-- docs/PRO_HIGH_STAKES_SOURCES.md): almost no skips, an x Mult by ante 4, one rental at most
+-- before ante 6 and only for a joker that carries the score, Eternal only on a joker kept all
+-- run. Applied from this stake; HIGH_STAKE_RULES false disables them (trainer comparisons).
+PL.HIGH_STAKE_RULES = true
+PL.HIGH_STAKE_FROM = 3
+function PL.high_stakes(state)
+    return PL.HIGH_STAKE_RULES and (((state and state.run and state.run.stake) or 1) >= PL.HIGH_STAKE_FROM)
+end
 
 local function has_tag(def, tag)
     for _, t in ipairs((def and def.tags) or {}) do if t == tag then return true end end
@@ -125,6 +134,13 @@ function PL.analyse(state, base)
     local target = PL.XMULT_TARGET[math.min(#PL.XMULT_TARGET, math.max(1, eff))] or 3
     local plan = { ante = ante, eff_ante = eff, stake_shift = shift, phase = PL.phase(eff), xmult = x, xmult_list = list,
         xmult_target = target, main_hand = PL.main_hand(state), gaps = {} }
+    -- share of the hands played that were the main hand
+    local tot, mp = 0, 0
+    for name, h in pairs(state.hands or {}) do
+        tot = tot + (h.played or 0)
+        if name == plan.main_hand then mp = h.played or 0 end
+    end
+    plan.main_share = tot > 0 and mp / tot or 0
     local kinds = { xmult = 0, scaling = 0, econ = 0, additive = 0, retrigger = 0, utility = 0, unknown = 0 }
     for _, j in ipairs(state.jokers or {}) do kinds[PL.joker_kind(DB.get(j.key, j.name))] = (kinds[PL.joker_kind(DB.get(j.key, j.name))] or 0) + 1 end
     plan.kinds = kinds
@@ -142,6 +158,8 @@ function PL.analyse(state, base)
     local track = (PL.TRACK_RATIO[math.min(#PL.TRACK_RATIO, math.max(1, ante))] or 0) * (PL.TRACK_SCALE or 0)
     plan.track_chips = track * plan.base_chips
     if base.median and track > 0 and base.median < plan.track_chips then plan.gaps.power = true; plan.off_track = true end
+    -- high stakes: no x Mult entering ante 5 "almost never catches up" (top players): no saving
+    if PL.high_stakes(state) and ante >= 4 and x == 0 then plan.off_track = true; plan.no_xmult_late = true end
     -- ante 1-2: the first scoring jokers come before everything else
     if plan.phase == 'early' and (kinds.additive + kinds.xmult + kinds.scaling + kinds.retrigger) <= 1 then plan.gaps.scoring = true end
     if plan.phase == 'early' and kinds.econ == 0 and ((state.econ and state.econ.dollars) or 0) < 10 then plan.gaps.economy = true end

@@ -198,7 +198,7 @@ local function grown(joker, rounds)
 end
 SH.grown = grown
 
-local function risk_of(def, joker)
+local function risk_of(def, joker, state)
     local r, notes = 0, {}
     if def and def.risk and def.risk.destroy_odds then
         r = r + math.min(0.6, 3 / def.risk.destroy_odds); notes[#notes + 1] = 'peut être détruit'
@@ -211,7 +211,17 @@ local function risk_of(def, joker)
         end
         -- the $3 per round is counted in the economy part of the note (econ_of)
         if joker.rental then r = r + 0.1; notes[#notes + 1] = 'location (3 $/manche)' end
-        if joker.eternal then r = r + 0.1; notes[#notes + 1] = 'éternel (invendable)' end
+        if joker.eternal then
+            r = r + 0.1; notes[#notes + 1] = 'éternel (invendable)'
+            -- high stakes: Eternal is fine on a joker kept all run (x Mult, growing), a trap on a
+            -- temporary additive one that will still fill a slot at ante 7 (top players)
+            local kind = PL.joker_kind(def)
+            local ante = (state and state.run and state.run.ante) or 1
+            if PL.high_stakes(state) and ante >= 3 and kind ~= 'xmult' and kind ~= 'scaling' then
+                r = r + 0.3; notes[#notes + 1] = 'éternel et temporaire : occupera une place jusqu\'à la fin'
+            end
+            if joker.rental then r = r + 0.4; notes[#notes + 1] = 'éternel + location : 3 $ par manche pour toujours' end
+        end
     end
     if def then
         for _, t in ipairs(def.tags) do
@@ -260,6 +270,22 @@ end
 
 -- A stand-in for the mult the board will gain later (future context of the notes).
 SH.FUTURE_BLEND = 0
+-- main hand focus of the planets (1.0.10, measured on the simulator); 0 disables
+SH.MAIN_FOCUS = 0
+
+-- Prior calibration of the shop's blind probabilities (piecewise linear, monotone), from the
+-- outcomes of 965 simulated bosses (docs/TRAINING.md); false disables it.
+SH.PRIOR_CALIBRATION = false
+SH.PRIOR_POINTS = { { 0, 0.26 }, { 0.15, 0.45 }, { 0.3, 0.85 }, { 0.5, 0.88 }, { 0.8, 0.92 }, { 1, 0.98 } }
+function SH.prior_calibration(p)
+    local pts = SH.PRIOR_POINTS
+    if not p then return p end
+    for i = 2, #pts do
+        local a, b = pts[i - 1], pts[i]
+        if p <= b[1] then return a[2] + (b[2] - a[2]) * (p - a[1]) / (b[1] - a[1]) end
+    end
+    return pts[#pts][2]
+end
 function SH.phantom_mult(m)
     return { key = 'j_joker', name = 'future', ability = { mult = m, x_mult = 1 }, rarity = 1, blueprint_compat = true,
         sell_cost = 0, uid = 'phantom_future' }
@@ -308,6 +334,15 @@ function SH.analyse(state, opts, task)
         if p_next then p_next = ctx.calibrate(p_next) end
         if p_boss then p_boss = ctx.calibrate(p_boss) end
     end
+    -- the estimate above plays typical hands WITHOUT discards: pessimistic. Measured on 965
+    -- simulated bosses (1.0.10): announced 0.30-0.90, won 80-97 % of the time; below 0.30,
+    -- 25-55 %. The advice thresholds (safe, danger, critical) read the calibrated value
+    -- (SH.prior_calibration) unless the player's own calibration is active.
+    -- (the internal components keep comparing raw estimates with each other)
+    local p_next_cal, p_boss_cal = p_next, p_boss
+    if not ctx.calibrate and SH.PRIOR_CALIBRATION then
+        p_next_cal, p_boss_cal = SH.prior_calibration(p_next), SH.prior_calibration(p_boss)
+    end
     local danger = ST.danger(p_next, p_boss)
     ctx.base = { ps = ps0, ps_boss = ps_boss, p_next = p_next, p_boss = p_boss, p_win = outlook.p_win }
     local w = SH.weights(danger, opts.weights)
@@ -316,8 +351,13 @@ function SH.analyse(state, opts, task)
     local plan = PL.analyse(state, { p_next = p_next, p_boss = p_boss, p_win = outlook.p_win, median = ps0.median })
     ctx.plan = plan
     local res = {
-        base = { mean = ps0.mean, median = ps0.median, q25 = ps0.q25, q75 = ps0.q75, p_next = p_next, p_boss = p_boss,
-            p_next_lo = p_next_lo, p_next_hi = p_next_hi, p_boss_lo = p_boss_lo, p_boss_hi = p_boss_hi,
+        base = { mean = ps0.mean, median = ps0.median, q25 = ps0.q25, q75 = ps0.q75, p_next = p_next_cal, p_boss = p_boss_cal,
+            p_next_raw = p_next, p_boss_raw = p_boss,
+            cal = (p_next_cal ~= p_next or p_boss_cal ~= p_boss) and SH.prior_calibration or nil,
+            p_next_lo = (p_next_cal ~= p_next) and SH.prior_calibration(p_next_lo) or p_next_lo,
+            p_next_hi = (p_next_cal ~= p_next) and SH.prior_calibration(p_next_hi) or p_next_hi,
+            p_boss_lo = (p_boss_cal ~= p_boss) and SH.prior_calibration(p_boss_lo) or p_boss_lo,
+            p_boss_hi = (p_boss_cal ~= p_boss) and SH.prior_calibration(p_boss_hi) or p_boss_hi,
             p_win = outlook.p_win, expected_blinds = outlook.expected_blinds, growth = outlook.growth,
             growth_source = outlook.growth_source, endless = outlook.endless, usage = ST.usage_fractions(ps0) },
         next_blind = next_b, boss = boss_b, danger = danger, weights = w, options = {}, sells = {},
@@ -402,6 +442,7 @@ function SH.analyse(state, opts, task)
             local j = it.joker
             local def = DB.get(j.key, j.name)
             opt.kind = 'joker'
+            opt.joker_kind = PL.joker_kind(def)
             -- rental (gold stake): $1 now, then $3 at the end of EVERY round it is kept. Priced
             -- as what it costs over the rounds it is expected to be kept, not as $1: two cheap
             -- rentals in ante 1 eat all the money of the run (seen in the simulated gold stake)
@@ -444,7 +485,7 @@ function SH.analyse(state, opts, task)
                 end
                 local fit, why = SY.fit(def, themes)
                 for _, r in ipairs(why) do opt.reasons[#opt.reasons + 1] = r end
-                local risk, rnotes = risk_of(def, j)
+                local risk, rnotes = risk_of(def, j, state)
                 for _, r in ipairs(rnotes) do opt.risks[#opt.risks + 1] = r end
                 local ev, ewhy = econ_of(def, j, state)
                 if ewhy then opt.reasons[#opt.reasons + 1] = ewhy end
@@ -479,7 +520,7 @@ function SH.analyse(state, opts, task)
                     opt.cost = cost - (best.owned.sell_cost or 0)
                     local fit, why = SY.fit(def, themes)
                     for _, r in ipairs(why) do opt.reasons[#opt.reasons + 1] = r end
-                    local risk, rnotes = risk_of(def, j)
+                    local risk, rnotes = risk_of(def, j, state)
                     for _, r in ipairs(rnotes) do opt.risks[#opt.risks + 1] = r end
                     local cc2 = cost_component(math.max(0, opt.cost) + (j.rental and 3 * SH.RENT_HORIZON or 0))
                     local ev = econ_of(def, j, state)
@@ -520,8 +561,17 @@ function SH.analyse(state, opts, task)
                 if use > 0.2 then opt.reasons[#opt.reasons + 1] = string.format('main jouée %d %% du temps', math.floor(use * 100)) end
                 -- the main hand of the plan grows with every level (more so after losses for
                 -- lack of levels: engine/plan.lua)
-                local main = (plan.main_hand == hand) and 0.2 * (plan.levels_weight or 1) or 0
+                local focus = SH.MAIN_FOCUS or 0
+                local main = (plan.main_hand == hand) and (0.2 + 0.3 * focus) * (plan.levels_weight or 1) or 0
                 if main > 0 then opt.reasons[#opt.reasons + 1] = 'main principale du plan' end
+                -- one main hand fed with the planets (top players; simulated high-stake runs: the
+                -- level of the main hand at ante 4 is the best predictor of the ante reached):
+                -- once it is clear, the planets of the other hands are worth less
+                if focus > 0 and plan.main_hand and plan.main_hand ~= hand and (plan.main_share or 0) >= 0.4
+                    and (plan.ante or 1) >= 3 and use < 0.3 then
+                    main = -0.2 * focus
+                    opt.risks[#opt.risks + 1] = 'pas la main principale (' .. tostring(plan.main_hand) .. ')'
+                end
                 finish(opt, m, components(m, { synergy = U.clamp(use * 1.5, 0, 1), potential = main, cost = cc,
                     reliability = m.complete and 1 or 0.5 }))
             else
@@ -605,7 +655,10 @@ function SH.analyse(state, opts, task)
                 local extra = {}
                 if sim.slot then extra.potential = 0.4; opt.reasons[#opt.reasons + 1] = 'emplacement de joker supplémentaire' end
                 -- Seed Money / Money Tree: only worth it with money to keep above the cap ($40+)
-                if sim.interest_cap then extra.econ = U.clamp((dollars >= 40) and 0.5 or ((dollars >= 25) and 0.2 or 0), 0, 1); opt.reasons[#opt.reasons + 1] = 'plafond d\'intérêts relevé' end
+                if sim.interest_cap and econ.no_interest then
+                    -- Green Deck: no interest at all, a higher cap is worth nothing
+                    extra.econ = -0.5; opt.risks[#opt.risks + 1] = 'aucun intérêt avec ce deck'
+                elseif sim.interest_cap then extra.econ = U.clamp((dollars >= 40) and 0.5 or ((dollars >= 25) and 0.2 or 0), 0, 1); opt.reasons[#opt.reasons + 1] = 'plafond d\'intérêts relevé' end
                 if sim.hands and sim.hands > 0 then opt.reasons[#opt.reasons + 1] = '+1 main par manche' end
                 if sim.discards and sim.discards > 0 then opt.reasons[#opt.reasons + 1] = '+1 défausse par manche' end
                 if sim.hand_size then opt.reasons[#opt.reasons + 1] = '+1 taille de main' end
@@ -623,6 +676,8 @@ function SH.analyse(state, opts, task)
                 local v = info.v or 4
                 if info.per_ante then
                     v = info.per_ante * antes_left
+                    -- Telescope feeds the main hand (taken "almost every time" by top players)
+                    if it.key == 'v_telescope' then v = v * (1 + 0.6 * (SH.MAIN_FOCUS or 0)) end
                     opt.reasons[#opt.reasons + 1] = string.format('permanent : ~%d $ sur les %d antes restantes (estimation)', math.floor(v + 0.5), antes_left)
                 end
                 finish(opt, nil, { econ = U.clamp((v - cost) / 12, -1, 1), potential = 0.2, cost = cc * 0.6, reliability = 0.6 })
@@ -891,8 +946,9 @@ function SH.joker_samples(state, ctx, res, w, task)
                 local m = measure({ n = math.max(24, math.floor(ctx.n / 2)), base = ctx.base, X_next = ctx.X_next, X_boss = ctx.X_boss,
                     profile = ctx.profile, calibrate = ctx.calibrate, task = task }, st)
                 local fit = SY.fit(DB.get(key), SY.themes(state, ctx.base.ps))
-                local dn = (m.p_next and res.base.p_next) and (m.p_next - res.base.p_next) or 0
-                local db = (m.p_boss and res.base.p_boss) and (m.p_boss - res.base.p_boss) or 0
+                local bn, bb = res.base.p_next_raw or res.base.p_next, res.base.p_boss_raw or res.base.p_boss
+                local dn = (m.p_next and bn) and (m.p_next - bn) or 0
+                local db = (m.p_boss and bb) and (m.p_boss - bb) or 0
                 local comp = { impact = U.clamp((0.5 * dn + 0.5 * db) * 5, -1.5, 1.5),
                     power = U.clamp(math.log(math.max(1e-6, m.ratio)) / math.log(2), -1, 1), synergy = fit,
                     potential = (PL.joker_bonus(DB.get(key), ctx.plan)) + (BD.joker_bonus(key, state, weakest and weakest.j)),
@@ -950,12 +1006,23 @@ function SH.booster_value(state, it, ctx, res, w, task)
         local usage = res.base.usage or {}
         local telescope = state.vouchers and state.vouchers.v_telescope
         local top, top_u = nil, -1
+        local focus = SH.MAIN_FOCUS or 0
+        local main = ctx.plan and ctx.plan.main_hand
         for _, h in ipairs(SH.BASE_HANDS) do
             local u = usage[h] or 0
-            notes[#notes + 1] = 50 + 30 * math.min(1, 1.5 * u)
+            local n = 50 + 30 * math.min(1, 1.5 * u)
+            -- the planet of the main hand: worth more (main hand focus)
+            if focus > 0 and h == main then n = math.min(100, 50 + 30 * math.min(1, 1.5 * math.max(u, 0.4)) + 12 * focus) end
+            notes[#notes + 1] = n
             if u > top_u then top, top_u = h, u end
         end
-        if telescope and top then notes = { 50 + 30 * math.min(1, 1.5 * top_u) } ; k = 1 end
+        if telescope and top then
+            -- Telescope: the most played hand's planet is always in the pack
+            local t = (focus > 0 and main) or top
+            local u = usage[t] or 0
+            notes = { math.min(100, 50 + 30 * math.min(1, 1.5 * math.max(u, (focus > 0 and t == main) and 0.4 or 0)) + ((focus > 0 and t == main) and 12 * focus or 0)) }
+            k = 1
+        end
     elseif kind == 'Arcana' or kind == 'Spectral' then
         -- each card scored like the same card in the shop (heuristic econ value), but free:
         -- the pack price is subtracted once, by the caller

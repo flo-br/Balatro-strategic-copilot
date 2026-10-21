@@ -226,7 +226,8 @@ function Player:record_build(g, st, res)
             xmult = pl.xmult, xmult_target = pl.xmult_target, gap_xmult = pl.gaps.xmult and true or nil,
             gap_power = pl.gaps.power and true or nil, main_hand = pl.main_hand, main_level = main and main.level,
             jokers = #g.jokers, slots = g.joker_slots, p_boss = res.base and res.base.p_boss, p_win = res.base and res.base.p_win,
-            median = med, falling_behind = pl.falling_behind, offers = {} }
+            p_next = res.base and res.base.p_next, p_next_raw = res.base and res.base.p_next_raw, p_boss_raw = res.base and res.base.p_boss_raw,
+            median = med, falling_behind = pl.falling_behind, off_track = pl.off_track, offers = {} }
         -- what the shop offered (for the analysis of the training runs)
         local b = self.builds[#self.builds]
         for i = 1, math.min(5, #(res.options or {})) do

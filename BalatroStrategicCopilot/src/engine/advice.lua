@@ -16,6 +16,7 @@ local EF = BSC.require('model/effects_db')
 local C = BSC.require('model/cards')
 local SK = BSC.require('engine/skip')
 local BD = BSC.require('engine/builds')
+local PL = BSC.require('engine/plan')
 
 local A = {}
 
@@ -467,6 +468,10 @@ local function money_policy(state, r, S)
     -- runs: not ready for the next ante (engine/plan.lua)
     if r.plan and (r.plan.falling_behind or r.plan.off_track) then safe = false end
     local cap = econ.no_interest and 0 or (econ.interest_cap or 25)
+    -- the rent is paid before the interest: $3 more per rental to keep the interest
+    local rentals = 0
+    for _, j in ipairs(state.jokers or {}) do if j.rental then rentals = rentals + 1 end end
+    if cap > 0 then cap = cap + 3 * rentals end
     local target = (safe and ante >= S.save_from_ante) and cap or 0
     -- last ante: interest no longer pays back, money goes into score (spend for reliability)
     if ante >= ((state.run and state.run.win_ante) or 8) then target = 0 end
@@ -474,7 +479,7 @@ local function money_policy(state, r, S)
     for _, u in ipairs(state.upcoming or {}) do
         if u.boss and u.key == 'bl_ox' and u.state ~= 'Defeated' then target = 0 end
     end
-    return { safe = safe, ante = ante, target = target, cap = cap }
+    return { safe = safe, ante = ante, target = target, cap = cap, rentals = rentals, high = PL.high_stakes(state) }
 end
 
 local function required_note(o, money, pol, S, state)
@@ -484,7 +489,13 @@ local function required_note(o, money, pol, S, state)
     if o.kind == 'replace' then return math.max(S.replace_note, base) end
     -- a rental ($3 every round): only a strong joker, or one needed to survive the next blinds;
     -- never the "spend the excess" / "fill an empty slot" shortcuts
-    if o.rental then return pol.safe and math.max(base, S.strong_note) or base end
+    if o.rental then
+        -- high stakes: one rental at most before ante 6, and only for a joker that carries the
+        -- score (x Mult, growing); an additive one waits for a copy without rent (top players)
+        if pol.high and (pol.rentals or 0) >= 1 and pol.ante < 6 then return 101 end
+        if pol.high and pol.safe and o.joker_kind ~= 'xmult' and o.joker_kind ~= 'scaling' then return 101 end
+        return pol.safe and math.max(base, S.strong_note) or base
+    end
     -- a voucher that adds no score now (shop, rerolls, money...) waits until the board is safe
     -- and on track: seen in simulated high-stake runs, Overstock / Clearance Sale bought for $10
     -- at ante 2 with the boss at 0-4 %, the run lost at ante 3
@@ -495,7 +506,8 @@ local function required_note(o, money, pol, S, state)
         return math.min(base, S.excess_note)
     end
     -- antes 1-2: any scoring joker beats an empty slot (top players)
-    if o.kind == 'joker' and pol.ante <= 2 and #(state and state.jokers or {}) < S.first_jokers then
+    -- (high stakes: 4-5 jokers by the end of ante 2, top players)
+    if o.kind == 'joker' and pol.ante <= 2 and #(state and state.jokers or {}) < S.first_jokers + (pol.high and 1 or 0) then
         return math.min(base, S.excess_note)
     end
     if not pol.safe or (o.note or 0) >= S.strong_note then return base end
@@ -545,8 +557,10 @@ function A.shop_step(state, r, cfg, partial)
         local j = state.jokers and state.jokers[sl.index]
         if j and j.uid == sl.uid and j.rental and sellable(j) and base.p_next and sl.d_next
             and (tight or (sl.contribution or 1) <= S.rental_max_contribution) then
-            local pn = base.p_next + sl.d_next
-            local pb = (base.p_boss and sl.d_boss) and (base.p_boss + sl.d_boss) or pn
+            -- deltas are between raw estimates: applied to the raw value, then calibrated
+            local cal = base.cal or function(x) return x end
+            local pn = cal(math.max(0, math.min(1, (base.p_next_raw or base.p_next) + sl.d_next)))
+            local pb = (base.p_boss and sl.d_boss) and cal(math.max(0, math.min(1, (base.p_boss_raw or base.p_boss) + sl.d_boss))) or pn
             if pn >= S.safe_next and pb >= S.safe_boss and not (r.plan and r.plan.falling_behind) then
                 return { action = 'sell', label = T('lbl_sell'), targets = { j.uid }, text = T('step_sell', j.name or '?'),
                     why = T('why_rental_sell', I.pct(math.min(pn, pb))), cls = 'mid' }
@@ -572,6 +586,8 @@ function A.shop_step(state, r, cfg, partial)
     if best then
         local p, p_text = nil, nil
         if best.d_boss and r.boss then p, p_text = best.p_boss, T('p_boss_after') elseif best.d_next then p, p_text = best.p_next, T('p_next_after') end
+        -- the options carry raw estimates: shown calibrated like the panel
+        if p and r.base and r.base.cal then p = r.base.cal(p) end
         if best.kind == 'replace' then
             local old = state.jokers[best.replace_index]
             return { action = 'sell', label = T('lbl_sell'), targets = { old.uid }, text = T('step_sell_for', old.name or '?', best.name or '?'),
@@ -700,6 +716,7 @@ function A.blind_step(state, r, cfg, partial)
     end
     local why
     if r.current.boss then why = T('why_boss')
+    elseif sk and sk.tag and sk.reason == 'high_stake' then why = T('why_no_skip_stake', name, v, c)
     elseif sk and sk.tag and sk.reason == 'not_safe' then
         why = T(sk.following_is_boss and 'why_no_skip_risk_boss' or 'why_no_skip_risk', name, v, I.pct(sk.p_following or 0), I.pct(sk.p_needed or 0))
     elseif sk and sk.tag then why = T('why_no_skip', name, v, c)

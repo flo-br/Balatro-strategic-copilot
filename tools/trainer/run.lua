@@ -31,6 +31,9 @@ for i = 4, #arg do
         if k == 'deck' then opts.deck = v
         elseif k == 'track_scale' then BSCopilot.require('engine/plan').TRACK_SCALE = num
         elseif k == 'future_blend' then BSCopilot.require('engine/shop').FUTURE_BLEND = num
+        elseif k == 'main_focus' then BSCopilot.require('engine/shop').MAIN_FOCUS = num
+        elseif k == 'prior_cal' then BSCopilot.require('engine/shop').PRIOR_CALIBRATION = (num == 1 or num == true)
+        elseif k == 'hs_rules' then BSCopilot.require('engine/plan').HIGH_STAKE_RULES = (num == 1 or num == true)
         elseif k == 'stake' then opts.stake = tonumber(v)
         elseif k == 'learn' then
             -- learn=1: lessons + settings; learn=lessons / learn=adapt: one mechanism only
