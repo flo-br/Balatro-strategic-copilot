@@ -269,14 +269,17 @@ graines**, jamais utilisées pour choisir les réglages.
 | Mise, graines | 1.0.9 | 1.0.10 | Écart graine par graine |
 |---|---|---|---|
 | Noire (4), 321-340 | 14,50 ; ante 5,40 ; 1 victoire | 15,69 ; ante 5,55 ; 1 victoire | +1,19 ± 0,96 |
-| Noire (4), 341-360 | {R341} | {F341} | {D341} |
-| **Noire, 301-360 regroupées** | | | **{DALL}** |
+| Noire (4), 341-360 | 13,54 ; ante 5,00 ; 1 victoire | 14,53 ; ante 5,10 ; 1 victoire | +0,99 ± 1,31 |
+| Noire, 321-360 (graines jamais utilisées pour choisir) | 14,02 ; ante 5,20 ; 2 victoires | 15,11 ; ante 5,33 ; 2 victoires | +1,09 ± 0,80 |
+| **Noire, 301-360 regroupées (60 parties)** | 14,06 ; ante 5,23 ; 2 victoires | 15,42 ; ante 5,38 ; 2 victoires | **+1,36 ± 0,59** |
 | Or (8), 401-412 | 8,38 ; ante 3,25 ; 0 victoire | 9,99 ; ante 3,75 ; 0 victoire | +1,61 ± 0,81 |
 | Blanche (1), 501-512 | 20,08 ; 4 victoires sur 12 | 20,08 ; 4 victoires sur 12 | identique (règles actives à partir de la mise verte) |
 
-E14 seul (seuils plus stricts) contre E4 se retrouve sur deux jeux de graines indépendants :
-+0,37 ± 0,41 (301-320) et +0,52 ± 0,48 (321-340), soit +0,43 ± 0,30 ; E15, plus strict encore,
-n'apporte rien : la règle est gardée à 95 % / 85 %, sans chercher plus loin.
+E14 seul (seuils plus stricts) contre E4 : +0,37 ± 0,41 (301-320), +0,52 ± 0,48 (321-340), puis
+−0,33 ± 0,50 (341-360) : **+0,18 ± 0,26 sur 60 graines, dans le bruit**. Gardé parce que son effet
+estimé reste positif et va dans le même sens que E6b (épargner davantage : −0,57) ; E15, plus
+strict encore, n'apporte rien. Sans ces seuils, les seules règles des mises élevées font
++1,18 ± 0,56 sur les mêmes 60 graines : l'essentiel du progrès vient d'elles.
 
 ### Ce que le diagnostic a montré
 
@@ -301,8 +304,9 @@ n'apporte rien : la règle est gardée à 95 % / 85 %, sans chercher plus loin.
   (le jeu choisi à The Wheel jouait cinq cartes faibles pour 13 jetons avec quatre défausses ;
   la simulation donne 73,3 % pour la défausse contre 73,0 % pour ce jeu : écart négligeable).
 
-**Lecture honnête.** Sur ces parties simulées, la 1.0.10 gagne en moyenne {DALLTXT} blinde de plus
-par partie à la mise noire et 1,6 à la mise or, sans rien changer à la mise blanche ; elle ne gagne
-pas plus de parties (1 sur 20 de part et d'autre aux graines 321-340, 0 sur 12 à la mise or). La
-plupart des parties s'arrêtent toujours à l'ante 5 : le copilote reste loin du niveau des
-meilleurs joueurs à ces mises. Rien n'a été vérifié dans le vrai jeu.
+**Lecture honnête.** Sur ces parties simulées, la 1.0.10 gagne en moyenne 1,1 à 1,4 blinde de plus
+par partie à la mise noire (selon qu'on compte ou non les graines qui ont servi à choisir) et 1,6
+à la mise or (12 parties), sans rien changer à la mise blanche ; elle ne gagne **pas plus de
+parties** (2 sur 60 de part et d'autre à la mise noire, 0 sur 12 à la mise or). La plupart des
+parties s'arrêtent toujours à l'ante 5 : le copilote reste loin du niveau des meilleurs joueurs à
+ces mises. Rien n'a été vérifié dans le vrai jeu.

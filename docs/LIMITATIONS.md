@@ -84,6 +84,13 @@
 * Mises 2 à 8 et decks (1.0.9) : la stratégie s'adapte à ce qui est **lu** (récompense nulle,
   taille des blindes, autocollants, défausses, cartes du deck) ; il n'y a pas de règle propre à
   chaque deck (par exemple pas de plan spécifique au deck Plasma ou au deck Damier).
+* Mises élevées (1.0.10) : les règles ajoutées viennent des meilleurs joueurs (forum Steam, wiki ;
+  Reddit et les vidéos n'ont pas pu être lus) et ont été mesurées **sur le simulateur seulement** :
+  environ +1 blinde gagnée par partie à la mise noire, **pas plus de victoires**. Avec 20 parties
+  par essai, seul un écart d'environ 1,5 blinde se distingue du hasard : les petites améliorations
+  possibles (moins de 0,5 blinde) n'ont pas pu être départagées, et plusieurs corrections justes
+  en principe restent coupées faute de gain mesuré. Le simulateur simplifie le jeu
+  (TRAINING.md) ; le niveau réel à ces mises reste à observer en jeu.
 
 ## Interface
 

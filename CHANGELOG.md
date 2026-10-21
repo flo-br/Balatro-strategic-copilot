@@ -1,5 +1,62 @@
 # Historique des versions
 
+## 1.0.10 — 2026-10-21
+
+Demande : progresser aux mises élevées (verte à or). Chaque idée a été **mesurée** sur le
+simulateur (mêmes graines, partie par partie) et n'est gardée que si elle fait mieux ; la version
+finale a été validée sur **de nouvelles graines**, jamais utilisées pour choisir les réglages.
+Détails et tous les chiffres : `docs/TRAINING.md`, « Résultats 1.0.10 ».
+
+### Ce qui change aux mises élevées (à partir de la mise verte)
+Règles des meilleurs joueurs (recherche sourcée : `docs/PRO_HIGH_STAKES_SOURCES.md`, synthèse :
+`docs/PRO_LESSONS.md` §9) :
+* **presque jamais passer une blinde** (sauf tag Investissement aux antes 1-2, et tag Boss contre
+  un boss qui contre le jeu) : la boutique et la récompense perdues coûtent plus que presque tous
+  les tags quand les blindes grandissent vite ; c'est le changement qui pèse le plus ;
+* pas de ×Mult en entrant à l'ante 5 : plus d'épargne, tout va à la puissance ;
+* **épargne seulement sur un plateau vraiment sûr** : prochaine blinde à 95 % et boss à 85 %
+  (85 % / 70 % aux mises blanche et rouge) ; réglables dans `config.lua` (`hs_safe_next`, `hs_safe_boss`) ;
+* mise or : une seule location avant l'ante 6, et seulement pour un ×Mult ou un joker qui
+  grandit ; le loyer passe avant les intérêts ;
+* mise noire et plus : un joker éternel qui n'est ni ×Mult ni croissant est plus risqué ;
+* bons sans effet immédiat sur le score (Overstock, Clearance Sale…) : seulement sur un plateau sûr ;
+* un joker de plus pris sans regarder les intérêts aux antes 1-2.
+
+**Mesuré** (deck rouge, simulateur) :
+* mise noire, 60 parties : **+1,36 ± 0,59 blinde gagnée par partie** par rapport à la 1.0.9 ;
+  sur les 40 parties jamais utilisées pour choisir : +1,09 ± 0,80 ;
+* mise or, 12 parties : +1,61 ± 0,81 (ante moyenne 3,25 → 3,75) ;
+* mise blanche, 12 parties : résultats identiques (4 victoires sur 12 des deux côtés).
+* **Pas plus de victoires** : 2 sur 60 de part et d'autre à la mise noire, 0 sur 12 à la mise or.
+  La plupart des parties s'arrêtent toujours à l'ante 5 ; le copilote reste loin des meilleurs
+  joueurs à ces mises.
+
+### Corrections (règles du jeu)
+* Jokers que le jeu ne rend **jamais éternels ou périssables** (listes du wiki : un joker qui
+  grandit n'est jamais périssable ; Gros Michel, Cavendish, Ramen… jamais éternels) : pris en
+  compte dans l'estimation des paquets Bouffon et des relances, et dans le simulateur (qui les
+  approchait par des étiquettes).
+* Cartes face cachée : les candidats en double ne sont plus simulés deux fois.
+
+### Essayé, mesuré, **non gardé** (options coupées, gardées pour reproduire les mesures)
+Trajectoire de puissance des parties gagnantes ; estimation des antes futures dans la note ;
+planètes centrées sur la main principale ; −8 points aux paquets Arcane / Standard / Spectral ;
+relances pour chercher un ×Mult dès l'ante 3 ; poids de la puissance du plateau ×1,5 ; épargne
+lue sur des chances calibrées ; seuils encore plus stricts (99 % / 95 %). Trois corrections justes
+en principe mais sans gain mesuré, donc coupées elles aussi : joker d'un paquet Bouffon compté
+gratuit (son prix était compté en plus de celui du paquet), croissance des jokers tirés pour un
+paquet ou une relance, défausse des cartes d'un jeu qui mêle cartes cachées et visibles.
+
+### Ce que le diagnostic a montré
+* Les probabilités de la main sont bien calibrées (annoncé 40-70 % → gagné 60-85 %).
+* Ce qui prédit l'issue d'une partie simulée à l'ante 4 : la puissance du plateau (corrélation
+  0,49), pas le niveau de la main principale (−0,04).
+
+### Validation
+272 tests (LuaJIT et Lua 5.1), installateur (53 vérifications, 0 échec), vrais chargeurs
+Steamodded 0509c et récent (bandeau « 1.0.10 actif »), mode autonome sur le vrai LÖVE 11.5.
+**Pas de partie réelle de Balatro jouée** : aucune installation du jeu n'était disponible.
+
 ## 1.0.9 — 2026-10-19
 
 Retours des parties réelles (journaux fournis) : erreurs à trouver sans aide, ordre des cartes à

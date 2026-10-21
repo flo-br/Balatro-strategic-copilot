@@ -179,9 +179,9 @@ Gardées (ensemble, sur 60 parties simulées à la mise noire jamais utilisées 
 * **Pas de ×Mult en entrant à l'ante 5** (« ne rattrape presque jamais ») : l'argent n'est plus
   gardé pour les intérêts, tout va à la puissance.
 * **L'épargne demande un plateau vraiment sûr** : l'argent n'est gardé pour les intérêts que si la
-  prochaine blinde est gagnée à 95 % et le boss à 85 % (85 % / 70 % à la mise blanche). Mesuré à
-  part : +0,4 blinde par partie, retrouvé sur deux jeux de graines ; plus strict encore (99 % /
-  95 %) n'apporte rien.
+  prochaine blinde est gagnée à 95 % et le boss à 85 % (85 % / 70 % aux mises blanche et rouge). Mesuré à
+  part : +0,18 ± 0,26 blinde par partie sur 60 parties, dans le bruit (épargner davantage faisait
+  −0,57) ; plus strict encore (99 % / 95 %) n'apporte rien.
 * **Locations** (mise or) : une seule avant l'ante 6, et seulement pour un joker qui porte le score
   (×Mult, joker qui grandit) ; le loyer passe avant les intérêts (plafond relevé de 3 $ par
   location).

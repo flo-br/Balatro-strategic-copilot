@@ -187,7 +187,7 @@ end
 
 -- High stakes: "safe" asks 95 % for the next blind and 85 % for the boss (white stake: 85 / 70);
 -- with the same chances, the savings are kept at the White Stake and spent at the Black Stake
--- (measured on the simulator: +0.43 +- 0.30 blinds per run, docs/TRAINING.md)
+-- (measured on the simulator: +0.18 +- 0.26 blinds per run, noise level; docs/TRAINING.md)
 function S.stricter_safety_at_high_stakes(T)
     local _, _, _, A = env()
     local function step(stake)

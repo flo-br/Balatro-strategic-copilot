@@ -182,11 +182,11 @@ section `advice`) :
 | Main | 1. Verdant Leaf : vendre le joker qui marque le moins (économie d'abord, jamais un éternel) ; 2. vendre Luchador (s'il n'est pas éternel) si boss actif et victoire < 80 % ; 3. utiliser une planète (sauf avec Observatory : la garder donne ×1,5), Black Hole, The Hermit (≥ 20 $, ou dernière ante), Temperance (≥ 3 $ de revente), Judgement / Wraith (≤ 10 $) / The Soul s'il y a la place, un tarot d'amélioration ou de couleur sur les cartes qui vont jouer ; 4. jouer / défausser selon la simulation de manche |
 | Boutique | 1. consommables comme ci-dessus (+ ceux qui créent des cartes quand il y a la place : High Priestess, Emperor, Wheel of Fortune ; Judgement / Wraith / The Soul avec les jokers pleins : vendre d'abord le joker le plus faible si un joker aléatoire a ≥ 50 % de chances d'être meilleur et un gain moyen ≥ 5 %, mesuré comme un remplacement) ; 2. vendre Invisible Joker quand il est prêt, un joker périssable expiré ; 3. meilleur achat abordable dont la note atteint le **seuil exigé** (ci-dessous) — remplacement : vendre d'abord le joker remplacé ; consommables pleins : vendre d'abord le plus faible ; 4. vendre un joker qui apporte ≤ 3 % du score (note de vente ≥ 60) ; 5. relancer : gratuite, ou rentable, ou **une fois par boutique** (ci-dessous) ; 6. blinde suivante |
 | Paquet | prendre la meilleure carte (note ≥ 50) — tarot ou spectrale : avec ses cartes cibles (dans la main du paquet) — sinon passer |
-| Choix de blinde | passer si le tag vaut au moins 1 $ de plus que ce que coûte le passage (récompense, mains, intérêts, jokers, boutique, croissance) et que la blinde qui suit reste ≥ 90 % sans la boutique (§9), sinon jouer ; un boss se joue toujours. Seul le choix **définitif** est affiché (pas pendant que l'analyse se termine) |
+| Choix de blinde | (à partir de la mise verte, 1.0.10 : jouer, sauf tag Investissement aux antes 1-2 ou tag Boss contre un boss qui contre le jeu) passer si le tag vaut au moins 1 $ de plus que ce que coûte le passage (récompense, mains, intérêts, jokers, boutique, croissance) et que la blinde qui suit reste ≥ 90 % sans la boutique (§9), sinon jouer ; un boss se joue toujours. Seul le choix **définitif** est affiché (pas pendant que l'analyse se termine) |
 
 **Discipline d'argent inspirée des meilleurs joueurs** (seulement quand la suite est « sûre » :
-prochaine blinde ≥ 85 % et boss ≥ 70 % ; sinon la puissance passe d'abord et seul le seuil de
-base compte) :
+prochaine blinde ≥ 85 % et boss ≥ 70 % ; **à partir de la mise verte, 95 % et 85 %** (1.0.10) ;
+sinon la puissance passe d'abord et seul le seuil de base compte) :
 * seuil de base : 56/100, **52/100 pour un paquet** (les meilleurs joueurs en achètent très
   souvent) ;
 * à partir de l'ante 2 : garder le plafond d'intérêts (25 $) et ne dépenser que l'excédent ; un

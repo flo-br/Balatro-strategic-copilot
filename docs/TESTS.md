@@ -96,11 +96,11 @@ prédiction (journal + diagnostic de compatibilité).
 Le script construit un **exécutable fusionné** (binaire LÖVE 11.5 + archive d'un Balatro simulé
 contenant `conf.lua` et `main.lua`), exactement comme `Balatro.exe`, puis le lance sous Xvfb avec
 différents dossiers de sauvegarde (l'équivalent de `%AppData%\Balatro`) remplis depuis l'archive
-`BalatroStrategicCopilot-1.0.10.zip`. Résultats (2026-10-18) :
+`BalatroStrategicCopilot-1.0.10.zip`. Résultats (2026-10-21, paquet 1.0.10) :
 
 | Scénario | Résultat |
 |---|---|
-| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.0.8 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 311) ; panneau et badges « JOUER » affichés (capture) |
+| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.0.10 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 351) ; panneau et badges « JOUER » affichés (capture) |
 | mod seul, sans amorce | jeu normal, pas de copilote (témoin) |
 | amorce sans le dossier du mod | jeu normal jusqu'au bout ; bandeau rouge « dossier introuvable » ; erreur dans `amorce.log` |
 | Steamodded a déjà chargé le copilote | l'amorce se retire (« Steamodded gère déjà le copilote »), pas de double chargement |
@@ -130,7 +130,8 @@ exécute l'installateur **extrait de l'archive réelle**, puis contrôle le rés
 
 Les dossiers `Mods` produits par S1, S4, S5, S7 et S9 sont ensuite passés aux **deux vrais
 chargeurs** de Steamodded (ci-dessous) : copilote trouvé, activé, bandeau « 1.0.3 actif » dans
-chaque cas.
+chaque cas. Paquet 1.0.10 (2026-10-21) : **53 vérifications réussies, 0 échec** ; S1, S4, S5 et S9
+passés aux deux chargeurs (0509c et récent) : bandeau « 1.0.10 actif » dans les 8 cas.
 
 ### Performances mesurées (LuaJIT, conteneur Linux, plusieurs exécutions)
 
@@ -171,7 +172,7 @@ car il faut LÖVE). La documentation 1.0.0/1.0.1 affirmait à tort qu'un zip dé
 fonctionnait : corrigé en 1.0.2. Le chargeur récent désactive durablement un mod en double via
 `blacklist.txt` : pris en charge par l'installateur en 1.0.3.
 
-### Parties complètes simulées (`tools/trainer`, 1.0.9 : mises 1 à 8, 15 decks)
+### Parties complètes simulées (`tools/trainer`, 1.0.9 : mises 1 à 8, 15 decks ; 1.0.10 : mises élevées, 84 parties par version comparée : 60 à la mise noire, 12 à la mise or, 12 à la mise blanche)
 
 Le copilote joue seul des parties complètes dans un Balatro simplifié (voir
 [TRAINING.md](TRAINING.md)) : chaque décision est l'étape « À FAIRE » du mod. Résultats et
