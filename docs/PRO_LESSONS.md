@@ -164,9 +164,38 @@ cartes tenues demandent des cartes en main (pas de Stuntman avec Baron).
   danger critique, l'argent gardé ne sert à rien ; un bon est permanent et vaut plus tôt dans la
   partie.
 
-## 9. Ce qui n'est pas (encore) appliqué
+## 9. Mises élevées (1.0.10, mise verte et au-delà)
+
+Sources : [PRO_HIGH_STAKES_SOURCES.md](PRO_HIGH_STAKES_SOURCES.md) (forum Steam, wiki, patch 1.0.1 ;
+Reddit et les vidéos n'ont pas pu être lus). Chaque règle a été **mesurée** sur le simulateur avant
+d'être gardée (TRAINING.md, « Résultats 1.0.10 ») ; celles qui n'ont rien apporté restent
+coupées et sont listées plus bas.
+
+Gardées (ensemble : +1,5 blinde gagnée par partie à la mise noire, ± 0,7) :
+* **Presque jamais passer une blinde** à partir de la mise verte : la boutique et la récompense
+  perdues coûtent plus que presque tous les tags quand les blindes grandissent ×2,5 par ante.
+  Exceptions : le tag Investissement aux antes 1-2, le tag Boss quand le boss à venir contre le
+  jeu. C'est la règle qui pèse le plus (17 passages sur 20 parties avant, 4 après).
+* **Pas de ×Mult en entrant à l'ante 5** (« ne rattrape presque jamais ») : l'argent n'est plus
+  gardé pour les intérêts, tout va à la puissance.
+* **Locations** (mise or) : une seule avant l'ante 6, et seulement pour un joker qui porte le score
+  (×Mult, joker qui grandit) ; le loyer passe avant les intérêts (plafond relevé de 3 $ par
+  location).
+* **Éternels** (mise noire et plus) : à partir de l'ante 3, un joker éternel qui n'est ni ×Mult ni
+  croissant est noté plus risqué (il bloque un emplacement pour toute la partie).
+* **Bons** qui n'ajoutent pas de score tout de suite (Overstock, Clearance Sale, Reroll Surplus…) :
+  achetés seulement quand le plateau est sûr.
+* Un premier joker de plus est pris sans regarder les intérêts aux antes 1-2.
+
+Essayées et **non gardées** (aucun gain mesuré, voir TRAINING.md) : suivre la « trajectoire » de
+puissance des parties gagnantes ; mêler l'estimation des antes futures à la note ; planètes
+centrées sur la main principale (−0,6 ± 0,7 : le niveau de la main principale à l'ante 4 ne
+prédit pas l'issue des parties simulées, la puissance médiane du plateau, si : corrélation 0,49).
+
+## 10. Ce qui n'est pas (encore) appliqué
 
 * Préparation explicite d'un boss connu à l'avance (garder Justice / Chariot pour The Needle ou The
   Eye, Luchador, Director's Cut) : seulement à travers la probabilité de battre le boss.
-* Choix de la main principale selon la mise (paire / carte haute aux mises élevées).
+* Choix de la main principale selon la mise (paire / carte haute aux mises élevées) : essayé en
+  1.0.10 par les planètes, sans gain mesuré.
 * Placement de Blueprint / Brainstorm au-delà du calcul d'ordre existant.
