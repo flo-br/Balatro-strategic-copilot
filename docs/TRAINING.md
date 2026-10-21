@@ -30,6 +30,11 @@ luajit tools/trainer/report.lua sortie.jsonl [autre.jsonl ...]
   `learn=lessons` ou `learn=adapt` : un seul des deux mécanismes (leçons du plan, réglages).
 * `BSC_MOD_ROOT=<dossier>` : évaluer une autre version du mod (ex. une copie de la 1.0.6).
 * `BSC_TRAIN_VERBOSE=1` : chaque main jouée ou défaussée est affichée.
+* Options des essais 1.0.10 (mises élevées ; valeur par défaut entre parenthèses, voir
+  « Résultats 1.0.10 ») : `hs_rules` (1 : règles des mises élevées), `hs_safe_next` / `hs_safe_boss`
+  (0,95 / 0,85), `track_scale` (0), `future_blend` (0), `main_focus` (0), `pack_penalty` (0),
+  `prior_cal` (0), `pack_free` (0), `sample_growth` (0), `hidden_discards` (0), `hs_power` (0),
+  `xmult_hunt` (0).
 * Une ligne JSON par partie : résultat, ante atteinte, blinde perdue, historique des manches,
   décisions, plateau, niveaux, et les anomalies (étape absente ou impossible à exécuter).
 * `report.lua` applique à chaque défaite **le bilan de partie du mod** (`learning/review.lua`) et
@@ -228,3 +233,76 @@ qui reste dans le bruit. Avec 20 parties, un écart de 2 victoires n'est pas sig
 (écart-type ≈ 2,2 victoires) ; il ne montre pas non plus de progrès. Le recalcul reste donc
 prudent (un essai à la fois, annulé s'il ne paie pas) et peut être coupé (`learning.adapt = false`).
 
+## Résultats 1.0.10 (2026-10-21, mises élevées)
+
+Demande : progresser aux mises élevées. Réglages du simulateur : `rollouts=24 shop_samples=60`,
+deck rouge. **Mesure** : une victoire est rare à ces mises (0 à 2 sur 20 parties), on compte donc
+les **blindes gagnées**, plus la fraction du score atteinte contre la blinde perdue (une victoire
+compte 25). Chaque version joue **les mêmes graines** ; l'écart est calculé graine par graine
+(moyenne ± erreur type). Avec 20 parties, l'écart type d'une différence est de 2 à 6 blindes :
+seul un écart d'environ ±1,5 se détache du bruit, d'où la validation finale sur de **nouvelles
+graines**, jamais utilisées pour choisir les réglages.
+
+### Essais un par un (mise noire, graines 301-320)
+
+| Essai | Blindes + fraction | Ante moyenne | Écart |
+|---|---|---|---|
+| 1.0.9 (référence) | 14,13 | 5,30 | — |
+| E1 trajectoire des parties gagnantes | 14,11 | 5,30 | −0,02 ± 0,73 |
+| E2 trajectoire + estimation des antes futures | 13,69 | — | −0,44 ± 0,68 |
+| E3 règles des mises élevées + trajectoire | 15,59 | 5,60 | +1,46 ± 1,07 |
+| **E4 règles des mises élevées** | **15,66** | **5,40** | **+1,53 ± 0,72** |
+| E5 planètes centrées sur la main principale (comparé à E3) | 15,02 | 5,35 | −0,57 ± 0,71 |
+| E6 calibrage a priori des chances (comparé à E3) | = E3 | = E3 | décisions identiques |
+| E7 −8 points aux paquets Arcane / Standard / Spectral (comparé à E4) | 14,61 | 5,15 | −1,05 ± 1,31 |
+| E8 relances pour chercher un ×Mult dès l'ante 3 (comparé à E4) | 15,66 | 5,55 | 0,00 ± 0,59 |
+| E9 jokers d'un paquet Bouffon comptés gratuits (comparé à E4) | 15,52 | 5,45 | −0,15 ± 0,90 |
+| E10 poids de la puissance du plateau ×1,5 (10 parties, arrêté) | 12,77 | 4,60 | −1,98 ± 1,23 |
+| E11 E9 + croissance des jokers tirés | 15,40 | 5,45 | −0,27 ± 0,91 |
+| E6b seuils « sûr » lus sur les chances calibrées (épargne plus) | 15,09 | 5,25 | −0,57 ± 0,54 |
+| E12 E9 + E11 + défausses avec cartes cachées + E8 | 15,25 | 5,50 | −0,41 ± 0,93 |
+| **E14 seuils « sûr » plus stricts aux mises élevées : 95 % / 85 % (épargne moins)** | **16,03** | **5,50** | **+0,37 ± 0,41** |
+| E15 seuils encore plus stricts : 99 % / 95 % | 15,66 | 5,40 | 0,00 ± 0,87 |
+
+### Validation sur de nouvelles graines (1.0.10 livrée = E4 + E14)
+
+| Mise, graines | 1.0.9 | 1.0.10 | Écart graine par graine |
+|---|---|---|---|
+| Noire (4), 321-340 | 14,50 ; ante 5,40 ; 1 victoire | 15,69 ; ante 5,55 ; 1 victoire | +1,19 ± 0,96 |
+| Noire (4), 341-360 | {R341} | {F341} | {D341} |
+| **Noire, 301-360 regroupées** | | | **{DALL}** |
+| Or (8), 401-412 | 8,38 ; ante 3,25 ; 0 victoire | 9,99 ; ante 3,75 ; 0 victoire | +1,61 ± 0,81 |
+| Blanche (1), 501-512 | 20,08 ; 4 victoires sur 12 | 20,08 ; 4 victoires sur 12 | identique (règles actives à partir de la mise verte) |
+
+E14 seul (seuils plus stricts) contre E4 se retrouve sur deux jeux de graines indépendants :
++0,37 ± 0,41 (301-320) et +0,52 ± 0,48 (321-340), soit +0,43 ± 0,30 ; E15, plus strict encore,
+n'apporte rien : la règle est gardée à 95 % / 85 %, sans chercher plus loin.
+
+### Ce que le diagnostic a montré
+
+* **Probabilités de la main** (fin de manche simulée) : bien calibrées, plutôt prudentes. Sur
+  toutes les décisions des essais, annoncé 40-70 % → gagné 60-85 % ; annoncé 90-100 % → 100 %. Une
+  défaite contre The Wheel rejouée en détail (graine 314, 5 200 à faire, quinte à 4 940 sur la
+  manche précédente) était un pari juste, perdu.
+* **Ce qui prédit l'issue d'une partie** (95 parties, plateau à l'entrée de l'ante 4) : la
+  puissance médiane du plateau (corrélation 0,49) et la chance annoncée contre le boss (0,42) ;
+  pas le niveau de la main principale (−0,04), ce qui explique l'échec de E5.
+* **Morts** : surtout à l'ante 5 (20 000 à 40 000 à faire), par manque de puissance : 6 à 8
+  défaites sur 20 contre une simple Big Blind ; un ×Mult proposé en boutique seulement 26 fois
+  en 20 parties, presque toujours aux antes 1-3.
+* **Erreurs trouvées et corrigées dans les deux modèles** (copilote et simulateur) : les jokers
+  que le jeu ne rend jamais éternels ou périssables (listes du wiki : un joker qui grandit n'est
+  jamais périssable) ; le simulateur les approchait par des étiquettes (Cavendish et Turtle Bean
+  pouvaient y être éternels). Analyse des cartes cachées : candidats en double retirés.
+* **Corrigées mais coupées** parce que la mesure ne montre aucun gain : le prix d'un joker tiré
+  d'un paquet Bouffon était compté en plus du prix du paquet (E9 : 23 → 30 paquets Bouffon
+  achetés, issue inchangée) ; la croissance des jokers tirés pour un paquet ou une relance (E11) ;
+  avec des cartes cachées, défausser les cartes d'un jeu qui mêle cartes cachées et visibles
+  (le jeu choisi à The Wheel jouait cinq cartes faibles pour 13 jetons avec quatre défausses ;
+  la simulation donne 73,3 % pour la défausse contre 73,0 % pour ce jeu : écart négligeable).
+
+**Lecture honnête.** Sur ces parties simulées, la 1.0.10 gagne en moyenne {DALLTXT} blinde de plus
+par partie à la mise noire et 1,6 à la mise or, sans rien changer à la mise blanche ; elle ne gagne
+pas plus de parties (1 sur 20 de part et d'autre aux graines 321-340, 0 sur 12 à la mise or). La
+plupart des parties s'arrêtent toujours à l'ante 5 : le copilote reste loin du niveau des
+meilleurs joueurs à ces mises. Rien n'a été vérifié dans le vrai jeu.
