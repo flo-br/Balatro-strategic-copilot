@@ -45,6 +45,8 @@ A.DEFAULTS = {
     excess_reserve = 5,            -- ... keeping this much above the cap
     idle_reserve = 20,             -- money above the cap + this: rerolled even without a gap (idle money)
     first_jokers = 3,              -- antes 1-2: the first jokers fill empty slots from excess_note, savings or not
+    xmult_hunt = 0,                -- high stakes, from ante 3, x Mult missing: rerolls per shop (a budget; 0 = off)
+    xmult_hunt_reserve = 15,       -- ... while this much money stays after the reroll
 }
 
 -- adjustments the copilot made to itself after its past runs (learning/adapt.lua); cfg.adapt_deltas
@@ -635,6 +637,12 @@ function A.shop_step(state, r, cfg, partial)
         local chaos = false
         for _, j in ipairs(state.jokers or {}) do if j.key == 'j_chaos' or j.key == 'j_flash' then chaos = true end end
         local early_cap = pol.ante <= 3 and not chaos and rerolls_done(econ) >= 1
+        -- high stakes: the multiplier the plan needs is hunted from ante 3 (top players reroll
+        -- for it rather than keep the interest), within a budget per shop and above a reserve
+        if (S.xmult_hunt or 0) > 0 and pol.high and pol.ante >= 3 and plan.gaps.xmult
+            and rerolls_done(econ) < S.xmult_hunt and money - rcost >= math.max(floor, S.xmult_hunt_reserve or 15) then
+            return reroll(T('why_reroll_hunt'), rr and rr.p_improve)
+        end
         if not early_cap and (plan.gaps.xmult or plan.gaps.power) and money - rcost >= math.max(keep, cap) + S.rich_reserve then
             return reroll(T('why_reroll_rich', money - cap, plan.gaps.xmult and T('gap_xmult') or T('gap_power')), rr and rr.p_improve)
         end

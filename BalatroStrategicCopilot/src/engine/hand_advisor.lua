@@ -721,6 +721,9 @@ local function concrete(cards, map)
     return out
 end
 
+-- discards mirroring the plays when cards are face down (1.0.10, measured on the simulator)
+HA.HIDDEN_DISCARDS = false
+
 function HA.analyse_hidden(state, opts, task, P, hand, visible, hidden, forced)
     local check = (task and task.check) or noop
     local deck = state.deck or {}
@@ -743,11 +746,18 @@ function HA.analyse_hidden(state, opts, task, P, hand, visible, hidden, forced)
     -- candidates: visible cards + the first k hidden positions (positions are interchangeable)
     local cands = {}
     local function hidden_pick(k) local t = {} for i = 1, k do t[i] = hidden[i] end return t end
+    local seen_cand = {}
     local function add(kind, vis, k)
         local cards = {}
         for _, c in ipairs(vis) do cards[#cards + 1] = c end
         for _, c in ipairs(hidden_pick(k)) do cards[#cards + 1] = c end
         if #cards == 0 or #cards > 5 then return end
+        local id = {}
+        for i, c in ipairs(cards) do id[i] = tostring(c.uid or c) end
+        table.sort(id)
+        id = kind .. ':' .. table.concat(id, ',')
+        if seen_cand[id] then return end
+        seen_cand[id] = true
         if kind == 'play' and forced then
             local has = false
             for _, c in ipairs(cards) do if c == forced then has = true end end
@@ -790,11 +800,24 @@ function HA.analyse_hidden(state, opts, task, P, hand, visible, hidden, forced)
             if ok and targets then
                 table.sort(targets, function(a, b) return (a.p_complete or 0) > (b.p_complete or 0) end)
                 for i = 1, math.min(3, #targets) do
+                    local n0 = #cands
                     add('discard', targets[i].discard or {}, 0)
-                    cands[#cands].target = targets[i].target
-                    cands[#cands].p_complete = targets[i].p_complete
+                    if #cands > n0 then
+                        cands[#cands].target = targets[i].target
+                        cands[#cands].p_complete = targets[i].p_complete
+                    end
                 end
             end
+        end
+        -- the cards of each play, discarded instead: with only plays mixing hidden and visible
+        -- cards, cycling them cost a hand (simulated The Wheel, ante 2: five weak cards played
+        -- for 13 chips with four discards left, round lost)
+        local plays = {}
+        for _, c in ipairs(cands) do if c.type == 'play' and HA.HIDDEN_DISCARDS then plays[#plays + 1] = c end end
+        for _, c in ipairs(plays) do
+            local vis = {}
+            for _, cc in ipairs(c.cards) do if not cc.face_down then vis[#vis + 1] = cc end end
+            add('discard', vis, c.hidden_n or 0)
         end
     end
     if #cands == 0 then res.empty = true; return res end

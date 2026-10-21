@@ -273,6 +273,8 @@ SH.FUTURE_BLEND = 0
 -- main hand focus of the planets (1.0.10, measured on the simulator); 0 disables
 SH.MAIN_FOCUS = 0
 SH.PACK_PENALTY = 0
+-- jokers of a Buffoon Pack valued without their shop price (the pack price is paid instead)
+SH.PACK_JOKERS_FREE = false
 
 -- Prior calibration of the shop's blind probabilities (piecewise linear, monotone), from the
 -- outcomes of 965 simulated bosses (docs/TRAINING.md); false disables it.
@@ -931,7 +933,7 @@ function SH.joker_samples(state, ctx, res, w, task)
             values[#values + 1] = { key = key, name = key, note = 50, unknown = true }
         elseif key then
             local j = joker_entry_from_def(key)
-            local note
+            local note, note_free
             local weakest = (slots_free <= 0) and SH.weakest_joker(state, ctx, task) or nil
             -- stickers of the higher stakes, as the game rolls them for shop and pack jokers:
             -- Eternal 30 % (Black Stake), else Perishable 30 % (Orange), and Rental 30 % (Gold).
@@ -960,10 +962,14 @@ function SH.joker_samples(state, ctx, res, w, task)
                     cost = U.clamp(((j.cost or 5) + (rental and 3 * SH.RENT_HORIZON or 0)) / math.max(10, (econ.dollars or 0) + 10), 0, 1.5),
                     risk = (perishable and 0.3 or 0) + (eternal and 0.1 or 0), reliability = 1 }
                 note = SH.note(comp, w)
+                -- the same joker drawn from a Buffoon Pack is free (the pack price is counted
+                -- once, by the pack note): only the rent remains
+                comp.cost = U.clamp((rental and 3 * SH.RENT_HORIZON or 0) / math.max(10, (econ.dollars or 0) + 10), 0, 1.5)
+                note_free = SH.note(comp, w)
             else
                 note = 40
             end
-            values[#values + 1] = { key = key, name = DB.get(key).name, note = note }
+            values[#values + 1] = { key = key, name = DB.get(key).name, note = note, note_free = note_free or note }
         end
     end
     ctx.joker_samples = values
@@ -1005,7 +1011,9 @@ function SH.booster_value(state, it, ctx, res, w, task)
     local choose = it.choose or 1
     local notes, method, why = {}, 'heuristic', nil
     if kind == 'Buffoon' then
-        for _, v in ipairs(SH.joker_samples(state, ctx, res, w, task)) do notes[#notes + 1] = v.note end
+        for _, v in ipairs(SH.joker_samples(state, ctx, res, w, task)) do
+            notes[#notes + 1] = SH.PACK_JOKERS_FREE and v.note_free or v.note
+        end
         method = 'simulation'
     elseif kind == 'Celestial' then
         local usage = res.base.usage or {}
