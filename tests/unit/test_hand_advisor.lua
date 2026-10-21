@@ -233,6 +233,54 @@ function S.face_down_cards_winning_visible_play(T)
     T.ok(not has.hidden, 'no need to play the hidden card blind')
 end
 
+-- Face-down cards (The Wheel): the cards of a play mixing hidden and visible cards can be
+-- discarded instead; before, cycling them was only possible by spending a hand (simulated
+-- The Wheel, ante 2: five weak cards played for 13 chips with four discards left).
+function S.face_down_cards_discarded_with_visible_ones(T)
+    local F, C, HA = env()
+    local vis = C.parse_list('2s 7c 9d Kh 4c 6s')
+    local hidden_real = C.parse_list('3d 8h')
+    local hand = {}
+    for i, c in ipairs(vis) do hand[i] = c end
+    hand[7] = { uid = 'hid1', face_down = true, id = 0, nominal = 0, unknown = true }
+    hand[8] = { uid = 'hid2', face_down = true, id = 0, nominal = 0, unknown = true }
+    local all = {}
+    for _, c in ipairs(vis) do all[#all + 1] = c end
+    for _, c in ipairs(hidden_real) do all[#all + 1] = c end
+    local deck = deck_without(C, all)
+    local full = {}
+    for _, c in ipairs(deck) do full[#full + 1] = c end
+    for _, c in ipairs(all) do full[#full + 1] = c end
+    local function mixed(on)
+        local was = HA.HIDDEN_DISCARDS
+        HA.HIDDEN_DISCARDS = on
+        local s = F.state({ hand_cards = hand, deck = deck, required = 600, hands_left = 4, discards_left = 3 })
+        s.full_deck = full
+        s.blind.key = 'bl_wheel'
+        local r = HA.analyse(s, { rollouts = 4 })
+        HA.HIDDEN_DISCARDS = was
+        local n = 0
+        for _, d in ipairs(r.discards or {}) do
+            local h, v = 0, 0
+            for _, c in ipairs(d.discard or {}) do if c.face_down then h = h + 1 else v = v + 1 end end
+            if h > 0 and v > 0 then n = n + 1 end
+        end
+        -- no candidate twice
+        local seen = {}
+        for _, d in ipairs(r.discards or {}) do
+            local id = {}
+            for i, c in ipairs(d.discard or {}) do id[i] = tostring(c.uid) end
+            table.sort(id)
+            id = table.concat(id, ',')
+            T.no(seen[id], 'discard listed once: ' .. id)
+            seen[id] = true
+        end
+        return n
+    end
+    T.eq(mixed(false), 0, 'switch off: hidden and visible cards never discarded together')
+    T.ok(mixed(true) > 0, 'switch on: the cards of a mixed play can be discarded instead')
+end
+
 -- The House: every card face down. Hidden positions are interchangeable; the advice is a
 -- number of hidden cards to play or discard, never based on the identity of a given card.
 function S.all_cards_face_down_still_advised(T)

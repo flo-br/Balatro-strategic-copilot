@@ -175,6 +175,23 @@ function S.buffoon_pack_counts_the_stake_stickers(T)
     T.ok(gold < white, string.format('gold %d below white %d', gold, white))
 end
 
+-- A joker taken from a Buffoon Pack is free: only the pack price is paid (before, the jokers of
+-- the pack were also charged their shop price, a pack worth ~5 to 12 points less when money is low)
+function S.buffoon_pack_jokers_are_free(T)
+    local F, C, SH = env()
+    local function note(free)
+        local was = SH.PACK_JOKERS_FREE
+        SH.PACK_JOKERS_FREE = free
+        local s = shop_state(F, C, { dollars = 6, jokers = { F.joker('j_joker') },
+            boosters = { { uid = 'buf', set = 'Booster', key = 'p_buffoon', name = 'Buffoon Pack', kind = 'Buffoon', cost = 4, pack_size = 2, choose = 1 } } })
+        local r = SH.analyse(s, { n = 16 })
+        SH.PACK_JOKERS_FREE = was
+        for _, o in ipairs(r.options) do if o.uid == 'buf' then return o.note end end
+    end
+    local paid, free = note(false), note(true)
+    T.ok(free > paid, string.format('free jokers %d above paid ones %d', free, paid))
+end
+
 -- Playing cards are worth their modifiers; Judgement with full slots is measured as a swap.
 function S.cards_and_judgement_with_full_slots(T)
     local F, C, SH = env()
