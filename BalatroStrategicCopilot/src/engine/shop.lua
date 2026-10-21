@@ -277,6 +277,8 @@ SH.PACK_PENALTY = 0
 SH.PACK_JOKERS_FREE = false
 -- high stakes: extra weight of the board's power in the notes (0 = off)
 SH.HS_POWER = 0
+-- growth of the jokers drawn for a Buffoon Pack or a reroll counted as in the shop
+SH.SAMPLE_GROWTH = false
 
 -- Prior calibration of the shop's blind probabilities (piecewise linear, monotone), from the
 -- outcomes of 965 simulated bosses (docs/TRAINING.md); false disables it.
@@ -958,12 +960,22 @@ function SH.joker_samples(state, ctx, res, w, task)
                 local m = measure({ n = math.max(24, math.floor(ctx.n / 2)), base = ctx.base, X_next = ctx.X_next, X_boss = ctx.X_boss,
                     profile = ctx.profile, calibrate = ctx.calibrate, task = task }, st)
                 local fit = SY.fit(DB.get(key), SY.themes(state, ctx.base.ps))
+                -- a growing joker is worth what it will become, as in the shop (SH.SAMPLE_GROWTH)
+                local pot = 0
+                local gj = SH.SAMPLE_GROWTH and grown(j, 3)
+                if gj then
+                    local st2 = weakest and SH.variant(state, { replace_joker = weakest.k, with = gj, dollars = -(j.cost or 5) + (weakest.j.sell_cost or 0) })
+                        or SH.variant(state, { add_joker = gj, dollars = -(j.cost or 5) })
+                    local m2 = measure({ n = math.max(24, math.floor(ctx.n / 2)), base = ctx.base, X_next = ctx.X_next, X_boss = ctx.X_boss,
+                        profile = ctx.profile, calibrate = ctx.calibrate, task = task }, st2)
+                    pot = U.clamp(math.log(math.max(1e-6, m2.ratio / math.max(1e-6, m.ratio))) / math.log(2), 0, 1)
+                end
                 local bn, bb = res.base.p_next_raw or res.base.p_next, res.base.p_boss_raw or res.base.p_boss
                 local dn = (m.p_next and bn) and (m.p_next - bn) or 0
                 local db = (m.p_boss and bb) and (m.p_boss - bb) or 0
                 local comp = { impact = U.clamp((0.5 * dn + 0.5 * db) * 5, -1.5, 1.5),
                     power = U.clamp(math.log(math.max(1e-6, m.ratio)) / math.log(2), -1, 1), synergy = fit,
-                    potential = (PL.joker_bonus(DB.get(key), ctx.plan)) + (BD.joker_bonus(key, state, weakest and weakest.j)),
+                    potential = pot + (PL.joker_bonus(DB.get(key), ctx.plan)) + (BD.joker_bonus(key, state, weakest and weakest.j)),
                     cost = U.clamp(((j.cost or 5) + (rental and 3 * SH.RENT_HORIZON or 0)) / math.max(10, (econ.dollars or 0) + 10), 0, 1.5),
                     risk = (perishable and 0.3 or 0) + (eternal and 0.1 or 0), reliability = 1 }
                 note = SH.note(comp, w)
