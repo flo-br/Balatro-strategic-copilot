@@ -352,7 +352,8 @@ function SK.evaluate(state, ctx, cfg)
     -- the Investment Tag in the first antes (research 1.0.10). Simulated black-stake runs skipped
     -- 17 blinds in 20 runs before this rule.
     local PL = BSC.require('engine/plan')
-    if res.recommended and PL.high_stakes(state) and not (tag == 'tag_investment' and ante <= 2) then
+    -- (and the Boss Tag when the coming boss hard-counters the build: its value is then high)
+    if res.recommended and PL.high_stakes(state) and not (tag == 'tag_investment' and ante <= 2) and tag ~= 'tag_boss' then
         res.recommended = false
         res.reason = 'high_stake'
     end
