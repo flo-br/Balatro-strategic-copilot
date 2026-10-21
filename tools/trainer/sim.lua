@@ -340,18 +340,16 @@ end
 
 -- Stake stickers on shop and pack jokers (vanilla create_card): Black Stake +: Eternal 30 %;
 -- Orange Stake +: Perishable 30 % (when not Eternal); Gold Stake: Rental 30 % ($1 to buy).
-local NO_ETERNAL = { decaying = true, fragile = true, joker_dup = true, boss_disable = true, tag_gen = true, survival = true }
+-- Jokers that cannot carry a sticker: SH.sticker_compat (lists of the Balatro Wiki; before
+-- 1.0.10 approximated by the joker tags: Cavendish and Turtle Bean could be Eternal, Campfire
+-- and Hit the Road never Perishable)
 function Sim:roll_stickers(j)
     if (self.stake or 1) < 4 then return j end
-    local def = BSC.require('model/jokers_db').get(j.key)
-    local tags = {}
-    for _, t in ipairs((def and def.tags) or {}) do tags[t] = true end
     local r = self.rng:float()
-    local eternal_ok = true
-    for t in pairs(NO_ETERNAL) do if tags[t] then eternal_ok = false end end
+    local eternal_ok, perishable_ok = SH.sticker_compat(j.key)
     if r > 0.7 and eternal_ok then
         j.eternal = true
-    elseif self.stake >= 7 and r > 0.4 and r <= 0.7 and not tags.scaling then
+    elseif self.stake >= 7 and r > 0.4 and r <= 0.7 and perishable_ok then
         j.perishable = true; j.perish_tally = 5
     end
     if self.stake >= 8 and self.rng:float() > 0.7 then

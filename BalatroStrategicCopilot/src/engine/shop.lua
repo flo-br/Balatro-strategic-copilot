@@ -918,6 +918,18 @@ function SH.slot_swap(state, ctx, res, w, task, rarity)
     return out
 end
 
+-- Jokers that never get a sticker (game data, eternal_compat / perishable_compat; lists of the
+-- Balatro Wiki, pages Eternal and Perishable): growing jokers are never Perishable, jokers that
+-- destroy or sell themselves never Eternal.
+SH.NEVER_ETERNAL = { j_gros_michel = true, j_ice_cream = true, j_cavendish = true, j_luchador = true, j_turtle_bean = true,
+    j_diet_cola = true, j_popcorn = true, j_ramen = true, j_selzer = true, j_mr_bones = true, j_invisible = true }
+SH.NEVER_PERISHABLE = { j_ceremonial = true, j_ride_the_bus = true, j_runner = true, j_constellation = true, j_green_joker = true,
+    j_red_card = true, j_madness = true, j_square = true, j_vampire = true, j_hologram = true, j_rocket = true, j_obelisk = true,
+    j_lucky_cat = true, j_flash = true, j_trousers = true, j_castle = true, j_glass = true, j_wee = true }
+function SH.sticker_compat(key)
+    return not SH.NEVER_ETERNAL[key], not SH.NEVER_PERISHABLE[key]
+end
+
 -- Notes of jokers drawn from the real pool (rarity 70/25/5 %), measured by simulation; shared
 -- by the reroll value and Buffoon packs (computed once per analysis).
 function SH.joker_samples(state, ctx, res, w, task)
@@ -949,8 +961,9 @@ function SH.joker_samples(state, ctx, res, w, task)
             local stake = (state.run and state.run.stake) or 1
             local r1, r2 = 0, 0
             if stake >= 4 then r1, r2 = rng:float(), rng:float() end
-            local eternal = stake >= 4 and r1 > 0.7
-            local perishable = not eternal and stake >= 7 and r1 > 0.4 and r1 <= 0.7
+            local eternal_ok, perishable_ok = SH.sticker_compat(key)
+            local eternal = stake >= 4 and r1 > 0.7 and eternal_ok
+            local perishable = not eternal and stake >= 7 and r1 > 0.4 and r1 <= 0.7 and perishable_ok
             local rental = stake >= 8 and r2 > 0.7
             if rental then j.cost = 1; j.rental = true end
             if slots_free > 0 or weakest then

@@ -157,4 +157,26 @@ function S.main_hand_focus_of_the_planets(T)
     T.ok(planet_note(1, 'c_uranus', 'Two Pair') <= planet_note(0, 'c_uranus', 'Two Pair'), 'another hand: not more')
 end
 
+-- Jokers that never carry a sticker (Balatro Wiki, pages Eternal and Perishable): growing jokers
+-- are never Perishable, jokers that destroy or sell themselves never Eternal
+function S.stickers_the_game_never_puts(T)
+    local _, _, _, _, SH = env()
+    local e, p = SH.sticker_compat('j_runner')
+    T.ok(e, 'Runner can be Eternal'); T.no(p, 'Runner is never Perishable')
+    e, p = SH.sticker_compat('j_cavendish')
+    T.no(e, 'Cavendish is never Eternal'); T.ok(p)
+    e, p = SH.sticker_compat('j_duo')
+    T.ok(e and p, 'The Duo: both possible')
+    local n = 0
+    for _ in pairs(SH.NEVER_PERISHABLE) do n = n + 1 end
+    T.eq(n, 18)
+    n = 0
+    for _ in pairs(SH.NEVER_ETERNAL) do n = n + 1 end
+    T.eq(n, 11)
+    -- every key is a real joker of the database
+    local DB = BSCopilot.require('model/jokers_db')
+    for k in pairs(SH.NEVER_PERISHABLE) do T.ok(DB.get(k), k) end
+    for k in pairs(SH.NEVER_ETERNAL) do T.ok(DB.get(k), k) end
+end
+
 return S
