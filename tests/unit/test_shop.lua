@@ -192,6 +192,27 @@ function S.buffoon_pack_jokers_are_free(T)
     T.ok(free > paid, string.format('free jokers %d above paid ones %d', free, paid))
 end
 
+-- Full slots: a growing joker bought to replace another one is worth what it will become, as
+-- with a free slot (before 1.0.11 only the growth of the joker sold was counted: Hologram, Lucky
+-- Cat, Campfire... at x1 were noted 0 to 15 as replacements in simulated runs)
+function S.replacement_counts_the_growth_of_the_new_joker(T)
+    local F, C, SH = env()
+    local function note(on)
+        local was = SH.REPLACE_GROWTH
+        SH.REPLACE_GROWTH = on
+        local js = { F.joker('j_joker'), F.joker('j_greedy_joker'), F.joker('j_lusty_joker'), F.joker('j_wrathful_joker'), F.joker('j_gluttenous_joker') }
+        local s = shop_state(F, C, { dollars = 20, jokers = js, items = { joker_item(F, 'j_campfire', 6) } })
+        s.run.ante = 3
+        local r = SH.analyse(s, { n = 16 })
+        SH.REPLACE_GROWTH = was
+        for _, o in ipairs(r.options) do if o.key == 'j_campfire' then return o.note, o.kind end end
+    end
+    local off, kind = note(false)
+    local on = note(true)
+    T.eq(kind, 'replace', 'full slots: a replacement')
+    T.ok(on > off, string.format('growth counted: %d above %d', on or -1, off or -1))
+end
+
 -- Playing cards are worth their modifiers; Judgement with full slots is measured as a swap.
 function S.cards_and_judgement_with_full_slots(T)
     local F, C, SH = env()

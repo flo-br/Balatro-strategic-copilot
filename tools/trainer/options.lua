@@ -11,6 +11,7 @@ local SWITCHES = {
     future_blend = { 'engine/shop', 'FUTURE_BLEND', 'number' },
     main_focus = { 'engine/shop', 'MAIN_FOCUS', 'number' },
     sample_growth = { 'engine/shop', 'SAMPLE_GROWTH', 'bool' },
+    replace_growth = { 'engine/shop', 'REPLACE_GROWTH', 'bool' },
     hs_power = { 'engine/shop', 'HS_POWER', 'number' },
     pack_free = { 'engine/shop', 'PACK_JOKERS_FREE', 'bool' },
     pack_penalty = { 'engine/shop', 'PACK_PENALTY', 'number' },

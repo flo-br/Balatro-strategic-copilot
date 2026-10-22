@@ -279,6 +279,8 @@ SH.PACK_JOKERS_FREE = false
 SH.HS_POWER = 0
 -- growth of the jokers drawn for a Buffoon Pack or a reroll counted as in the shop
 SH.SAMPLE_GROWTH = false
+-- growth of the joker bought to replace another one counted (1.0.11; false = as before)
+SH.REPLACE_GROWTH = false
 
 -- Prior calibration of the shop's blind probabilities (piecewise linear, monotone), from the
 -- outcomes of 965 simulated bosses (docs/TRAINING.md); false disables it.
@@ -553,7 +555,17 @@ function SH.analyse(state, opts, task)
                         local mg = measure(ctx, SH.variant(state, { replace_joker = best.k, with = gown }))
                         sout = sout + U.clamp(math.log(math.max(1e-6, mg.ratio)) / math.log(2), 0, 1)
                     end
-                    local comp = components(best.m, { potential = pb - pout + sb - sout, synergy = fit, econ = U.clamp(ev * 3 / 20, -1, 1), cost = cc2, risk = risk,
+                    -- ... and the new one gains what IT will become, as with a free slot (before
+                    -- 1.0.11 only the joker sold was counted: Madness, Lucky Cat, Hologram,
+                    -- Campfire... at x1 were noted 0 to 15 as replacements in simulated runs)
+                    local pin = 0
+                    local gin = SH.REPLACE_GROWTH and j.key ~= 'j_madness' and grown(j, 3)
+                    if gin then
+                        local mi = measure(ctx, SH.variant(state, { replace_joker = best.k, with = gin, dollars = -cost + (best.owned.sell_cost or 0) }))
+                        pin = U.clamp(math.log(math.max(1e-6, mi.ratio / math.max(1e-6, best.m.ratio))) / math.log(2), 0, 1)
+                        if pin > 0.05 then opt.reasons[#opt.reasons + 1] = 'progresse avec le temps' end
+                    end
+                    local comp = components(best.m, { potential = pb - pout + sb - sout + pin, synergy = fit, econ = U.clamp(ev * 3 / 20, -1, 1), cost = cc2, risk = risk,
                         reliability = def and 1 or 0.5 })
                     blend_future(comp, { replace_joker = best.k, with = j })
                     finish(opt, best.m, comp)
