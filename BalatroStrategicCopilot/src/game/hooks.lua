@@ -7,6 +7,8 @@
 --   * SMODS.Keybind for the panel keys; without Steamodded (autonomous mode), the same keys are
 --     read with love.keyboard.isDown on each frame (edge detection), never while the game has a
 --     text field focused (G.CONTROLLER.text_input_hook, vanilla).
+--   * while the "Mon choix" box is open (only then), the LÖVE keyboard callbacks are wrapped so
+--     that its keys never reach the game (game/feedback_input.lua).
 -- No Lovely patch, no change to the game's files or objects.
 
 local BSC = BSCopilot
@@ -21,7 +23,8 @@ function Hooks.poll_keys()
     local kb = love and love.keyboard
     if not (kb and kb.isDown) then return end
     local G = rawget(_G, 'G')
-    local typing = G and G.CONTROLLER and G.CONTROLLER.text_input_hook
+    local typing = (G and G.CONTROLLER and G.CONTROLLER.text_input_hook)
+        or BSC.require('game/feedback_input').active
     local modifier = kb.isDown('lctrl', 'rctrl', 'lalt', 'ralt', 'lgui', 'rgui')
     for _, b in ipairs(P) do
         local down = kb.isDown(b.key)
@@ -87,6 +90,7 @@ function Hooks.install(Ctl, UI)
         bind(keys.panel or 'c', Ctl.toggle_panel)
         bind(keys.detail or 'v', Ctl.toggle_detail)
         bind(keys.badges or 'b', Ctl.toggle_badges)
+        bind(keys.my_choice or 'x', Ctl.open_feedback)
         Hooks.installed.keys = true
     elseif love and love.keyboard and love.keyboard.isDown then
         local keys = (BSC.config and BSC.config.keys) or {}
@@ -99,6 +103,7 @@ function Hooks.install(Ctl, UI)
         bind(keys.panel or 'c', Ctl.toggle_panel)
         bind(keys.detail or 'v', Ctl.toggle_detail)
         bind(keys.badges or 'b', Ctl.toggle_badges)
+        bind(keys.my_choice or 'x', Ctl.open_feedback)
         Hooks.polled = P
         Hooks.installed.keys = #P > 0
         L.info('hooks', 'no SMODS.Keybind: %d keys read directly from the keyboard', #P)

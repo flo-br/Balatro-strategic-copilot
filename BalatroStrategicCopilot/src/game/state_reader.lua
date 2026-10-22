@@ -132,6 +132,8 @@ function SR.read_joker(card)
     return {
         uid = get(function() return card.sort_id end, nil) or tostring(card),
         key = ck or (def and def.key), name = name or (def and def.name) or ck,
+        -- selected by the player (clicked): read by the "my choice" box (game/feedback_input.lua)
+        highlighted = card.highlighted and true or nil,
         ability = U.deepcopy(card.ability, 5) or {},
         rarity = get(function() return card.config.center.rarity end, def and def.rarity),
         blueprint_compat = get(function() return card.config.center.blueprint_compat end, def and def.bp),
@@ -157,6 +159,7 @@ function SR.read_consumable(card)
         edition = edition_key(card.edition),
         sell_cost = num(card.sell_cost, 0),
         debuff = card.debuff and true or false,
+        highlighted = card.highlighted and true or nil,
     }
 end
 
@@ -168,6 +171,7 @@ function SR.read_item(card, area)
         uid = get(function() return card.sort_id end, nil) or tostring(card),
         key = center_key(card), name = ab.name, set = set, area = area,
         cost = num(card.cost, 0), edition = edition_key(card.edition),
+        highlighted = card.highlighted and true or nil,
     }
     if set == 'Joker' then
         item.joker = SR.read_joker(card)

@@ -37,6 +37,16 @@ function RT.init(store)
 end
 
 function RT.profile() return RT.profile_data end
+function RT.save_profile()
+    if RT.store and RT.profile_data then return RT.store:save(RT.PROFILE, LE.SCHEMA, RT.profile_data) end
+end
+-- the profile whose "Mon choix" corrections move the notes (learning/feedback.lua), or nil
+function RT.player_feedback()
+    if cfg().enabled == false or cfg().player_feedback == false then return nil end
+    local d = RT.profile_data and RT.profile_data.feedback
+    if type(d) ~= 'table' or (d.count or 0) == 0 then return nil end
+    return RT.profile_data
+end
 
 function RT.calibrator(kind)
     return function(p)
@@ -109,6 +119,10 @@ function RT.finish_run(run)
     end
     if RT.store then RT.store:delete(RT.ACTIVE) end
     RT.last_review = RV.build(run, RT.profile_data)
+    -- the player's corrections during this run ("Mon choix")
+    local FB = BSC.require('learning/feedback')
+    RT.last_review.feedback = FB.run_entries(RT.profile_data, run.started_at)
+    RT.last_review.feedback_summary = FB.summary(RT.profile_data)
     -- the causes of the last losses are kept in the profile (shown; the plan of the next runs
     -- only changes through the trials of learning/adapt.lua)
     if not run.won and cfg().enabled ~= false and RT.last_review.lessons and #RT.last_review.lessons > 0 then
@@ -184,6 +198,11 @@ function RT.menu_lines(detail)
     if tr.enough then
         lines[#lines + 1] = { seg(string.format('Tendance : %s → %s de victoires (%s)', I.pct(tr.old.win), I.pct(tr.new.win),
             tr.significant and 'différence significative' or 'différence non significative'), tr.significant and 'accent' or 'dim') }
+    end
+    local fs = BSC.require('learning/feedback').summary(RT.profile_data, detail and 8 or 4)
+    if fs then
+        lines[#lines + 1] = { seg(I.T('fb_learned', fs.count, fs.text ~= '' and fs.text or '-'), 'accent') }
+        lines[#lines + 1] = { seg(I.T('fb_file'), 'dim') }
     end
     if RT.last_review then
         lines[#lines + 1] = { seg(I.T('review_title'), 'title') }

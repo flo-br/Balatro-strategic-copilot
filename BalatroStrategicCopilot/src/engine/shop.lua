@@ -24,6 +24,7 @@ local BD = BSC.require('engine/builds')
 local HA = BSC.require('engine/hand_advisor')
 local EF = BSC.require('model/effects_db')
 local PL = BSC.require('engine/plan')
+local FB = BSC.require('learning/feedback')
 local I = BSC.require('core/i18n')
 
 local SH = {}
@@ -270,6 +271,12 @@ end
 
 -- A stand-in for the mult the board will gain later (future context of the notes).
 SH.FUTURE_BLEND = 0
+-- profile carrying the player's "Mon choix" corrections, or nil (none, disabled, simulator)
+function SH.player_feedback()
+    local lr = BSC.learning_runtime
+    return lr and lr.player_feedback and lr.player_feedback() or nil
+end
+
 -- main hand focus of the planets (1.0.10, measured on the simulator); 0 disables
 SH.MAIN_FOCUS = 0
 SH.PACK_PENALTY = 0
@@ -355,6 +362,15 @@ function SH.analyse(state, opts, task)
     local danger = ST.danger(p_next, p_boss)
     ctx.base = { ps = ps0, ps_boss = ps_boss, p_next = p_next, p_boss = p_boss, p_win = outlook.p_win }
     local w = SH.weights(danger, opts.weights)
+    -- reasons the player gave with their corrections move some weights a little (bounded)
+    local fbp0 = SH.player_feedback()
+    if fbp0 then
+        local nd = FB.nudges(fbp0)
+        w.synergy = w.synergy * (nd.synergy or 1)
+        w.potential = w.potential * (nd.potential or 1)
+        w.risk = w.risk * (nd.risk or 1)
+        w.impact = w.impact * (nd.impact or 1)
+    end
     -- high stakes: the blinds outgrow what the next blind shows; the power of the board (median
     -- score: the best predictor of how far simulated runs go) weighs more (SH.HS_POWER)
     if (SH.HS_POWER or 0) > 0 and PL.high_stakes(state) then w.power = w.power * (1 + SH.HS_POWER) end
@@ -706,6 +722,7 @@ function SH.analyse(state, opts, task)
             end
         elseif it.set == 'Booster' then
             opt.kind = 'booster'
+            opt.pack_kind = it.kind
             local value, method, why = SH.booster_value(state, it, ctx, res, w, task)
             finish(opt, nil, { reliability = 1 })
             local rel = (method == 'simulation') and 0.9 or 0.7
@@ -739,6 +756,20 @@ function SH.analyse(state, opts, task)
         for _, c in ipairs(state.consumables or {}) do
             local info = IT.consumable(c.key)
             if info and info.joker then SH.slot_swap(state, ctx, res, w, task, info.joker) end
+        end
+    end
+    -- the player's corrections ("Mon choix", learning/feedback.lua): an item they chose instead of
+    -- the advice is noted higher, the one advised instead lower (bounded, shown in the reasons)
+    local fbp = SH.player_feedback()
+    if fbp then
+        for _, o in ipairs(res.options) do
+            local dv, fwhy = FB.item_adjust(fbp, o)
+            if dv ~= 0 and o.note then
+                o.note = math.floor(U.clamp(o.note + dv, 0, 100) + 0.5)
+                o.player_adjust = dv
+                o.reasons = o.reasons or {}
+                o.reasons[#o.reasons + 1] = fwhy
+            end
         end
     end
     table.sort(res.options, function(a, b) return (a.note or 0) > (b.note or 0) end)

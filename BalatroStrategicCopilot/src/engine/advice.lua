@@ -69,6 +69,13 @@ local function settings(cfg)
         local AD = BSC.require('learning/adapt')
         for k, v in pairs(out) do out[k] = AD.apply(k, v, d) end
     end
+    -- reasons of the player's corrections: "garder l'argent" / "la puissance d'abord"
+    local lr = (not (cfg and cfg.adapt_deltas)) and BSC.learning_runtime or nil
+    local fbp = lr and lr.player_feedback and lr.player_feedback()
+    if fbp then
+        local nd = BSC.require('learning/feedback').nudges(fbp)
+        if nd.interest then out.interest_weight = math.max(0, (out.interest_weight or 3) + nd.interest) end
+    end
     return out
 end
 A.settings = settings

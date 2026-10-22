@@ -128,6 +128,11 @@ function FS.shop_panel(state, r, detail)
     if pt then lines[#lines + 1] = line(seg('Situation ' .. pt, pc)) end
     -- the run's plan (engine/plan.lua): what the shop should bring
     for _, l in ipairs(FS.plan_lines(r.plan, state)) do lines[#lines + 1] = l end
+    -- what the player's corrections changed in the notes ("Mon choix")
+    local lr = BSC.learning_runtime
+    local fbp = lr and lr.player_feedback and lr.player_feedback()
+    local fs = fbp and BSC.require('learning/feedback').summary(fbp, detail and 6 or 3)
+    if fs and fs.text ~= '' then lines[#lines + 1] = line(seg(T('fb_learned', fs.count, fs.text), 'accent')) end
     -- the ante's boss is known from the start of the ante: what it demands
     local BL = BSC.require('model/blinds_db')
     local prep = r.boss and r.boss.key and BL.PREP[r.boss.key]

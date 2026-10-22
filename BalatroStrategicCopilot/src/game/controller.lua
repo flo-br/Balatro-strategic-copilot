@@ -17,6 +17,7 @@ local EF = BSC.require('game/event_fallback')
 local Advice = BSC.require('engine/advice')
 local SY = BSC.require('engine/synergy')
 local UT = BSC.require('game/ui_targets')
+local FI = BSC.require('game/feedback_input')
 
 local Ctl = {}
 
@@ -474,7 +475,8 @@ function Ctl.ui_model()
     local c = cfg()
     local phase = SR.phase()
     local s = Ctl.state
-    local m = { panel_open = Ctl.panel_open, anchor = c.ui and c.ui.anchor, scale = c.ui and c.ui.scale or 1, alerts = Ctl.alerts }
+    local m = { panel_open = Ctl.panel_open, anchor = c.ui and c.ui.anchor, scale = c.ui and c.ui.scale or 1, alerts = Ctl.alerts,
+        feedback = FI.model() }
     if phase == 'menu' or phase == 'none' then
         -- history and learning summary, only on demand (panel key) outside a run
         m.compact_lines = nil
@@ -532,7 +534,8 @@ function Ctl.ui_model()
         if ax then m.avoid = { x = ax, y = ay, w = aw, h = ah } end
     end
     local keys = c.keys or {}
-    m.footer = I.T('keys_help', (keys.panel or 'c'):upper(), (keys.detail or 'v'):upper(), (keys.badges or 'b'):upper())
+    m.footer = I.T('keys_help', (keys.panel or 'c'):upper(), (keys.detail or 'v'):upper(), (keys.badges or 'b'):upper(),
+        (keys.my_choice or 'x'):upper())
     -- badges: the step label above what to act on, order numbers under the jokers
     local show_badges = not (c.ui and c.ui.show_badges == false)
     if show_badges then
@@ -573,6 +576,25 @@ function Ctl.ui_model()
 end
 
 -- key actions
+-- "Mon choix": the box reads what the player highlighted (a fresh snapshot: highlights do not
+-- start a new analysis) and the advice of the moment (game/feedback_input.lua)
+function Ctl.open_feedback()
+    if FI.active then return end
+    local fresh = SR.snapshot()
+    local phase = SR.phase()
+    if phase == 'busy' then phase = Ctl.last_phase end
+    local ok, why = FI.open(fresh, phase, Ctl.step(phase))
+    if not ok then
+        Ctl.alert('feedback', I.T(why == 'no_run' and 'fb_no_run' or 'fb_select_first'), 'mid')
+    end
+end
+FI.on_saved = function(changes)
+    local txt = (changes and #changes > 0) and table.concat(changes, ' · ') or I.T('fb_kept')
+    Ctl.alert('feedback_saved', I.T('fb_saved', txt), 'good')
+    -- the notes change with the new preferences: analyse again
+    Ctl.version = (Ctl.version or 0) + 1
+    Ctl.last_sig = nil
+end
 function Ctl.toggle_panel() Ctl.panel_open = not Ctl.panel_open end
 function Ctl.toggle_detail() Ctl.detail = not Ctl.detail end
 function Ctl.toggle_badges()

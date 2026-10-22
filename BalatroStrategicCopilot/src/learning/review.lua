@@ -317,6 +317,19 @@ function RV.panel(state, rv, detail)
         for _, ch in ipairs(rv.adapt) do lines[#lines + 1] = { seg('- ' .. RV.adapt_text(ch), 'accent') } end
     end
     if detail then section('review_decisions', rv.major, 'text', 6) end
+    -- the player's corrections of this run ("Mon choix", learning/feedback.lua)
+    if rv.feedback and #rv.feedback > 0 then
+        lines[#lines + 1] = { seg(I.T('review_feedback', #rv.feedback), 'title') }
+        local FB = BSC.require('learning/feedback')
+        for i = math.max(1, #rv.feedback - (detail and 7 or 2)), #rv.feedback do
+            local e = rv.feedback[i]
+            local t = string.format('- ante %s : %s', tostring(e.ante or '?'), tostring(e.choice and e.choice.label or '?'))
+            if e.reason and e.reason ~= 'other' then t = t .. ' (' .. (FB.REASON_LABEL[e.reason] or e.reason) .. ')' end
+            if e.text and e.text ~= '' then t = t .. ' « ' .. e.text .. ' »' end
+            lines[#lines + 1] = { seg(t, 'accent') }
+        end
+        if rv.feedback_summary then lines[#lines + 1] = { seg('  ' .. I.T('fb_learned', rv.feedback_summary.count, rv.feedback_summary.text), 'dim') } end
+    end
     local l = rv.learning
     if l and l.runs and l.runs > 0 then
         local cal = l.calibration or {}

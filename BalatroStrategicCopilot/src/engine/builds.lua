@@ -111,6 +111,10 @@ function BD.joker_bonus(key, state, without)
     if not key then return 0, nil end
     local total, list = BD.synergies(key, state, without)
     if total == 0 then return 0, nil end
+    -- "synergie avec mes jokers": the player's corrections make the synergies weigh more
+    local lr = BSC.learning_runtime
+    local fbp = lr and lr.player_feedback and lr.player_feedback()
+    if fbp and total > 0 then total = total * (BSC.require('learning/feedback').nudges(fbp).synergy or 1) end
     local ante = (state.run and state.run.ante) or 1
     -- do not force a build before the shop has offered its pieces
     if total > 0 and ante <= 2 then total = total * 0.7 end

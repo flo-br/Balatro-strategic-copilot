@@ -10,7 +10,7 @@ local Boot = {}
 
 local DEFAULTS = {
     enabled = true, lang = 'fr',
-    keys = { panel = 'c', detail = 'v', badges = 'b' },
+    keys = { panel = 'c', detail = 'v', badges = 'b', my_choice = 'x' },
     ui = { anchor = 'right', scale = 1.0, show_badges = true, show_compact = true, panel_open = false, detail = true, use_game_font = true },
     alerts = { enabled = true, danger_threshold = 0.5, great_buy_note = 80, joker_order_gain = 0.10, cooldown = 25, duration = 5 },
     thresholds = { prob_good = 0.80, prob_mid = 0.50, note_good = 70, note_mid = 45 },
@@ -19,7 +19,7 @@ local DEFAULTS = {
         booster_note = 52, strong_note = 75, save_from_ante = 2, interest_weight = 3, safe_next = 0.85, safe_boss = 0.70,
         reroll_once = true, reroll_once_max_loss = 1, rich_reserve = 10,
         replace_note = 60, danger_rerolls = 2, excess_note = 54, excess_reserve = 5, idle_reserve = 20, first_jokers = 3 },
-    learning = { enabled = true, max_runs_kept = 300, min_samples_calibration = 30 },
+    learning = { enabled = true, max_runs_kept = 300, min_samples_calibration = 30, player_feedback = true },
     log = { level = 'info', file = true, max_file_kb = 512 },
 }
 Boot.DEFAULTS = DEFAULTS

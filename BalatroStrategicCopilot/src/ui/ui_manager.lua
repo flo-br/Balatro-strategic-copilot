@@ -231,6 +231,27 @@ function UI.draw(model)
         end
     end
 
+    -- "Mon choix" box (game/feedback_input.lua), centred over everything
+    local fb = model.feedback
+    if fb and fb.lines then
+        local bw = math.max(360, math.floor(W * 0.46))
+        local pad = math.floor(base * 0.8)
+        local body_h = measure_lines(fb.lines, bw - 2 * pad, font, line_h)
+        local bh = math.min(H - 20, body_h + line_h + 2 * pad)
+        local bx, by = math.floor(W / 2 - bw / 2), math.floor(math.max(10, H / 2 - bh / 2))
+        g.setColor(colour('bg', 1.07))
+        g.rectangle('fill', bx, by, bw, bh, 10, 10)
+        g.setColor(colour('accent'))
+        g.setLineWidth(3)
+        g.rectangle('line', bx, by, bw, bh, 10, 10)
+        g.setScissor(bx, by, bw, bh)
+        g.setFont(font)
+        g.setColor(colour('title'))
+        g.print(clean(fb.title or ''), bx + pad, by + pad)
+        draw_lines(fb.lines, bx + pad, by + pad + line_h, bw - 2 * pad, font, line_h)
+        g.setScissor()
+    end
+
     -- alerts (toasts), top centre
     if model.alerts and #model.alerts > 0 then
         g.setFont(font)

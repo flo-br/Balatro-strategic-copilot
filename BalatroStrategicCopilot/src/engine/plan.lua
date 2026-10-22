@@ -116,8 +116,16 @@ local function lesson(key)
     local lr = BSC.learning_runtime
     local d = lr and lr.adapt_deltas and lr.adapt_deltas()
     local k = URGENCY[key]
-    if not (d and k and type(d[k]) == 'number') then return 1 end
-    return 1 + math.max(0, math.min(0.5, d[k]))
+    local v = 1
+    if d and k and type(d[k]) == 'number' then v = 1 + math.max(0, math.min(0.5, d[k])) end
+    -- reasons of the player's corrections ("il me faut du ×Mult", "ma main principale")
+    local fbp = lr and lr.player_feedback and lr.player_feedback()
+    if fbp then
+        local nd = BSC.require('learning/feedback').nudges(fbp)
+        local extra = (key == 'xmult' and nd.xmult) or (key == 'levels' and nd.levels) or 0
+        v = math.min(2, v + extra)
+    end
+    return v
 end
 PL.lesson = lesson
 

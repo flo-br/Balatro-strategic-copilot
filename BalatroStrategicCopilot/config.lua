@@ -7,6 +7,8 @@ return {
         panel = 'c',             -- open/close the strategic panel
         detail = 'v',            -- show/hide alternatives and details
         badges = 'b',            -- show/hide badges over cards
+        my_choice = 'x',         -- "Mon choix": what YOU selected in the game instead of the advice, and why
+                                 -- (not 'm': Steamodded restarts the game when M is held)
     },
     ui = {
         anchor = 'right',        -- 'right' or 'left'
@@ -71,6 +73,9 @@ return {
         -- after a loss, try one change of the copilot's own settings for 3 runs and keep it only
         -- if those runs are not worse (learning/adapt.lua); false: config.lua values only
         adapt = true,
+        -- "Mon choix" (keys.my_choice): your corrections move the notes of the items and a few
+        -- settings (bounded, shown in the panel); false: they are only kept and shown
+        player_feedback = true,
     },
     log = {
         level = 'info',          -- off, error, warn, info, debug, trace
