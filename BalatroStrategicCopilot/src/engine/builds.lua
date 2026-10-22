@@ -89,6 +89,7 @@ end
 BD.BUILDS = {}
 for _, b in ipairs(DBB.BUILDS) do BD.BUILDS[#BD.BUILDS + 1] = b end
 for _, b in ipairs(SDB.BUILDS) do BD.BUILDS[#BD.BUILDS + 1] = b end
+local function builds() return ((BD.LIST_SCALE or 1) == 0) and DBB.BUILDS or BD.BUILDS end
 
 -- Joker + consumable / voucher / booster synergies, indexed both ways
 BD.ITEMS_OF_JOKER, BD.JOKERS_OF_ITEM = {}, {}
@@ -236,7 +237,7 @@ function BD.synergies(key, state, without)
     end
     -- builds: support of a build under way, core piece of a build whose support is there,
     -- anti-synergy with a build under way
-    for _, b in ipairs(BD.BUILDS) do
+    for _, b in ipairs(builds()) do
         local core_owned, support_owned = 0, 0
         for _, k in ipairs(b.core) do if own[k] then core_owned = core_owned + 1 end end
         for _, k in ipairs(b.support) do if own[k] then support_owned = support_owned + 1 end end
@@ -340,7 +341,7 @@ end
 function BD.active(state)
     local own = owned_set(state)
     local out = {}
-    for _, b in ipairs(BD.BUILDS) do
+    for _, b in ipairs(builds()) do
         local have, missing = {}, {}
         local core = 0
         for _, k in ipairs(b.core) do if own[k] then core = core + 1; have[#have + 1] = name_of(k) end end

@@ -183,7 +183,7 @@ function PL.analyse(state, base)
     -- builds of top players under way and the S / A pieces to look for (engine/builds.lua;
     -- loaded lazily: it requires this module)
     local okb, BD = pcall(BSC.require, 'engine/builds')
-    if okb and BD then plan.builds = BD.active(state); plan.wanted = BD.wanted(state, 4) end
+    if okb and BD then plan.builds = BD.active(state); plan.wanted = BD.wanted(state, 8) end
     return plan
 end
 

@@ -18,6 +18,9 @@ local SWITCHES = {
     pack_penalty = { 'engine/shop', 'PACK_PENALTY', 'number' },
     prior_cal = { 'engine/shop', 'PRIOR_CALIBRATION', 'bool' },
     hidden_discards = { 'engine/hand_advisor', 'HIDDEN_DISCARDS', 'bool' },
+    syn_list = { 'engine/builds', 'LIST_SCALE', 'number' },
+    syn_items = { 'engine/builds', 'ITEM_SCALE', 'number' },
+    syn_generic = { 'engine/builds', 'GENERIC_SCALE', 'number' },
 }
 
 -- args: list of strings; cfg: config.lua table; opts: simulator options (modified)

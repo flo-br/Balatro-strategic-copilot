@@ -110,10 +110,15 @@ function FS.plan_lines(plan, state)
         if b.tip then out[#out + 1] = line(seg('    ' .. b.tip, 'dim')) end
     end
     -- the S / A synergies of the jokers owned still to find (model/synergies_db.lua)
+    -- (the pieces the build line already names are not repeated)
     if plan.wanted and #plan.wanted > 0 then
+        local named = {}
+        for _, n in ipairs((b and b.missing) or {}) do named[n] = true end
         local parts = {}
-        for _, w in ipairs(plan.wanted) do parts[#parts + 1] = T('syn_wanted_item', w.name, w.tier, w.with) end
-        out[#out + 1] = line(seg('  ' .. T('syn_wanted', table.concat(parts, ', ')), 'accent'))
+        for _, w in ipairs(plan.wanted) do
+            if not named[w.name] and #parts < 4 then parts[#parts + 1] = T('syn_wanted_item', w.name, w.tier, w.with) end
+        end
+        if #parts > 0 then out[#out + 1] = line(seg('  ' .. T('syn_wanted', table.concat(parts, ', ')), 'accent')) end
     end
     return out
 end

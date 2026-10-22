@@ -37,6 +37,15 @@ function love.load()
         opts.shop = { FG.joker('j_duo', 'The Duo', { x_mult = 2, type = 'Pair' }, { rarity = 3, cost = 8 }),
                       FG.joker('j_credit_card', 'Credit Card', { extra = 20 }, { rarity = 1, cost = 1 }) }
     end
+    if scenario == 'choice' then
+        -- "Mon choix" (1.0.12): the synergies to look for in the shop panel, then the player
+        -- highlights another joker than the advised one and explains why (key X)
+        opts.state = 5
+        opts.dollars = 16
+        opts.jokers = { FG.joker('j_baron', 'Baron', { extra = 1.5 }), FG.joker('j_joker', 'Joker', { mult = 4 }) }
+        opts.shop = { FG.joker('j_mime', 'Mime', { extra = 1 }, { rarity = 2, cost = 5 }),
+                      FG.joker('j_duo', 'The Duo', { x_mult = 2, type = 'Pair' }, { rarity = 3, cost = 8 }) }
+    end
     if scenario == 'death' then
         -- Death in the consumable area (top right, where the game puts it): the copilot must name
         -- the two cards and which one goes on the left; the panel must not cover the area
@@ -90,7 +99,7 @@ function love.load()
     -- simulated game buttons, as UI trees (box.UIRoot.children, config.button / config.id)
     local function btn(fn, id, x, y, label) return { config = { button = fn, id = id }, T = { x = x, y = y, w = 3, h = 0.9 }, label = label, children = {} } end
     HARNESS_BUTTONS = {}
-    if scenario == 'shop' then
+    if scenario == 'shop' or scenario == 'choice' then
         local nb, rr = btn('toggle_shop', 'next_round_button', 1, 3.2, 'Blinde suivante'), btn('reroll_shop', nil, 1, 4.5, 'Relancer 5 $')
         G.shop = { UIRoot = { config = {}, children = { nb, rr } } }
         HARNESS_BUTTONS = { nb, rr }
@@ -132,7 +141,7 @@ function love.update(dt)
     if frame == 20 then love.graphics.captureScreenshot('banner_' .. scenario .. '.png') end -- banner_shot
     Game.update(G, dt)
     local Ctl = BSCopilot.controller
-    local ph = (scenario == 'shop' and 'shop') or (scenario == 'blind' and 'blind_select') or 'hand'
+    local ph = ((scenario == 'shop' or scenario == 'choice') and 'shop') or (scenario == 'blind' and 'blind_select') or 'hand'
     if done_at and frame == done_at + 1 then
         local st = Ctl.step(ph)
         log('step: %s %s (%s)', tostring(st and st.label), tostring(st and st.text), tostring(st and st.why))
@@ -147,11 +156,30 @@ function love.update(dt)
         -- simulate a selection by the player (the mod never selects cards itself)
         G.hand.highlighted = { G.hand.cards[1], G.hand.cards[2] }
     end
-    if done_at and frame == done_at + 30 then
+    local quit_at = (scenario == 'choice') and 60 or 40
+    if scenario == 'choice' and done_at then
+        -- the player's own choice: the copilot advises The Duo, the player highlights Mime (the
+        -- game does it on a click), presses X, 1 (buy it), 1 (reason: synergy), types, Enter
+        if frame == done_at + 30 then love.graphics.captureScreenshot('overlay_synergies.png') end
+        if frame == done_at + 32 then
+            G.shop_jokers.cards[1].highlighted = true
+            Ctl.open_feedback(); log('feedback box open: %s', tostring(BSCopilot.require('game/feedback_input').active ~= nil))
+        end
+        if frame == done_at + 33 then love.keypressed('1') end
+        if frame == done_at + 34 then love.keypressed('1') end
+        if frame == done_at + 35 then love.keypressed('r'); love.textinput('Mime rejoue les Rois tenus : Baron compte deux fois') end
+        if frame == done_at + 40 then love.graphics.captureScreenshot('overlay_choice.png'); shots = shots + 1 end
+        if frame == done_at + 42 then
+            love.keypressed('return')
+            local fb = BSCopilot.learning_runtime.profile().feedback
+            log('saved: %d correction(s), Duo %+d, Mime %+d', fb.count or 0, fb.items.j_duo or 0, fb.items.j_mime or 0)
+            log('mes_choix.txt: %s', tostring(love.filesystem.read(BSCopilot.store:path('mes_choix.txt'))))
+        end
+    elseif done_at and frame == done_at + 30 then
         love.graphics.captureScreenshot('overlay_' .. scenario .. '.png')
         shots = shots + 1
     end
-    if done_at and frame == done_at + 40 then
+    if done_at and frame == done_at + quit_at then
         -- persistence check with the real love.filesystem
         local st = BSCopilot.store
         if st then
