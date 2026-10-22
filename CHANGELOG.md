@@ -44,8 +44,10 @@ synergies** pour tous les types de jokers.
   planètes, Hologram et les paquets Standard, Yorick et Wasteful…).
 * **Mesuré** sur le simulateur (60 parties, mise noire, graine par graine contre la 1.0.11) :
   tout compter faisait **−0,33 ± 0,32** blinde par partie ; la version livrée fait
-  **+0,22 ± 0,21** (2 victoires de part et d'autre). Mise or et mise blanche : voir
-  `docs/TRAINING.md`, « Résultats 1.0.12 ».
+  **+0,22 ± 0,21** (2 victoires de part et d'autre) ; mise or : identique (12 parties) ; mise
+  blanche : −0,35 ± 1,20 (4 victoires sur 12 de part et d'autre). Dans le bruit partout : la liste
+  ne fait pas perdre ; elle sert surtout à vous dire quelle synergie porte une note et quoi
+  chercher. Détails : `docs/TRAINING.md`, « Résultats 1.0.12 ».
 * Huit erreurs de règles retirées à la relecture (Blueprint ne copie pas l'argent de fin de manche
   de Rocket ou Cloud 9 ; Mime ne paie pas Golden Ticket ; Smeared Joker n'aide pas Blackboard…).
 

@@ -418,11 +418,12 @@ en B ; textes d'Abstract Joker).
 
 | Autres mises (S2, 12 parties) | 1.0.11 | 1.0.12 | Écart |
 |---|---|---|---|
-| Or (8), 401-412 | GOLD_REF | GOLD_NEW | GOLD_DIFF |
-| Blanche (1), 501-512 | WHITE_REF | WHITE_NEW | WHITE_DIFF |
+| Or (8), 401-412 | 9,99 ; ante 3,75 ; 0 victoire | 9,99 ; ante 3,75 ; 0 victoire | identique (+0,00) |
+| Blanche (1), 501-512 | 20,08 ; ante 7,17 ; 4 victoires sur 12 | 19,73 ; ante 7,08 ; 4 victoires sur 12 | −0,35 ± 1,20 |
 
-**Lecture honnête.** +0,22 ± 0,21 est dans le bruit : la liste ne fait pas perdre, elle ne fait
-pas gagner davantage de parties sur le simulateur (2 sur 60 de part et d'autre). Son intérêt
+**Lecture honnête.** +0,22 ± 0,21 à la mise noire, rien à la mise or, −0,35 ± 1,20 à la mise
+blanche : tout est dans le bruit. La liste ne fait pas perdre, elle ne fait pas gagner davantage
+de parties sur le simulateur (2 sur 60, 0 sur 12, 4 sur 12 de part et d'autre). Son intérêt
 principal est pour vous : elle dit en boutique quelle synergie porte une note et quelles pièces
 chercher. Les préférences apprises par « Mon choix » ne sont pas appliquées par le simulateur et
 n'ont pas été mesurées.
