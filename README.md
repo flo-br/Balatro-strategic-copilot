@@ -5,7 +5,7 @@ partie, calcule les scores exacts, les probabilités, évalue la boutique, conse
 défausses, et **apprend de vos parties**. **Il ne joue jamais à votre place** : il n'effectue
 aucune action (sélection, jeu, défausse, achat, vente, relance).
 
-> Statut : version 1.0.11. Développée **hors du jeu** (aucune installation de Balatro n'était
+> Statut : version 1.0.12. Développée **hors du jeu** (aucune installation de Balatro n'était
 > disponible dans l'environnement de développement), puis essayée par l'utilisateur dans le vrai
 > jeu (mode copier-coller). Validée par des tests automatisés, un environnement Balatro/Steamodded
 > simulé, le vrai runtime LÖVE 11.5 et des parties complètes simulées ([entraînement](docs/TRAINING.md)).
@@ -36,7 +36,7 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 **Méthode sans programme (recommandée, 1.0.4+)** — ni Lovely, ni Steamodded, ni script, ni DLL ;
 fonctionne aussi sur un PC protégé (contrôle parental, antivirus strict) :
 
-1. Extraire l'archive `BalatroStrategicCopilot-1.0.11.zip`.
+1. Extraire l'archive `BalatroStrategicCopilot-1.0.12.zip`.
 2. Copier le **contenu** du dossier `COPIER_DANS_AppData_Balatro` (`main.lua` + `Mods`) dans
    `%AppData%\Balatro\` (touche Windows + R, `%AppData%\Balatro`).
 3. Lancer Balatro : bandeau vert « … actif — touche C : panneau (mode autonome, sans Steamodded) ».
@@ -48,7 +48,7 @@ Balatro tourne sur LÖVE 11, qui lit `main.lua` d'abord dans le dossier de sauve
 **Avec Lovely + Steamodded** : copier le dossier `BalatroStrategicCopilot` dans
 `%AppData%\Balatro\Mods\` (de sorte que `Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json`
 existe ; une archive `.zip` déposée telle quelle est ignorée par les anciens Steamodded). L'archive
-`BalatroStrategicCopilot-1.0.11-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
+`BalatroStrategicCopilot-1.0.12-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
 répare toute la chaîne (dossier du jeu, Lovely, Steamodded, copilote) puis confirme que tout s'est
 chargé. Un **bandeau vert « actif »** s'affiche au lancement ; **aucun bandeau = mod non trouvé**
 ([pièges vérifiés](docs/INSTALL.md)).
@@ -64,6 +64,7 @@ les données apprises `%AppData%\Balatro\BSC\`). Détails dans [docs/INSTALL.md]
 | `C` | ouvrir / fermer le panneau stratégique |
 | `V` | afficher / masquer les alternatives et les détails |
 | `B` | afficher / masquer les badges sur les cartes |
+| `X` | **« Mon choix »** : votre choix à la place du conseil, avec la raison et une explication (ci-dessous) |
 
 ### Une étape à la fois (« À FAIRE »)
 
@@ -96,6 +97,42 @@ Panneau fermé, un résumé compact reste visible. Au menu principal, `C` affich
 dernier bilan de partie, taux de victoire avec intervalle, calibration et précision des scores.
 Les options (badges, alertes, apprentissage, export, import, réinitialisation) sont dans
 *Mods → Balatro Strategic Copilot → Config*.
+
+### « Mon choix » : apprendre de vos décisions (touche `X`, 1.0.12)
+
+Vous n'êtes pas d'accord avec le conseil ? **Sélectionnez dans le jeu** (clic, comme d'habitude)
+ce que vous choisiriez — un joker ou un paquet de la boutique, des cartes de la main, un
+consommable — puis appuyez sur `X`. Une boîte s'ouvre : un chiffre pour votre choix (acheter,
+vendre, jouer ces cartes, défausser, partir, relancer…), un chiffre pour la raison (synergie,
+×Mult, garder l'argent, la main principale, le boss, l'avenir, le risque…), puis une explication
+libre (facultative, 200 caractères) et Entrée.
+
+![« Mon choix »](docs/img/overlay_choice.png)
+
+* Le copilote **ne fait rien dans le jeu** : il lit seulement ce que vous avez sélectionné ; vous
+  achetez, jouez ou vendez vous-même. Pendant la saisie, **aucune touche n'atteint le jeu**
+  (taper « r » ne relance pas la partie).
+* Ce qu'il apprend est **borné et visible** : l'objet choisi gagne 4 points de note par correction
+  (15 au plus, et 8 de plus au plus pour son type : joker ×Mult, paquet Céleste…), celui qu'il
+  conseillait en perd autant ; les raisons ajustent quelques poids (synergies ×1,5 au
+  plus, risque, intérêts, urgence des ×Mult…). La raison apparaît dans les notes (« vos choix :
+  +4 ») et le panneau de la boutique résume ce qui a changé.
+* `Suppr` dans la boîte efface tout ce qui a été appris de vos choix. Le bilan de fin de partie
+  liste vos corrections ; elles sont aussi écrites, lisibles, dans `%AppData%\Balatro\BSC\mes_choix.txt`.
+* Ces préférences ne s'appliquent qu'à votre jeu : le simulateur d'entraînement ne les utilise pas
+  (leur effet sur vos parties ne peut donc pas être mesuré à l'avance).
+
+### Synergies (1.0.12)
+
+Le copilote connaît **373 synergies joker + joker et 111 synergies joker + carte, bon ou
+paquet** (Baron + Mime, Blueprint + Triboulet, Steel Joker + The Chariot, Constellation + les
+planètes, Hologram + paquet Standard, Yorick + Wasteful…), des anti-synergies (Vampire et les
+cartes améliorées, Erosion et les cartes ajoutées…), 26 builds, et des règles générales (même
+main, même couleur, copies). Elles comptent dans les notes de la boutique et des paquets, et le
+panneau indique les **« Synergies à chercher »** pour vos jokers. Liste complète :
+[docs/SYNERGIES.md](docs/SYNERGIES.md).
+
+![Synergies à chercher](docs/img/overlay_synergies.png)
 
 ### Lire les indicateurs
 

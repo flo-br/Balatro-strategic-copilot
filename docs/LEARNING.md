@@ -81,6 +81,40 @@ Disponible dans le bilan de fin de partie (panneau, détail `V`) et dans le prof
 * taux de victoire et ante moyenne par deck/mise, avec intervalles ;
 * tendance anciennes / récentes parties (validation temporelle).
 
+## 4 bis. Vos corrections : « Mon choix » (touche X, 1.0.12)
+
+`learning/feedback.lua`, `game/feedback_input.lua`. Le joueur sélectionne dans le jeu ce qu'il
+choisirait (le jeu marque la carte sélectionnée : `card.highlighted`, que le copilote lit
+seulement), appuie sur X, choisit avec les chiffres (acheter / vendre / garder / utiliser ;
+jouer / défausser ; partir, relancer ; prendre ou passer un paquet ; jouer ou passer la blinde),
+donne une raison et, s'il veut, une explication (200 caractères au plus, caractères de contrôle
+retirés).
+
+**Ce qui est enregistré** (`profile.feedback`, dans le profil) : la phase, l'ante, la mise, le
+deck, l'argent, le conseil donné, le choix, la raison, le texte (300 corrections au plus, les plus
+anciennes sortent). Rien d'autre : ni nom, ni heure précise au-delà de la minute dans
+`mes_choix.txt`.
+
+**Ce qui est appris, toujours borné** :
+
+| Quoi | Pas par correction | Borne |
+|---|---|---|
+| l'objet choisi / l'objet conseillé à sa place | +4 / −4 points de note | ±15 |
+| leur type (joker ×Mult, joker qui grandit, paquet Céleste…) | +2 / −2 | ±8 |
+| raison « synergie » | poids des synergies ×(1 + 0,1 par correction) | ×1,5 |
+| raison « l'avenir » / « le risque » / « le boss » | poids du potentiel / du risque / des blindes proches | ×1,5 / ×1,6 / ×1,25 |
+| raison « ×Mult » / « main principale » | urgence des ×Mult / des niveaux | +0,5 |
+| raisons « garder l'argent » / « dépenser » | poids des intérêts perdus (elles se compensent) | ±2 |
+
+Les notes de la boutique et des paquets affichent « vos choix : +4 » quand une préférence joue,
+le panneau de la boutique résume ce qui a changé, le bilan de fin de partie liste les corrections
+de la partie. `Suppr` dans la boîte (puis Entrée) efface tout ce qui a été appris des choix ;
+`mes_choix.txt` (`%AppData%\Balatro\BSC\`) est gardé : c'est le journal lisible des corrections.
+`learning.player_feedback = false` (dans `config.lua`) coupe leur effet sur les conseils.
+
+**Limite** : ces préférences n'existent que dans votre jeu ; le simulateur d'entraînement ne les
+applique pas, leur effet sur les résultats n'a donc pas pu être mesuré.
+
 ## 5. Export, import, réinitialisation
 
 Depuis *Mods → Balatro Strategic Copilot → Config* :

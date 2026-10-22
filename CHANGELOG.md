@@ -1,5 +1,50 @@
 # Historique des versions
 
+## 1.0.12 — 2026-10-22
+
+Demandes : une touche pour **donner votre propre choix** à la place du conseil, avec votre
+explication, pour que le copilote progresse grâce à vos conseils ; et **une énorme liste de
+synergies** pour tous les types de jokers.
+
+### « Mon choix » (touche X)
+* Sélectionnez dans le jeu ce que vous choisiriez (joker, paquet, cartes de la main,
+  consommable), appuyez sur **X** : une boîte propose les choix correspondants (acheter, vendre,
+  garder, utiliser, jouer ou défausser ces cartes, partir, relancer, prendre ou passer le paquet,
+  jouer ou passer la blinde), puis la raison (synergie, ×Mult, garder l'argent, dépenser, main
+  principale, boss, l'avenir, le risque, autre), puis une explication libre (200 caractères).
+* Le copilote ne fait rien dans le jeu : il lit la sélection. Pendant la saisie, le clavier ne va
+  qu'à la boîte (taper « r » ne relance pas la partie) ; la saisie de texte LÖVE est activée le
+  temps de la boîte puis remise comme avant.
+* Il apprend des préférences **bornées et affichées** : l'objet choisi +4 points de note par
+  correction (±15), son type ±2 (±8), l'objet conseillé à sa place autant en moins ; chaque raison
+  ajuste un peu un poids (synergies ×1,5 au plus, potentiel, risque, blindes proches, urgence des
+  ×Mult, niveaux, intérêts). Les notes disent « vos choix : +4 », le panneau de la boutique
+  résume, le bilan de fin de partie liste les corrections de la partie.
+* `Suppr` dans la boîte efface ce qui a été appris ; `%AppData%\Balatro\BSC\mes_choix.txt` garde
+  le journal lisible de vos corrections ; `learning.player_feedback = false` coupe leur effet.
+
+### Synergies : la grande liste (`model/synergies_db.lua`, `docs/SYNERGIES.md`)
+* **373 paires joker + joker** (112 de la 1.0.8 et 261 nouvelles : copies, redéclenchements,
+  familles de mains, couleurs, économie, défausses, construction du deck, taille de main, jokers à
+  vendre…), **111 synergies joker + carte / bon / paquet** (Steel Joker + The Chariot, Glass Joker
+  + Justice, Constellation + les planètes et les paquets Céleste, Hologram + paquet Standard,
+  Perkeo + Observatory, Yorick + Wasteful, To the Moon + Seed Money…), **11 builds de plus**
+  (26 au total) ; les 150 jokers y figurent tous.
+* Règles générales pour le reste : même main (Jolly + Sly), une main qui en contient une autre,
+  même couleur, joker de couleur + joker de Couleur, deux couleurs différentes (léger malus, sauf
+  avec Smeared Joker), copies d'un ×Mult compatible Blueprint.
+* Elles comptent dans les notes : jokers (avec les bons achetés et les cartes tenues), **et
+  maintenant cartes, bons et paquets** ; le panneau de la boutique affiche les **« Synergies à
+  chercher »** (pièces S et A qui manquent à vos jokers).
+* Effet mesuré sur le simulateur : voir ci-dessous et `docs/TRAINING.md`, « Résultats 1.0.12 ».
+
+### Tests et outils
+* `tests/unit/test_synergies.lua` (clés existantes, aucun doublon, tous les jokers couverts,
+  règles, notes de la boutique, pièces à chercher, `docs/SYNERGIES.md` à jour) ;
+  `tests/unit/test_feedback.lua` ; capture LÖVE `docs/img/overlay_choice.png`.
+* `tools/synergies_doc.lua` génère `docs/SYNERGIES.md` ; options du simulateur `syn_list`,
+  `syn_items`, `syn_generic`.
+
 ## 1.0.11 — 2026-10-22
 
 Demande : continuer à progresser aux mises élevées. Détails : `docs/TRAINING.md`, « Résultats 1.0.11 ».

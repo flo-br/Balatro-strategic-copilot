@@ -24,7 +24,8 @@ BALATRO STRATEGIC COPILOT - INSTALLATION EN 3 ÉTAPES (Windows, Balatro sur Stea
      - une deuxième fenêtre noire « Lovely x.x.x » ;
      - un bouton « Mods » au menu principal ;
      - un bandeau vert « Balatro Strategic Copilot ... actif » en haut de l'écran.
-   En partie : résumé en haut à droite, touche C = panneau complet, V = détails, B = badges.
+   En partie : résumé en haut à droite, touche C = panneau complet, V = détails, B = badges,
+   X = « Mon choix » (votre choix à la place du conseil, avec votre explication).
 
 Si ça ne marche toujours pas
    Un rapport est enregistré sur le Bureau : Rapport_Copilot_Balatro.txt.

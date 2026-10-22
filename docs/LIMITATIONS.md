@@ -97,10 +97,21 @@
   de la main sont bien calibrées dans les deux cas, mais l'effet de ce réglage sur les résultats
   n'a pas été mesuré.
 
+* Synergies (1.0.12, `model/synergies_db.lua`) : la liste est une connaissance écrite à la main à
+  partir des textes des jokers (Balatro 1.0.1) et des builds des meilleurs joueurs ; les niveaux
+  S / A / B / C / X sont un jugement, pas une mesure. Le moteur de score mesure toujours ce qu'un
+  joker apporte maintenant ; la liste ajoute ce que le build deviendra (effet mesuré sur le
+  simulateur : TRAINING.md, « Résultats 1.0.12 »). Les jokers de mods ne sont pas dans la liste.
+* « Mon choix » (1.0.12) : le copilote lit ce que le jeu a sélectionné (`card.highlighted`) ;
+  un choix qui ne passe pas par une sélection (par exemple « je partirais ») se fait avec les
+  choix toujours proposés (partir, relancer, passer). Ses préférences apprises ne peuvent pas être
+  mesurées sur le simulateur.
+
 ## Interface
 
 * Overlay dessiné par-dessus le jeu (pas d'objets UI Balatro) : pas de survol à la souris ;
-  touches `C`, `V`, `B` (modifiables dans `config.lua`, redémarrage requis).
+  touches `C`, `V`, `B`, `X` (modifiables dans `config.lua`, redémarrage requis). Pendant que la
+  boîte « Mon choix » est ouverte, le jeu ne reçoit aucune touche ; elle se ferme avec Échap.
 * Si la police du jeu ne contient pas certains caractères (≈, …, symboles de couleur), ils sont
   remplacés automatiquement (`~`, `...`, lettres P/C/T/K).
 

@@ -22,7 +22,7 @@ antivirus strict, PC restreint) qui bloquent .bat, PowerShell ou winmm.dll.
 
 3. Lancer Balatro normalement (par Steam)
    Un bandeau vert apparaît en haut de l'écran :
-     « Balatro Strategic Copilot 1.0.11 actif - touche C : panneau (mode autonome, sans Steamodded) »
+     « Balatro Strategic Copilot 1.0.12 actif - touche C : panneau (mode autonome, sans Steamodded) »
    En partie : la ligne « À FAIRE » (en haut à droite) et une étiquette au-dessus de ce qu'il
    faut toucher indiquent UNE action à faire maintenant : JOUER / DÉFAUSSER, À PRENDRE,
    À VENDRE, RELANCER, BLINDE SUIVANTE, PASSER, UTILISER (+ CIBLE). Faites-la : l'étape
@@ -34,6 +34,11 @@ antivirus strict, PC restreint) qui bloquent .bat, PowerShell ou winmm.dll.
    (main principale, multiplicateurs ×Mult attendus, ce qui manque). Après une partie, le bilan
    explique pourquoi le build n'a pas suffi et ce qu'il faut faire autrement.
    Touche C = panneau complet, V = détails, B = étiquettes.
+   Touche X = « Mon choix » : sélectionnez dans le jeu (clic) ce que VOUS choisiriez, appuyez
+   sur X, puis sur un chiffre (votre choix), un chiffre (la raison), écrivez une explication si
+   vous voulez et Entrée. Le copilote en tient compte pour les conseils suivants (dans des
+   limites, effaçable avec Suppr dans la même boîte). Pendant la saisie, le jeu ne reçoit
+   aucune touche. Vos choix sont écrits dans %AppData%\Balatro\BSC\mes_choix.txt.
 
 Si rien n'apparaît
    Ouvrir %AppData%\Balatro\BSC\ :

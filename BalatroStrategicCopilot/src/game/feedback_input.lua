@@ -6,14 +6,15 @@
 --   3. a free text (optional, <= 200 characters), Enter saves, Escape goes back.
 -- While the box is open, the keyboard goes to the box ONLY: love.keypressed, love.keyreleased
 -- and love.textinput (LÖVE callbacks) are wrapped and their events are not passed to the game
--- (typing "r" never reaches the game's restart key). Closed, the wrappers pass everything on.
+-- (typing "r" never reaches the game's restart key; the release of a key pressed in the box is
+-- kept too, even after the box closed). Closed, the wrappers pass everything else on.
 -- The box never acts in the game: it reads the selection and stores the player's explanation.
 
 local BSC = BSCopilot
 local L = BSC.require('core/log')
 local FB = BSC.require('learning/feedback')
 
-local FI = { active = nil, hooks = nil }
+local FI = { active = nil, hooks = nil, swallowed = {} }
 
 local function profile()
     local lr = BSC.learning_runtime
@@ -46,10 +47,25 @@ function FI.open(state, phase, step)
     if not ctx then return false, why end
     FI.active = { stage = 'choice', ctx = ctx, text = '', reason = nil, choice = nil }
     FI.ensure_hooks()
+    -- text input events on while the box is open (love.keyboard.setTextInput, LÖVE 11), the
+    -- previous state given back when it closes
+    local kb = love and love.keyboard
+    if kb and kb.setTextInput and kb.hasTextInput then
+        local ok, was = pcall(kb.hasTextInput)
+        if ok then FI.active.text_input_was = was end
+        pcall(kb.setTextInput, true)
+    end
     return true
 end
 
-function FI.close() FI.active = nil end
+local function release()
+    local a = FI.active
+    FI.active = nil
+    local kb = love and love.keyboard
+    if a and a.text_input_was == false and kb and kb.setTextInput then pcall(kb.setTextInput, false) end
+end
+
+function FI.close() release() end
 
 local DIGIT = { ['1'] = 1, ['2'] = 2, ['3'] = 3, ['4'] = 4, ['5'] = 5, ['6'] = 6, ['7'] = 7, ['8'] = 8, ['9'] = 9,
     kp1 = 1, kp2 = 2, kp3 = 3, kp4 = 4, kp5 = 5, kp6 = 6, kp7 = 7, kp8 = 8, kp9 = 9 }
@@ -66,7 +82,7 @@ function FI.save(now)
     if kept and store and store.be and store.be.append then
         pcall(function() store.be.append(store:path('mes_choix.txt'), FB.export_line(kept) .. '\n') end)
     end
-    FI.active = nil
+    release()
     FI.last = { changes = changes, entry = kept }
     return changes, kept
 end
@@ -92,7 +108,7 @@ function FI.keypressed(key)
             FB.reset(profile())
             local lr = BSC.learning_runtime
             if lr and lr.save_profile then pcall(lr.save_profile) end
-            FI.active = nil
+            release()
             if FI.on_saved then pcall(FI.on_saved, { 'préférences effacées' }) end
         elseif key == 'escape' then a.stage = 'choice' end
         return true
@@ -129,7 +145,16 @@ function FI.ensure_hooks()
             local orig = cur
             local wrapper
             wrapper = function(...)
+                -- a key released: kept from the game only if it was pressed in the box (the
+                -- release of the key that opened the box goes to the game, which saw it pressed)
+                if name == 'keyreleased' then
+                    local key = ...
+                    if FI.swallowed[key] then FI.swallowed[key] = nil; return end
+                    if orig then return orig(...) end
+                    return
+                end
                 if FI.active then
+                    if name == 'keypressed' then FI.swallowed[(...)] = true end
                     local ok, err = pcall(function(...)
                         if name == 'keypressed' then FI.keypressed(...) elseif name == 'textinput' then FI.textinput(...) end
                     end, ...)

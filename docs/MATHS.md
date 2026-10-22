@@ -143,6 +143,22 @@ note = 50 + 50·tanh(z) ;  note = 50 + (note − 50)·fiabilité
   `w_impact = 1,4 + 1,6·d`, `w_potentiel = 0,9·(1 − d) + 0,1`, `w_éco = 0,8·(1 − d) + 0,1`,
   `w_coût = 0,7·(1 − d) + 0,3`, `w_puissance = 1`, `w_synergie = 0,5`, `w_risque = 0,6`.
 
+**Synergies (builds 1.0.8, grande liste 1.0.12 : `engine/builds.lua`, [SYNERGIES.md](SYNERGIES.md)).**
+Un joker reçoit, dans `potentiel`, la somme des forces de ses synergies avec le plateau
+(S 0,4 ; A 0,28 ; B 0,16 ; C 0,07 ; X −0,25 ; paires des deux listes, règles générales, deck,
+bons achetés et cartes tenues, builds), bornée à [−0,5 ; 0,6] et ×0,7 aux antes 1-2. Une
+carte, un bon ou un paquet reçoit de même la somme des synergies avec les jokers possédés, bornée
+à [−0,4 ; 0,5] ; pour un paquet, dont la note vient du contenu simulé, elle s'ajoute en points :
+`note + 45·w_potentiel·bonus`. Règles générales : même main (B, A avec un ×Mult), une main qui
+en contient une autre (C), même couleur payée (B, A avec un ×Mult), un joker de couleur et un
+joker de Couleur (C), deux couleurs différentes (−0,07 ; B avec Smeared Joker et deux couleurs de
+même teinte), copies (A) d'un ×Mult compatible Blueprint. Une paire nommée remplace la règle
+générale pour les mêmes jokers.
+
+**Vos corrections (« Mon choix », 1.0.12, [LEARNING.md](LEARNING.md) §4 bis)** ajoutent aux notes
+la préférence apprise (±15 points pour un objet, ±8 pour son type) et multiplient, dans des
+bornes, quelques poids (`w_synergie`, `w_potentiel`, `w_risque`, `w_impact`, poids des intérêts).
+
 Les poids ne sont **pas** modifiés automatiquement après une victoire ou une défaite. Leur
 réglage automatique a été volontairement écarté : l'attribution d'un résultat de partie à un
 achat est trop confondue avec le hasard pour les volumes de données d'un joueur (voir

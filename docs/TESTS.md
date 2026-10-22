@@ -13,8 +13,8 @@ Aucune dépendance de test : `tests/testlib.lua` fournit assertions, exécution 
 
 ```bash
 python3 tools/build.py                                    # paquet dist/…zip
-pwsh -NoProfile -File tests/installer/test_installer.ps1 -Zip dist/BalatroStrategicCopilot-1.0.11-installateur.zip [-Smods <sources Steamodded>]
-tests/standalone/run_love_standalone.sh dist/BalatroStrategicCopilot-1.0.11.zip [dossier]      # mode autonome, vrai LÖVE
+pwsh -NoProfile -File tests/installer/test_installer.ps1 -Zip dist/BalatroStrategicCopilot-1.0.12-installateur.zip [-Smods <sources Steamodded>]
+tests/standalone/run_love_standalone.sh dist/BalatroStrategicCopilot-1.0.12.zip [dossier]      # mode autonome, vrai LÖVE
 luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai chargeur Steamodded
 ```
 

@@ -1,4 +1,4 @@
-Balatro Strategic Copilot 1.0.11
+Balatro Strategic Copilot 1.0.12
 ================================
 
 Copilote stratégique pour Balatro : il analyse, calcule, recommande et apprend.
@@ -27,6 +27,10 @@ Installation (Windows)
      (winmm.dll) n'est plus dans le dossier du jeu, par exemple après une réinstallation
      du jeu. Le réinstaller (lanceur Balatro Multiplayer, ou docs/INSTALL.md étape 2).
      Les conseils s'affichent en partie. Touche C : panneau, V : détails, B : badges.
+     Touche X (« Mon choix ») : sélectionnez dans le jeu ce que VOUS choisiriez, appuyez sur X,
+     choisissez avec les chiffres, donnez la raison et une explication : le copilote en tient
+     compte ensuite (préférences bornées, effaçables avec Suppr). Vos choix sont aussi écrits
+     dans %AppData%\Balatro\BSC\mes_choix.txt.
 
 Désinstallation
   - Supprimer le dossier %AppData%\Balatro\Mods\BalatroStrategicCopilot

@@ -112,13 +112,20 @@ function S.the_box_keeps_every_key_from_the_game(T)
     local prof = LE.new_profile(0)
     local got = {}
     local old_love = love
+    local kb = { ti = false }
+    kb.hasTextInput = function() return kb.ti end
+    kb.setTextInput = function(v) kb.ti = v end
     love = { keypressed = function(k) got[#got + 1] = 'key:' .. k end, keyreleased = function(k) got[#got + 1] = 'up:' .. k end,
-        textinput = function(t) got[#got + 1] = 'text:' .. t end }
+        textinput = function(t) got[#got + 1] = 'text:' .. t end, keyboard = kb }
     local ok, err = pcall(function()
         local saved
         FI.on_saved = function(ch) saved = ch end
         with_profile(prof, function()
+            love.keypressed('x')          -- the key that opens the box reaches the game...
             T.ok(FI.open(shop_state(F, true), 'shop', ADVICE_DUO))
+            T.eq(kb.ti, true, 'text input on while the box is open')
+            love.keyreleased('x')         -- ... and so does its release
+            T.eq(table.remove(got), 'up:x'); T.eq(table.remove(got), 'key:x')
             -- every key goes to the box, none to the game (typing "r" never restarts the run)
             love.keypressed('1')          -- choice 1: buy Hologram
             T.eq(FI.active.stage, 'reason')
@@ -131,8 +138,10 @@ function S.the_box_keeps_every_key_from_the_game(T)
             love.textinput('iff')
             love.keypressed('return')
         end)
+        love.keyreleased('return')        -- released after the box closed: still kept
         T.eq(#got, 0, 'the game received nothing: ' .. table.concat(got, ' '))
         T.eq(FI.active, nil, 'closed')
+        T.eq(kb.ti, false, 'text input given back as it was')
         T.ok(saved, 'saved')
         T.eq(prof.feedback.entries[1].text, 'riff')
         T.eq(prof.feedback.entries[1].reason, 'synergy')
@@ -147,7 +156,7 @@ function S.the_box_keeps_every_key_from_the_game(T)
         T.eq(FI.active, nil); T.eq(#prof.feedback.entries, 1)
     end)
     love = old_love
-    FI.active = nil; FI.hooks = nil; FI.on_saved = nil
+    FI.active = nil; FI.hooks = nil; FI.on_saved = nil; FI.swallowed = {}
     if not ok then error(err, 0) end
 end
 

@@ -2,7 +2,7 @@
 
 Tous les fichiers sont dans `BalatroStrategicCopilot/`. Seuls `game/state_reader.lua`,
 `game/hooks.lua`, `game/controller.lua`, `game/compat.lua`, `game/config_ui.lua`,
-`game/ui_targets.lua` et `ui/ui_manager.lua` touchent le jeu ou LÖVE ; tout le reste est pur et testé hors jeu.
+`game/ui_targets.lua`, `game/feedback_input.lua` et `ui/ui_manager.lua` touchent le jeu ou LÖVE ; tout le reste est pur et testé hors jeu.
 
 | Fichier | Responsabilité (cahier des charges) |
 |---|---|
@@ -20,6 +20,7 @@ Tous les fichiers sont dans `BalatroStrategicCopilot/`. Seuls `game/state_reader
 | `src/model/blinds_db.lua` | blindes et boss, formule de taille vanilla |
 | `src/model/items_db.lua` | tarots, planètes, spectrales, bons, paquets (simulables ou heuristiques) |
 | `src/model/builds_db.lua` | builds des meilleurs joueurs (pièces, anti-synergies, main, cartes voulues, comment les assembler), paires de jokers notées S / A / B / C / anti, synergies joker + deck |
+| `src/model/synergies_db.lua` | **la grande liste des synergies (1.0.12)** : paires joker + joker, synergies joker + carte / bon / paquet (une clé ou une classe : `planet`, `tarot`, `pack:Celestial`…), builds supplémentaires, noms des objets ; `docs/SYNERGIES.md` en est généré (`tools/synergies_doc.lua`) |
 | `src/model/effects_db.lua` | améliorations, éditions, sceaux, autocollants des jokers : rôle (jouer, garder, défausser, prudence), valeur d'une carte |
 | `src/engine/poker_eval.lua` | **RulesEngine** : identification des mains (Four Fingers, Shortcut, Smeared, Wild, Pierre, Splash) |
 | `src/engine/score.lua` | **ScoreEvaluator** : pipeline de score complet, aléas énumérés / Monte-Carlo, couverture |
@@ -31,7 +32,7 @@ Tous les fichiers sont dans `BalatroStrategicCopilot/`. Seuls `game/state_reader
 | `src/engine/shop.lua` | **ShopAnalyzer** : options, notes, ventes, remplacements, relance |
 | `src/engine/outlook.lua` | choix de blinde : prochaine blinde, boss (simulés), passer ou jouer (via `engine/skip.lua`) |
 | `src/engine/skip.lua` | passer ou jouer une blinde : valeur de chaque tag selon la situation contre le coût réel du passage, condition de sécurité |
-| `src/engine/builds.lua` | synergies d'un joker avec le plateau et le deck, builds en cours et pièces manquantes, cartes voulues par le build (cibles des tarots) |
+| `src/engine/builds.lua` | synergies d'un joker avec le plateau, le deck, les bons achetés et les cartes tenues (les deux listes fusionnées, règles générales : même main, même couleur, copies) ; synergies d'une carte, d'un bon ou d'un paquet avec les jokers (`BD.item_bonus`) ; « synergies à chercher » (`BD.wanted`) ; builds en cours et pièces manquantes, cartes voulues par le build (cibles des tarots) |
 | `src/engine/plan.lua` | plan de partie (leçons des meilleurs joueurs) : main principale, ×Mult attendus par ante, « en retard », manques, bonus de note par type de joker |
 | `src/engine/advice.lua` | **prochaine étape** : UNE action à faire maintenant (jouer, défausser, acheter, vendre, relancer, blinde suivante, utiliser, prendre ou passer un paquet, jouer ou passer une blinde) et numéros d'ordre des jokers |
 | `src/learning/recorder.lua` | journal brut des parties |
@@ -39,6 +40,7 @@ Tous les fichiers sont dans `BalatroStrategicCopilot/`. Seuls `game/state_reader
 | `src/learning/learning.lua` | **LearningEngine** : profil appris |
 | `src/learning/review.lua` | bilan de partie : erreurs au moment de la décision et causes de la défaite (toute partie est jouable) ; affiche les réglages recalculés |
 | `src/learning/adapt.lua` | recalcul des réglages après chaque partie : causes du bilan → pas bornés sur les seuils d'achat, d'épargne, de sécurité et de passage ; retour vers la base après une victoire |
+| `src/learning/feedback.lua` | **« Mon choix » (1.0.12)** : ce que le joueur a sélectionné et les choix possibles, enregistrement de sa correction (choix, raison, texte), préférences bornées (objets, types) et petits ajustements de poids par raison, résumé, ligne du fichier `mes_choix.txt` |
 | `src/learning/runtime.lua` | liaison enregistreur / apprentissage / stockage, export, import, réinitialisation |
 | `src/io/persistence.lua` | **PersistenceManager** : JSON versionné A/B, sommes de contrôle, migrations, quarantaine |
 | `src/game/state_reader.lua` | **GameStateReader** : seul lecteur de `G` (connu / déduit / inconnu) |
@@ -48,6 +50,7 @@ Tous les fichiers sont dans `BalatroStrategicCopilot/`. Seuls `game/state_reader
 | `src/game/boot.lua` | assemblage au démarrage |
 | `src/game/register_strategy.lua` | analyses de boutique, blinde, paquet, fin de manche ; alertes |
 | `src/game/config_ui.lua` | onglet de configuration Steamodded (export, import, réinitialisation) |
+| `src/game/feedback_input.lua` | la boîte « Mon choix » (touche X) : choix, raison, texte ; pendant qu'elle est ouverte, le clavier (`love.keypressed`, `love.keyreleased`, `love.textinput`) ne va qu'à elle ; ne fait rien dans le jeu |
 | `src/game/ui_targets.lua` | repère les boutons du jeu (relance, blinde suivante, sélectionner / passer la blinde, passer le paquet) pour y poser l'étiquette ; lecture seule |
 | `src/ui/format.lua`, `src/ui/format_strategy.lua` | présentation pure (lignes, couleurs, symboles) |
 | `src/ui/ui_manager.lua` | **UIManager** : rendu LÖVE (panneau, badges, alertes) |
