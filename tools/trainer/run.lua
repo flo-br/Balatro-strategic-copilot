@@ -23,32 +23,7 @@ local cfg = dofile(T.MOD_ROOT .. '/config.lua')
 local opts = { deck = 'b_red' }
 cfg.compute.rollouts = 32
 cfg.compute.shop_samples = 80
-for i = 4, #arg do
-    local k, v = arg[i]:match('^([%w_]+)=(.+)$')
-    if k then
-        local num = tonumber(v)
-        if v == 'true' then num = true elseif v == 'false' then num = false end
-        if k == 'deck' then opts.deck = v
-        elseif k == 'track_scale' then BSCopilot.require('engine/plan').TRACK_SCALE = num
-        elseif k == 'future_blend' then BSCopilot.require('engine/shop').FUTURE_BLEND = num
-        elseif k == 'main_focus' then BSCopilot.require('engine/shop').MAIN_FOCUS = num
-        elseif k == 'sample_growth' then BSCopilot.require('engine/shop').SAMPLE_GROWTH = (num == 1 or num == true)
-        elseif k == 'hs_power' then BSCopilot.require('engine/shop').HS_POWER = num
-        elseif k == 'pack_free' then BSCopilot.require('engine/shop').PACK_JOKERS_FREE = (num == 1 or num == true)
-        elseif k == 'pack_penalty' then BSCopilot.require('engine/shop').PACK_PENALTY = num
-        elseif k == 'prior_cal' then BSCopilot.require('engine/shop').PRIOR_CALIBRATION = (num == 1 or num == true)
-        elseif k == 'hidden_discards' then BSCopilot.require('engine/hand_advisor').HIDDEN_DISCARDS = (num == 1 or num == true)
-        elseif k == 'hs_rules' then BSCopilot.require('engine/plan').HIGH_STAKE_RULES = (num == 1 or num == true)
-        elseif k == 'stake' then opts.stake = tonumber(v)
-        elseif k == 'learn' then
-            -- learn=1: lessons + settings; learn=lessons / learn=adapt: one mechanism only
-            opts.learn = (v == '1' or v == 'true' or v == 'lessons' or v == 'adapt')
-            opts.learn_lessons = opts.learn and v ~= 'adapt'
-            opts.learn_adapt = opts.learn and v ~= 'lessons'
-        elseif cfg.compute[k] ~= nil then cfg.compute[k] = num
-        else cfg.advice[k] = (num ~= nil) and num or v end
-    end
-end
+dofile(TRAINER_DIR .. '/options.lua').apply(arg, 4, cfg, opts)
 
 local Sim = dofile(TRAINER_DIR .. '/sim.lua')
 local Player = dofile(TRAINER_DIR .. '/player.lua')
