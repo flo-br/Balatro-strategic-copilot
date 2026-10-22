@@ -190,7 +190,7 @@ function PL.joker_bonus(def, plan)
         -- high stakes: a x Mult is worth more than the power measured now (simulated runs: at the
         -- same median score, each x Mult on the board gave +1 blind won later; the measure plays
         -- random hands, the player steers toward the joker's condition) (PL.XMULT_EXTRA)
-        if (PL.XMULT_EXTRA or 0) > 0 and plan.high_stakes then v = v + PL.XMULT_EXTRA end
+        if (PL.XMULT_EXTRA or 0) ~= 0 and plan.high_stakes then v = v + PL.XMULT_EXTRA end
         if plan.gaps.xmult then
             v = v + 0.3 * (plan.xmult_weight or 1)
             why = string.format('multiplicateur ×Mult : %d sur %d attendus à cette ante', plan.xmult, plan.xmult_target)
