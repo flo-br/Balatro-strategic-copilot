@@ -1,5 +1,29 @@
 # Historique des versions
 
+## 1.0.11 — 2026-10-22
+
+Demande : continuer à progresser aux mises élevées. **Les conseils restent ceux de la 1.0.10** :
+aucune des pistes mesurées ne fait mieux (détails : `docs/TRAINING.md`, « Résultats 1.0.11 »).
+
+### Nouvelles mesures
+* **Bifurcations** (`tools/trainer/branch.lua`) : à une décision de boutique, la partie simulée est
+  dupliquée et chaque alternative (le choix du copilote, acheter autre chose, partir, relancer) est
+  jouée avec les mêmes futurs. Sur 24 décisions, aucune alternative ne bat nettement le choix du
+  copilote.
+* Régression sur 5 500 boutiques simulées : ce que valent puissance, argent et ×Mult en blindes
+  gagnées par la suite (corrélations, pas des règles : voir les essais).
+
+### Essayé sur 60 parties chacun, **non gardé** (options coupées)
+* Croissance du joker acheté en remplacement d'un autre (erreur réelle : seule la croissance du
+  joker vendu était comptée ; corrigée, mais −0,21 ± 0,13 : un joker qui grandit « à condition »
+  ne vaut pas le joker solide qu'on revend pour lui) — `replace_growth`.
+* Bonus ×Mult relevé (−0,90 ± 0,34) ou baissé (−0,41 ± 0,31) aux mises élevées — `xmult_extra`.
+* Deux fois plus d'échantillons en boutique ; estimation des antes futures dans la note.
+
+### Outils
+* Options du simulateur partagées (`tools/trainer/options.lua`) ; `branch.lua` (Linux, LuaJIT).
+* 273 tests.
+
 ## 1.0.10 — 2026-10-21
 
 Demande : progresser aux mises élevées (verte à or). Chaque idée a été **mesurée** sur le

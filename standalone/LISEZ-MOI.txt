@@ -22,7 +22,7 @@ antivirus strict, PC restreint) qui bloquent .bat, PowerShell ou winmm.dll.
 
 3. Lancer Balatro normalement (par Steam)
    Un bandeau vert apparaît en haut de l'écran :
-     « Balatro Strategic Copilot 1.0.10 actif - touche C : panneau (mode autonome, sans Steamodded) »
+     « Balatro Strategic Copilot 1.0.11 actif - touche C : panneau (mode autonome, sans Steamodded) »
    En partie : la ligne « À FAIRE » (en haut à droite) et une étiquette au-dessus de ce qu'il
    faut toucher indiquent UNE action à faire maintenant : JOUER / DÉFAUSSER, À PRENDRE,
    À VENDRE, RELANCER, BLINDE SUIVANTE, PASSER, UTILISER (+ CIBLE). Faites-la : l'étape

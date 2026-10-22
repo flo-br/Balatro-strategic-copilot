@@ -318,3 +318,56 @@ par partie à la mise noire (selon qu'on compte ou non les graines qui ont servi
 parties** (2 sur 60 de part et d'autre à la mise noire, 0 sur 12 à la mise or). La plupart des
 parties s'arrêtent toujours à l'ante 5 : le copilote reste loin du niveau des meilleurs joueurs à
 ces mises. Rien n'a été vérifié dans le vrai jeu.
+
+## Résultats 1.0.11 (2026-10-22, mise noire) : rien de mieux que la 1.0.10
+
+Demande : continuer à progresser. Trois méthodes, puis six essais mesurés sur **60 parties chacun**
+(graines 301-360, mises à l'écart du choix des réglages pour 321-360), contre la 1.0.10.
+
+### 1. Bifurcations (`branch.lua`) : les choix de boutique du copilote, un par un
+
+24 décisions (premier pas de la première boutique des antes 2 à 4, graines 361-384), 4 futurs par
+alternative, 3 antes d'horizon. Écart moyen de chaque alternative par rapport au pas du copilote :
+
+| Alternative | Points | Écart |
+|---|---|---|
+| partir sans rien acheter | 22 | −0,06 ± 0,43 |
+| paquet Standard | 10 | −0,71 ± 0,47 |
+| paquet Céleste | 9 | −0,31 ± 0,45 |
+| paquet Arcane | 8 | +0,06 ± 0,61 |
+| bon | 7 | −0,24 ± 0,43 |
+| tarot | 4 | +0,58 ± 0,64 |
+
+Aucune alternative ne bat nettement le choix du copilote : localement, ses choix de boutique sont
+proches du meilleur de ces options. (Quand il achète un ×Mult, partir faisait +0,77 ± 0,92 :
+dans le bruit, mais dans le même sens que R2 ci-dessous.)
+
+### 2. Ce que valent les choses (régression sur 5 500 boutiques simulées)
+
+Blindes gagnées par la suite, à ante égale : +10 % de puissance médiane ≈ +0,09 ; 1 $ ≈ +0,033 ;
+**un ×Mult de plus, à puissance égale, ≈ +1,05** ; un joker de plus, à puissance égale, ≈ −0,86 ;
+niveau de la main principale ≈ 0. Ce sont des **corrélations** : les essais R2 et X3 montrent
+qu'elles ne se traduisent pas en règle (les plateaux à ×Mult ont d'autres qualités).
+
+### 3. Une erreur trouvée : la croissance du joker qui en remplace un autre
+
+Emplacements pleins, le copilote comptait la croissance du joker vendu mais pas celle du joker
+acheté (Lucky Cat, Hologram, Campfire… à ×1 notés 0 à 15 en remplacement ; 51 ×Mult proposés en
+remplacement sur 67 refusés). Corrigé derrière une option : notes 39 → 52-67.
+
+### Essais (60 parties chacun, contre la 1.0.10)
+
+| Essai | Écart | Gardé |
+|---|---|---|
+| R1 croissance du joker acheté comptée en remplacement | −0,21 ± 0,13 | non |
+| R2 R1 + bonus ×Mult +0,3 aux mises élevées | −0,90 ± 0,34 (58 parties) | non |
+| X3 bonus ×Mult −0,15 aux mises élevées | −0,41 ± 0,31 (59 parties) | non |
+| X1 deux fois plus d'échantillons en boutique (120, la valeur du jeu) | {X1} | non |
+| X2 estimation des antes futures mêlée à la note (0,5) | {X2} | non |
+
+**Lecture honnête.** Remplacer un joker solide par un joker qui grandit « à condition » (ajouter
+des cartes, vendre, déclencher des cartes chance) coûte plus qu'il ne rapporte ; pousser les ×Mult
+dans un sens ou dans l'autre fait moins bien : le réglage actuel est au bon niveau. Plus
+d'échantillons en boutique ne fait pas mieux : le bruit de l'estimation n'est pas ce qui limite le
+copilote. **La 1.0.11 garde donc les conseils de la 1.0.10** ; les options restent coupées
+(`replace_growth`, `xmult_extra`), pour reproduire ces mesures.

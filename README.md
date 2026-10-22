@@ -5,7 +5,7 @@ partie, calcule les scores exacts, les probabilités, évalue la boutique, conse
 défausses, et **apprend de vos parties**. **Il ne joue jamais à votre place** : il n'effectue
 aucune action (sélection, jeu, défausse, achat, vente, relance).
 
-> Statut : version 1.0.10. Développée **hors du jeu** (aucune installation de Balatro n'était
+> Statut : version 1.0.11. Développée **hors du jeu** (aucune installation de Balatro n'était
 > disponible dans l'environnement de développement), puis essayée par l'utilisateur dans le vrai
 > jeu (mode copier-coller). Validée par des tests automatisés, un environnement Balatro/Steamodded
 > simulé, le vrai runtime LÖVE 11.5 et des parties complètes simulées ([entraînement](docs/TRAINING.md)).
@@ -36,7 +36,7 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 **Méthode sans programme (recommandée, 1.0.4+)** — ni Lovely, ni Steamodded, ni script, ni DLL ;
 fonctionne aussi sur un PC protégé (contrôle parental, antivirus strict) :
 
-1. Extraire l'archive `BalatroStrategicCopilot-1.0.10.zip`.
+1. Extraire l'archive `BalatroStrategicCopilot-1.0.11.zip`.
 2. Copier le **contenu** du dossier `COPIER_DANS_AppData_Balatro` (`main.lua` + `Mods`) dans
    `%AppData%\Balatro\` (touche Windows + R, `%AppData%\Balatro`).
 3. Lancer Balatro : bandeau vert « … actif — touche C : panneau (mode autonome, sans Steamodded) ».
@@ -48,7 +48,7 @@ Balatro tourne sur LÖVE 11, qui lit `main.lua` d'abord dans le dossier de sauve
 **Avec Lovely + Steamodded** : copier le dossier `BalatroStrategicCopilot` dans
 `%AppData%\Balatro\Mods\` (de sorte que `Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json`
 existe ; une archive `.zip` déposée telle quelle est ignorée par les anciens Steamodded). L'archive
-`BalatroStrategicCopilot-1.0.10-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
+`BalatroStrategicCopilot-1.0.11-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
 répare toute la chaîne (dossier du jeu, Lovely, Steamodded, copilote) puis confirme que tout s'est
 chargé. Un **bandeau vert « actif »** s'affiche au lancement ; **aucun bandeau = mod non trouvé**
 ([pièges vérifiés](docs/INSTALL.md)).
