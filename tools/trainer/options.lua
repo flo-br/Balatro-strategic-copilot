@@ -8,6 +8,7 @@ local O = {}
 local SWITCHES = {
     track_scale = { 'engine/plan', 'TRACK_SCALE', 'number' },
     hs_rules = { 'engine/plan', 'HIGH_STAKE_RULES', 'bool' },
+    xmult_extra = { 'engine/plan', 'XMULT_EXTRA', 'number' },
     future_blend = { 'engine/shop', 'FUTURE_BLEND', 'number' },
     main_focus = { 'engine/shop', 'MAIN_FOCUS', 'number' },
     sample_growth = { 'engine/shop', 'SAMPLE_GROWTH', 'bool' },

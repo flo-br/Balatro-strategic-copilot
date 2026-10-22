@@ -42,6 +42,8 @@ PL.TRACK_SCALE = 0
 -- run. Applied from this stake; HIGH_STAKE_RULES false disables them (trainer comparisons).
 PL.HIGH_STAKE_RULES = true
 PL.HIGH_STAKE_FROM = 3
+-- extra planning bonus of a x Mult joker at high stakes (1.0.11, measured on the simulator; 0 = off)
+PL.XMULT_EXTRA = 0
 function PL.high_stakes(state)
     return PL.HIGH_STAKE_RULES and (((state and state.run and state.run.stake) or 1) >= PL.HIGH_STAKE_FROM)
 end
@@ -135,7 +137,7 @@ function PL.analyse(state, base)
     local x, list = PL.xmult_sources(state)
     local target = PL.XMULT_TARGET[math.min(#PL.XMULT_TARGET, math.max(1, eff))] or 3
     local plan = { ante = ante, eff_ante = eff, stake_shift = shift, phase = PL.phase(eff), xmult = x, xmult_list = list,
-        xmult_target = target, main_hand = PL.main_hand(state), gaps = {} }
+        xmult_target = target, main_hand = PL.main_hand(state), gaps = {}, high_stakes = PL.high_stakes(state) }
     -- share of the hands played that were the main hand
     local tot, mp = 0, 0
     for name, h in pairs(state.hands or {}) do
@@ -185,6 +187,10 @@ function PL.joker_bonus(def, plan)
     local v, why = 0, nil
     if kind == 'xmult' then
         v = 0.1 + 0.07 * math.max(0, (plan.eff_ante or plan.ante) - 2)
+        -- high stakes: a x Mult is worth more than the power measured now (simulated runs: at the
+        -- same median score, each x Mult on the board gave +1 blind won later; the measure plays
+        -- random hands, the player steers toward the joker's condition) (PL.XMULT_EXTRA)
+        if (PL.XMULT_EXTRA or 0) > 0 and plan.high_stakes then v = v + PL.XMULT_EXTRA end
         if plan.gaps.xmult then
             v = v + 0.3 * (plan.xmult_weight or 1)
             why = string.format('multiplicateur ×Mult : %d sur %d attendus à cette ante', plan.xmult, plan.xmult_target)
