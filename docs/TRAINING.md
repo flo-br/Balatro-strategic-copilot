@@ -43,7 +43,11 @@ luajit tools/trainer/report.lua sortie.jsonl [autre.jsonl ...]
   « Résultats 1.0.10 ») : `hs_rules` (1 : règles des mises élevées), `hs_safe_next` / `hs_safe_boss`
   (0,95 / 0,85), `track_scale` (0), `future_blend` (0), `main_focus` (0), `pack_penalty` (0),
   `prior_cal` (0), `pack_free` (0), `sample_growth` (0), `hidden_discards` (0), `hs_power` (0),
-  `xmult_hunt` (0) ; 1.0.11 : `replace_growth` (0), `xmult_extra` (0).
+  `xmult_hunt` (0) ; 1.0.11 : `replace_growth` (0), `xmult_extra` (0) ; 1.0.12 (synergies,
+  `engine/builds.lua`) : `syn_list` (1 : la grande liste), `syn_items` (1 : cartes, bons, paquets),
+  `syn_static` (0 : synergies que le moteur de score mesure déjà), `syn_generic` (0 : règles
+  générales). `syn_list=0 syn_items=0` rejoue exactement les choix de la 1.0.11 (vérifié graine
+  par graine).
 * Une ligne JSON par partie : résultat, ante atteinte, blinde perdue, historique des manches,
   décisions, plateau, niveaux, et les anomalies (étape absente ou impossible à exécuter).
 * `report.lua` applique à chaque défaite **le bilan de partie du mod** (`learning/review.lua`) et
@@ -380,3 +384,45 @@ et l'épargne en trop fait perdre, comme E6b). Le jeu passe donc à `shop_sample
 avec laquelle les conseils ont été réglés et validés (et l'analyse de boutique demande ≈ 30 % de
 calcul en moins). Écart restant entre le jeu et le simulateur : la fin de manche est simulée 64 fois par
 candidat en jeu, 24 fois dans les mesures (les probabilités de la main restent bien calibrées).
+
+## Résultats 1.0.12 (2026-10-22) : la grande liste de synergies
+
+Demande : une énorme liste de synergies pour tous les jokers, parce que bien synergiser est
+essentiel. La liste (`model/synergies_db.lua`, `docs/SYNERGIES.md`) a été mesurée comme toute
+autre règle : 60 parties à la mise noire (graines 301-360), graine par graine contre la 1.0.11.
+
+**Contrôle d'abord.** Liste coupée (`syn_list=0 syn_items=0 syn_generic=0`), le simulateur rejoue
+exactement les parties de référence (mêmes antes, mêmes scores) : la comparaison mesure bien la
+liste et rien d'autre.
+
+| Essai (60 parties, mise noire) | 1.0.11 | Essai | Écart graine par graine |
+|---|---|---|---|
+| S1 toute la liste comptée (paires, objets, règles générales) | 15,42 ; ante 5,38 ; 2 victoires | 15,09 ; ante 5,27 ; 2 victoires | **−0,33 ± 0,32** |
+| **S2 comptée seulement là où la mesure ne voit pas (livrée)** | 15,42 ; ante 5,38 ; 2 victoires | 15,63 ; ante 5,45 ; 2 victoires | **+0,22 ± 0,21** |
+| S2 contre S1 | | | +0,54 ± 0,26 |
+
+**Pourquoi S1 faisait moins bien : un double compte.** Le moteur de score mesure déjà ce que
+deux jokers font ensemble maintenant (Blueprint + The Duo, Jolly + Sly), et la simulation d'un
+tarot mesure déjà ce qu'il apporte avec les jokers possédés (The Chariot avec Steel Joker). Le
+bonus de synergie les comptait une seconde fois et poussait des achats que la mesure avait déjà
+payés. S2 ne compte une synergie que si l'une des pièces dépend de la suite (elle grandit,
+rapporte, crée des cartes, change le deck) ou si l'objet n'est pas simulé ; les autres sont
+affichées (raisons, « Synergies à chercher »). Les achats changent peu : par lot de 20 graines,
+S2 −0,07 à +0,61 (S1 −1,19 à +0,47) ; 33 achats sur 1 159 avaient une synergie comme première
+raison dans S1.
+
+Relecture de la liste avant S2 : huit erreurs de règles retirées ou corrigées (Blueprint et
+Brainstorm ne copient pas l'argent de fin de manche de Rocket et Cloud 9 ; Mime ne paie pas Golden
+Ticket ; Smeared Joker n'aide pas Blackboard ; Pareidolia ne nuit pas à Hit the Road ; Flash Card
+en B ; textes d'Abstract Joker).
+
+| Autres mises (S2, 12 parties) | 1.0.11 | 1.0.12 | Écart |
+|---|---|---|---|
+| Or (8), 401-412 | GOLD_REF | GOLD_NEW | GOLD_DIFF |
+| Blanche (1), 501-512 | WHITE_REF | WHITE_NEW | WHITE_DIFF |
+
+**Lecture honnête.** +0,22 ± 0,21 est dans le bruit : la liste ne fait pas perdre, elle ne fait
+pas gagner davantage de parties sur le simulateur (2 sur 60 de part et d'autre). Son intérêt
+principal est pour vous : elle dit en boutique quelle synergie porte une note et quelles pièces
+chercher. Les préférences apprises par « Mon choix » ne sont pas appliquées par le simulateur et
+n'ont pas été mesurées.

@@ -98,11 +98,11 @@ prédiction (journal + diagnostic de compatibilité).
 Le script construit un **exécutable fusionné** (binaire LÖVE 11.5 + archive d'un Balatro simulé
 contenant `conf.lua` et `main.lua`), exactement comme `Balatro.exe`, puis le lance sous Xvfb avec
 différents dossiers de sauvegarde (l'équivalent de `%AppData%\Balatro`) remplis depuis l'archive
-`BalatroStrategicCopilot-1.0.11.zip`. Résultats (2026-10-22, paquet 1.0.11) :
+`BalatroStrategicCopilot-1.0.12.zip`. Résultats (2026-10-22, paquet 1.0.12) :
 
 | Scénario | Résultat |
 |---|---|
-| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.0.11 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 247) ; panneau et badges « JOUER » affichés (capture) |
+| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.0.12 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 354) ; panneau et badges « JOUER » affichés (capture) |
 | mod seul, sans amorce | jeu normal, pas de copilote (témoin) |
 | amorce sans le dossier du mod | jeu normal jusqu'au bout ; bandeau rouge « dossier introuvable » ; erreur dans `amorce.log` |
 | Steamodded a déjà chargé le copilote | l'amorce se retire (« Steamodded gère déjà le copilote »), pas de double chargement |
@@ -132,8 +132,8 @@ exécute l'installateur **extrait de l'archive réelle**, puis contrôle le rés
 
 Les dossiers `Mods` produits par S1, S4, S5, S7 et S9 sont ensuite passés aux **deux vrais
 chargeurs** de Steamodded (ci-dessous) : copilote trouvé, activé, bandeau « 1.0.3 actif » dans
-chaque cas. Paquet 1.0.11 (2026-10-22) : **53 vérifications réussies, 0 échec** ; S1, S4, S5 et S9
-passés aux deux chargeurs (0509c et récent) : bandeau « 1.0.11 actif » dans les 8 cas.
+chaque cas. Paquet 1.0.12 (2026-10-22) : **53 vérifications réussies, 0 échec** ; S1, S4, S5 et S9
+passés aux deux chargeurs (0509c et récent) : bandeau « 1.0.12 actif » dans les 8 cas.
 
 ### Performances mesurées (LuaJIT, conteneur Linux, plusieurs exécutions)
 
@@ -174,7 +174,7 @@ car il faut LÖVE). La documentation 1.0.0/1.0.1 affirmait à tort qu'un zip dé
 fonctionnait : corrigé en 1.0.2. Le chargeur récent désactive durablement un mod en double via
 `blacklist.txt` : pris en charge par l'installateur en 1.0.3.
 
-### Parties complètes simulées (`tools/trainer`, 1.0.9 : mises 1 à 8, 15 decks ; 1.0.10 : mises élevées, 84 parties par version comparée : 60 à la mise noire, 12 à la mise or, 12 à la mise blanche ; 1.0.11 : 24 décisions bifurquées, 6 essais de 60 parties)
+### Parties complètes simulées (`tools/trainer`, 1.0.9 : mises 1 à 8, 15 decks ; 1.0.10 : mises élevées, 84 parties par version comparée : 60 à la mise noire, 12 à la mise or, 12 à la mise blanche ; 1.0.11 : 24 décisions bifurquées, 6 essais de 60 parties ; 1.0.12 : contrôle synergies coupées, 2 essais de 60 parties, mises or et blanche)
 
 Le copilote joue seul des parties complètes dans un Balatro simplifié (voir
 [TRAINING.md](TRAINING.md)) : chaque décision est l'étape « À FAIRE » du mod. Résultats et
@@ -190,7 +190,10 @@ DEVIENT / MODÈLE étiquetées, consigne de glissement, panneau placé sous la z
 cartes acier / or / holo / sceaux affichées avec leur rôle, jokers éternel et périssable) et Cerulean
 Bell (1.0.8 : étiquette IMPOSÉE sur la carte sélectionnée d'office, explication dans le panneau) et
 ordre des cartes (1.0.9 : Photograph + Hanging Chad, JOUER 1 sur le Roi, les étiquettes voisines
-décalées d'une rangée pour rester lisibles, « +335 % » dans le panneau) : accroches
+décalées d'une rangée pour rester lisibles, « +335 % » dans le panneau) et « Mon choix » (1.0.12 :
+« Synergies à chercher » dans le panneau de la boutique avec Baron ; le copilote conseille The Duo,
+le joueur sélectionne Mime, touche X, 1, 1, texte tapé, Entrée : correction enregistrée, Mime +4,
+The Duo −4, ligne écrite dans `mes_choix.txt` par le vrai `love.filesystem`) : accroches
 installées, analyses terminées (28–298 images), sauvegarde/rechargement réels dans le dossier de
 sauvegarde LÖVE, **0 erreur**. Captures : `docs/img/overlay_*.png`.
 

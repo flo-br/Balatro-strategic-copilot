@@ -128,9 +128,12 @@ Le copilote connaît **373 synergies joker + joker et 111 synergies joker + cart
 paquet** (Baron + Mime, Blueprint + Triboulet, Steel Joker + The Chariot, Constellation + les
 planètes, Hologram + paquet Standard, Yorick + Wasteful…), des anti-synergies (Vampire et les
 cartes améliorées, Erosion et les cartes ajoutées…), 26 builds, et des règles générales (même
-main, même couleur, copies). Elles comptent dans les notes de la boutique et des paquets, et le
-panneau indique les **« Synergies à chercher »** pour vos jokers. Liste complète :
-[docs/SYNERGIES.md](docs/SYNERGIES.md).
+main, même couleur, copies). Le panneau indique les **« Synergies à chercher »** pour vos jokers
+et chaque note dit la synergie qui la porte. Comme le moteur de score mesure déjà ce que vos
+jokers font ensemble maintenant, une synergie ne s'ajoute à la note que pour ce que cette mesure
+ne voit pas encore (un joker qui grandit, rapporte de l'argent, ajoute des cartes…) : mesuré sur
+60 parties simulées, +0,22 ± 0,21 blinde par partie (compter tout deux fois faisait −0,33).
+Liste complète : [docs/SYNERGIES.md](docs/SYNERGIES.md).
 
 ![Synergies à chercher](docs/img/overlay_synergies.png)
 

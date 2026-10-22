@@ -145,15 +145,22 @@ note = 50 + 50·tanh(z) ;  note = 50 + (note − 50)·fiabilité
 
 **Synergies (builds 1.0.8, grande liste 1.0.12 : `engine/builds.lua`, [SYNERGIES.md](SYNERGIES.md)).**
 Un joker reçoit, dans `potentiel`, la somme des forces de ses synergies avec le plateau
-(S 0,4 ; A 0,28 ; B 0,16 ; C 0,07 ; X −0,25 ; paires des deux listes, règles générales, deck,
-bons achetés et cartes tenues, builds), bornée à [−0,5 ; 0,6] et ×0,7 aux antes 1-2. Une
-carte, un bon ou un paquet reçoit de même la somme des synergies avec les jokers possédés, bornée
-à [−0,4 ; 0,5] ; pour un paquet, dont la note vient du contenu simulé, elle s'ajoute en points :
-`note + 45·w_potentiel·bonus`. Règles générales : même main (B, A avec un ×Mult), une main qui
-en contient une autre (C), même couleur payée (B, A avec un ×Mult), un joker de couleur et un
-joker de Couleur (C), deux couleurs différentes (−0,07 ; B avec Smeared Joker et deux couleurs de
-même teinte), copies (A) d'un ×Mult compatible Blueprint. Une paire nommée remplace la règle
-générale pour les mêmes jokers.
+(S 0,4 ; A 0,28 ; B 0,16 ; C 0,07 ; X −0,25 ; paires des deux listes, deck, bons achetés et cartes
+tenues, builds), bornée à [−0,5 ; 0,6] et ×0,7 aux antes 1-2. Une carte, un bon ou un paquet
+reçoit de même la somme des synergies avec les jokers possédés, bornée à [−0,4 ; 0,5] ; pour un
+paquet, dont la note vient du contenu simulé, elle s'ajoute en points : `note + 45·w_potentiel·bonus`.
+**Pas de double compte (1.0.12)** : `puissance` et `impact` mesurent déjà ce que les jokers font
+ensemble maintenant. Une synergie de la grande liste ne compte que si l'une des deux pièces
+dépend de la suite (étiquettes `scaling`, `decaying`, `econ`, `money`, `permanent`, générateurs de
+cartes, cartes ajoutées ou retirées du deck, améliorations du deck, valeur de vente, niveaux…) ou si
+l'objet n'est pas simulé (Death, Strength, Cryptid, Deja Vu, Observatory…) ; sinon elle est
+affichée avec un poids `STATIC_SCALE = 0`. Mesuré (60 parties, mise noire) : tout compter
+−0,33 ± 0,32 blinde par partie, version livrée +0,22 ± 0,21. Règles générales (affichées ; comptées seulement
+avec `GENERIC_SCALE` ≠ 0, puisqu'elles portent sur des effets mesurés) : même main (B, A avec un
+×Mult), une main qui en contient une autre (C), même couleur payée (B, A avec un ×Mult), un joker
+de couleur et un joker de Couleur (C), deux couleurs différentes (−0,07 ; B avec Smeared Joker et
+deux couleurs de même teinte). La copie (A) d'un ×Mult compatible Blueprint, règle de la 1.0.8,
+compte toujours. Une paire nommée remplace la règle générale pour les mêmes jokers.
 
 **Vos corrections (« Mon choix », 1.0.12, [LEARNING.md](LEARNING.md) §4 bis)** ajoutent aux notes
 la préférence apprise (±15 points pour un objet, ±8 pour son type) et multiplient, dans des

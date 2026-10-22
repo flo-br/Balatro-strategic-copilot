@@ -33,10 +33,21 @@ synergies** pour tous les types de jokers.
 * Règles générales pour le reste : même main (Jolly + Sly), une main qui en contient une autre,
   même couleur, joker de couleur + joker de Couleur, deux couleurs différentes (léger malus, sauf
   avec Smeared Joker), copies d'un ×Mult compatible Blueprint.
-* Elles comptent dans les notes : jokers (avec les bons achetés et les cartes tenues), **et
-  maintenant cartes, bons et paquets** ; le panneau de la boutique affiche les **« Synergies à
-  chercher »** (pièces S et A qui manquent à vos jokers).
-* Effet mesuré sur le simulateur : voir ci-dessous et `docs/TRAINING.md`, « Résultats 1.0.12 ».
+* Le panneau de la boutique affiche les **« Synergies à chercher »** (pièces S et A qui manquent à
+  vos jokers) ; chaque note dit la synergie qui la porte (« synergie : Baron, … »).
+* **Pas de double compte** : le moteur de score mesure déjà ce que deux jokers font ensemble
+  maintenant (Blueprint + The Duo, Jolly + Sly, The Chariot avec Steel Joker est simulé). Une
+  synergie de la liste ne s'ajoute à la note que pour ce que cette mesure ne voit pas : une pièce
+  qui grandit, rapporte, crée des cartes ou change le deck plus tard, ou un objet non simulé
+  (146 paires sur 254 nouvelles, 90 synergies d'objets sur 111). Les autres sont affichées.
+  Cartes, bons et paquets sont désormais notés avec leurs synergies (Constellation et les
+  planètes, Hologram et les paquets Standard, Yorick et Wasteful…).
+* **Mesuré** sur le simulateur (60 parties, mise noire, graine par graine contre la 1.0.11) :
+  tout compter faisait **−0,33 ± 0,32** blinde par partie ; la version livrée fait
+  **+0,22 ± 0,21** (2 victoires de part et d'autre). Mise or et mise blanche : voir
+  `docs/TRAINING.md`, « Résultats 1.0.12 ».
+* Huit erreurs de règles retirées à la relecture (Blueprint ne copie pas l'argent de fin de manche
+  de Rocket ou Cloud 9 ; Mime ne paie pas Golden Ticket ; Smeared Joker n'aide pas Blackboard…).
 
 ### Tests et outils
 * `tests/unit/test_synergies.lua` (clés existantes, aucun doublon, tous les jokers couverts,
