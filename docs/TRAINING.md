@@ -30,11 +30,19 @@ luajit tools/trainer/report.lua sortie.jsonl [autre.jsonl ...]
   `learn=lessons` ou `learn=adapt` : un seul des deux mécanismes (leçons du plan, réglages).
 * `BSC_MOD_ROOT=<dossier>` : évaluer une autre version du mod (ex. une copie de la 1.0.6).
 * `BSC_TRAIN_VERBOSE=1` : chaque main jouée ou défaussée est affichée.
+* **Bifurcations** (1.0.11, Linux) : `luajit tools/trainer/branch.lua <graine> <nombre> <sortie.jsonl>
+  antes=2-4 points=first K=4 alts=3 H=3 jobs=3 [réglages]`. Au premier pas de la boutique choisie,
+  le processus est dupliqué (`fork()` par la FFI de LuaJIT) : une copie par alternative (le pas du
+  copilote, acheter un autre objet, partir, relancer) et par futur (`K` graines de futur, **les mêmes
+  pour toutes les alternatives**) ; chaque copie joue la suite avec le copilote, jusqu'à `H` antes
+  plus loin (0 : fin de partie). Une ligne JSON par point : l'état, le pas du copilote et les `K`
+  scores de chaque alternative. Les alternatives partent du **même état** : on mesure une décision
+  sans le bruit des parties qui divergent dès le premier choix différent.
 * Options des essais 1.0.10 (mises élevées ; valeur par défaut entre parenthèses, voir
   « Résultats 1.0.10 ») : `hs_rules` (1 : règles des mises élevées), `hs_safe_next` / `hs_safe_boss`
   (0,95 / 0,85), `track_scale` (0), `future_blend` (0), `main_focus` (0), `pack_penalty` (0),
   `prior_cal` (0), `pack_free` (0), `sample_growth` (0), `hidden_discards` (0), `hs_power` (0),
-  `xmult_hunt` (0).
+  `xmult_hunt` (0) ; 1.0.11 : `replace_growth` (0), `xmult_extra` (0).
 * Une ligne JSON par partie : résultat, ante atteinte, blinde perdue, historique des manches,
   décisions, plateau, niveaux, et les anomalies (étape absente ou impossible à exécuter).
 * `report.lua` applique à chaque défaite **le bilan de partie du mod** (`learning/review.lua`) et
