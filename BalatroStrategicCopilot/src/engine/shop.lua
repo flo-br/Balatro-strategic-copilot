@@ -433,6 +433,8 @@ function SH.analyse(state, opts, task)
     end
 
     local function finish(opt, m, comp)
+        -- a consumable or voucher that feeds the jokers owned (model/synergies_db.lua)
+        if (opt.item_synergy or 0) ~= 0 then comp.potential = (comp.potential or 0) + opt.item_synergy end
         opt.note = SH.note(comp, w)
         opt.components = comp
         if m then
@@ -466,6 +468,14 @@ function SH.analyse(state, opts, task)
             affordable = affordable, reasons = {}, risks = {}, method = 'simulation' }
         local cc, loss = cost_component(cost)
         opt.interest_loss = loss
+        if it.set ~= 'Joker' and not it.card then
+            local ib, iwhy = BD.item_bonus(it, state)
+            if ib ~= 0 then
+                opt.item_synergy = ib
+                local into = (ib > 0) and opt.reasons or opt.risks
+                into[#into + 1] = iwhy
+            end
+        end
         if it.set == 'Joker' and it.joker then
             local j = it.joker
             local def = DB.get(j.key, j.name)
@@ -730,6 +740,10 @@ function SH.analyse(state, opts, task)
             -- (measured on the simulator: SH.PACK_PENALTY points off Arcana / Standard / Spectral packs)
             if (SH.PACK_PENALTY or 0) ~= 0 and (it.kind == 'Arcana' or it.kind == 'Standard' or it.kind == 'Spectral') then
                 opt.note = math.max(0, opt.note - SH.PACK_PENALTY)
+            end
+            -- the pack feeds the jokers owned (Celestial with Constellation, Standard with Hologram...)
+            if (opt.item_synergy or 0) ~= 0 then
+                opt.note = math.floor(U.clamp(opt.note + 45 * w.potential * opt.item_synergy, 0, 100) + 0.5)
             end
             opt.method = method
             opt.reasons[#opt.reasons + 1] = why

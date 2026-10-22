@@ -109,6 +109,12 @@ function FS.plan_lines(plan, state)
             seg((#b.missing > 0) and ('  ' .. T('plan_build_missing', table.concat(b.missing, ', '))) or '', 'dim'))
         if b.tip then out[#out + 1] = line(seg('    ' .. b.tip, 'dim')) end
     end
+    -- the S / A synergies of the jokers owned still to find (model/synergies_db.lua)
+    if plan.wanted and #plan.wanted > 0 then
+        local parts = {}
+        for _, w in ipairs(plan.wanted) do parts[#parts + 1] = T('syn_wanted_item', w.name, w.tier, w.with) end
+        out[#out + 1] = line(seg('  ' .. T('syn_wanted', table.concat(parts, ', ')), 'accent'))
+    end
     return out
 end
 

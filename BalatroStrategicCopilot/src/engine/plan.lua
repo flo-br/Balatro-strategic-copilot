@@ -180,9 +180,10 @@ function PL.analyse(state, base)
     -- urgency of multipliers / planets tried (and kept only if it pays) after losses
     plan.xmult_weight = lesson('xmult')
     plan.levels_weight = lesson('levels')
-    -- builds of top players under way (engine/builds.lua; loaded lazily: it requires this module)
+    -- builds of top players under way and the S / A pieces to look for (engine/builds.lua;
+    -- loaded lazily: it requires this module)
     local okb, BD = pcall(BSC.require, 'engine/builds')
-    if okb and BD then plan.builds = BD.active(state) end
+    if okb and BD then plan.builds = BD.active(state); plan.wanted = BD.wanted(state, 4) end
     return plan
 end
 

@@ -1,5 +1,6 @@
 -- Balatro Strategic Copilot - engine/builds.lua
--- The synergies of top players' builds (model/builds_db.lua) applied to the current run:
+-- The synergies of top players' builds (model/builds_db.lua) and the big list of synergies
+-- (model/synergies_db.lua, 1.0.12) applied to the current run:
 --   * synergies of a joker with the board and the deck (shop: what the joker will become with
 --     the pieces already owned, on top of what the score engine measures now);
 --   * builds under way (core piece owned), their missing pieces and how to assemble them;
@@ -14,6 +15,8 @@ local U = BSC.require('core/util')
 local C = BSC.require('model/cards')
 local DB = BSC.require('model/jokers_db')
 local DBB = BSC.require('model/builds_db')
+local SDB = BSC.require('model/synergies_db')
+local I = BSC.require('core/i18n')
 local PL = BSC.require('engine/plan')
 
 local BD = {}
@@ -52,40 +55,188 @@ local function in_list(list, key)
     return false
 end
 
--- Synergies of joker `key` with the board (minus `without`) and the deck.
--- Returns total (potential units, clamped), list of { v, why, with }.
+-- Weight of the 1.0.12 list (model/synergies_db.lua: pairs, items) and of the generic rules,
+-- relative to the builds_db pairs (simulator A/B: docs/TRAINING.md; 0 = shown, never counted).
+BD.LIST_SCALE = 1
+BD.ITEM_SCALE = 1
+BD.GENERIC_SCALE = 1
+
+local function pair_id(a, b) if a > b then a, b = b, a end return a .. '|' .. b end
+
+-- Joker + joker synergies of both lists, indexed by joker. A pair of both lists keeps its
+-- builds_db entry.
+BD.PAIRS, BD.PAIRS_OF = {}, {}
+do
+    local seen = {}
+    for li, list in ipairs({ DBB.PAIRS, SDB.PAIRS }) do
+        for _, p in ipairs(list) do
+            local id = pair_id(p[1], p[2])
+            if p[1] ~= p[2] and not seen[id] then
+                seen[id] = true
+                local e = { a = p[1], b = p[2], tier = p[3], why = p[4], list = (li == 1) and 'builds' or 'synergies' }
+                BD.PAIRS[#BD.PAIRS + 1] = e
+                for _, k in ipairs({ p[1], p[2] }) do
+                    local t = BD.PAIRS_OF[k] or {}
+                    BD.PAIRS_OF[k] = t
+                    t[#t + 1] = e
+                end
+            end
+        end
+    end
+end
+
+-- Archetypes of both lists
+BD.BUILDS = {}
+for _, b in ipairs(DBB.BUILDS) do BD.BUILDS[#BD.BUILDS + 1] = b end
+for _, b in ipairs(SDB.BUILDS) do BD.BUILDS[#BD.BUILDS + 1] = b end
+
+-- Joker + consumable / voucher / booster synergies, indexed both ways
+BD.ITEMS_OF_JOKER, BD.JOKERS_OF_ITEM = {}, {}
+for _, p in ipairs(SDB.ITEMS) do
+    local e = { joker = p[1], item = p[2], tier = p[3], why = p[4] }
+    BD.ITEMS_OF_JOKER[p[1]] = BD.ITEMS_OF_JOKER[p[1]] or {}
+    table.insert(BD.ITEMS_OF_JOKER[p[1]], e)
+    BD.JOKERS_OF_ITEM[p[2]] = BD.JOKERS_OF_ITEM[p[2]] or {}
+    table.insert(BD.JOKERS_OF_ITEM[p[2]], e)
+end
+
+local function strength(e)
+    return DBB.STRENGTH[e.tier] * ((e.list == 'synergies') and BD.LIST_SCALE or 1)
+end
+
+function BD.item_name(k)
+    return SDB.ITEM_NAMES[k] or k
+end
+
+-- Keys under which an item is listed: its key, then its class.
+function BD.item_classes(it)
+    local out = {}
+    if it.key then out[#out + 1] = it.key end
+    local set = it.set
+    if set == 'Planet' then out[#out + 1] = 'planet'
+    elseif set == 'Tarot' then out[#out + 1] = 'tarot'
+    elseif set == 'Spectral' then out[#out + 1] = 'spectral'
+    elseif set == 'Booster' and (it.kind or it.pack_kind) then out[#out + 1] = 'pack:' .. (it.kind or it.pack_kind) end
+    return out
+end
+
+-- Generic rules: hand types (tags hand_<hand>), suits (suit_<suit>, suit_dark), hands that
+-- contain another one (a Three of a Kind contains a Pair: Jolly Joker scores on it).
+local CONTAINS = {
+    ['Two Pair'] = { Pair = true }, ['Three of a Kind'] = { Pair = true },
+    ['Four of a Kind'] = { Pair = true, ['Three of a Kind'] = true },
+    ['Straight Flush'] = { Straight = true, Flush = true },
+}
+local DARK = { Spades = true, Clubs = true }
+local VALID = {
+    hand = { ['Flush Five'] = true, ['Flush House'] = true, ['Five of a Kind'] = true, ['Straight Flush'] = true,
+        ['Four of a Kind'] = true, ['Full House'] = true, Flush = true, Straight = true, ['Three of a Kind'] = true,
+        ['Two Pair'] = true, Pair = true, ['High Card'] = true },
+    suit = { dark = true },
+}
+local function tag_set(def, prefix)
+    local out = {}
+    for _, t in ipairs((def and def.tags) or {}) do
+        local v = t:match('^' .. prefix .. '_(.+)$')
+        if v and VALID[prefix][v] then out[v] = true end
+    end
+    return out
+end
+local function hand_fr(h) return I.hand_name(h) end
+local function suit_fr(su) return I.suit_name(su) end
+
+local function generic(key, jkey, def, jdef, xm, smeared)
+    local g = BD.GENERIC_SCALE or 1
+    if g == 0 then return nil end
+    local S = DBB.STRENGTH
+    local h1, h2 = tag_set(def, 'hand'), tag_set(jdef, 'hand')
+    local contained
+    for h in pairs(h1) do
+        if h2[h] then return (xm and S.A or S.B) * g, 'même main : ' .. hand_fr(h) end
+        for o in pairs(h2) do
+            if (CONTAINS[o] and CONTAINS[o][h]) or (CONTAINS[h] and CONTAINS[h][o]) then contained = contained or { h, o } end
+        end
+    end
+    -- suits: the suit payoff jokers (builds_db.SUIT_OF; not Seeing Double, which wants a Club
+    -- AND another suit) and Blackboard (Spades and Clubs held)
+    local su1, su2 = DBB.SUIT_OF[key], DBB.SUIT_OF[jkey]
+    local d1, d2 = tag_set(def, 'suit').dark, tag_set(jdef, 'suit').dark
+    if su1 and su1 == su2 then return (xm and S.A or S.B) * g, 'même couleur : ' .. suit_fr(su1) end
+    if d1 and su2 and DARK[su2] then return S.B * g, 'Blackboard : cartes ' .. suit_fr(su2) end
+    if d2 and su1 and DARK[su1] then return S.B * g, 'Blackboard : cartes ' .. suit_fr(su1) end
+    -- a suit payoff joker and a Flush joker: a Flush of that suit scores both
+    local sf = (su1 and h2.Flush and su1) or (su2 and h1.Flush and su2)
+    if sf then return S.C * g, 'une Couleur en ' .. suit_fr(sf) .. ' : les deux marquent' end
+    if contained then
+        return S.C * g, 'jouer « ' .. hand_fr(contained[2]) .. ' » déclenche aussi « ' .. hand_fr(contained[1]) .. ' »'
+    end
+    -- two suit payoff jokers of different suits pull the deck two ways (Smeared Joker merges
+    -- the suits of the same colour)
+    if su1 and su2 and su1 ~= su2 then
+        if smeared and (DARK[su1] or false) == (DARK[su2] or false) then
+            return S.B * g, 'Smeared Joker : ' .. suit_fr(su1) .. ' et ' .. suit_fr(su2) .. ' comptent ensemble'
+        end
+        return -S.C * g, 'couleurs différentes (' .. suit_fr(su1) .. ', ' .. suit_fr(su2) .. ') : deux decks à construire'
+    end
+    return nil
+end
+
+-- Synergies of joker `key` with the board (minus `without`), the deck, the vouchers bought and
+-- the consumables held. Returns total (potential units, clamped), list of { v, why, with }.
 function BD.synergies(key, state, without)
     local own = owned_set(state, without)
     local list, seen = {}, {}
     local S = DBB.STRENGTH
     local function add(v, why, with, tag)
         if tag then if seen[tag] then return end seen[tag] = true end
-        list[#list + 1] = { v = v, why = why, with = with }
+        if v ~= 0 then list[#list + 1] = { v = v, why = why, with = with } end
     end
-    for _, p in ipairs(DBB.PAIRS) do
-        local other = (p[1] == key and p[2]) or (p[2] == key and p[1]) or nil
-        if other and own[other] then add(S[p[3]], p[4], name_of(other), 'pair:' .. other) end
+    for _, e in ipairs(BD.PAIRS_OF[key] or {}) do
+        local other = (e.a == key) and e.b or e.a
+        if own[other] then add(strength(e), e.why, name_of(other), 'pair:' .. other) end
     end
     for _, d in ipairs(DBB.DECK) do
         if d[1] == key and deck_value(state, d[2], key) >= d[3] then add(S[d[4]], d[5], nil, 'deck:' .. d[2]) end
     end
-    local kind = PL.joker_kind(DB.get(key))
+    local def = DB.get(key)
+    local kind = PL.joker_kind(def)
     if DBB.COPIERS[key] then
-        -- a copy joker wants an xMult or retrigger target
+        -- a copy joker wants an xMult or retrigger target it can copy
         for _, j in ipairs(state.jokers or {}) do
             if j ~= without and not DBB.COPIERS[j.key] and not seen['pair:' .. tostring(j.key)] then
-                local k = PL.joker_kind(DB.get(j.key, j.name))
-                if k == 'xmult' or k == 'retrigger' then add(S.A, 'copie un multiplicateur', j.name or name_of(j.key), 'copy'); break end
+                local jd = DB.get(j.key, j.name)
+                local k = PL.joker_kind(jd)
+                if (k == 'xmult' or k == 'retrigger') and jd and jd.bp then add(S.A, 'copie un multiplicateur', j.name or name_of(j.key), 'copy'); break end
             end
         end
-    elseif kind == 'xmult' or kind == 'retrigger' then
+    elseif (kind == 'xmult' or kind == 'retrigger') and def and def.bp then
         for ck in pairs(DBB.COPIERS) do
             if own[ck] and not seen['pair:' .. ck] then add(S.B, 'copiable par ' .. name_of(ck), name_of(ck), 'copied') end
         end
     end
+    -- generic rules with the jokers no pair already links to this one
+    local xm = kind == 'xmult'
+    for _, j in ipairs(state.jokers or {}) do
+        if j ~= without and j.key and j.key ~= key and not seen['pair:' .. j.key] and not seen['gen:' .. j.key] then
+            local jd = DB.get(j.key, j.name)
+            local v, why = generic(key, j.key, def, jd, xm or PL.joker_kind(jd) == 'xmult', own.j_smeared)
+            if v then add(v, why, j.name or name_of(j.key), 'gen:' .. j.key) end
+        end
+    end
+    -- vouchers bought and consumables held (Perkeo with Observatory, Baron with a Cryptid held)
+    local ig = BD.ITEM_SCALE or 1
+    if ig ~= 0 then
+        for _, e in ipairs(BD.ITEMS_OF_JOKER[key] or {}) do
+            local have = (state.vouchers and state.vouchers[e.item]) and true or false
+            if not have and e.item:match('^c_') then
+                for _, c in ipairs(state.consumables or {}) do if c.key == e.item then have = true end end
+            end
+            if have then add(S[e.tier] * ig, e.why, BD.item_name(e.item), 'item:' .. e.item) end
+        end
+    end
     -- builds: support of a build under way, core piece of a build whose support is there,
     -- anti-synergy with a build under way
-    for _, b in ipairs(DBB.BUILDS) do
+    for _, b in ipairs(BD.BUILDS) do
         local core_owned, support_owned = 0, 0
         for _, k in ipairs(b.core) do if own[k] then core_owned = core_owned + 1 end end
         for _, k in ipairs(b.support) do if own[k] then support_owned = support_owned + 1 end end
@@ -104,6 +255,63 @@ function BD.synergies(key, state, without)
     local total = 0
     for _, e in ipairs(list) do total = total + e.v end
     return U.clamp(total, -0.5, 0.6), list
+end
+
+-- Synergies of a consumable, voucher or booster (shop or pack item `it`: key, set, kind) with
+-- the jokers owned (The Chariot with Steel Joker, planets with Constellation, a Standard pack
+-- with Hologram, Wasteful with Yorick...). Returns total (potential units), why, list.
+function BD.item_bonus(it, state)
+    local ig = BD.ITEM_SCALE or 1
+    if not it or ig == 0 then return 0, nil end
+    local own = owned_set(state)
+    local list, seen = {}, {}
+    for _, cls in ipairs(BD.item_classes(it)) do
+        for _, e in ipairs(BD.JOKERS_OF_ITEM[cls] or {}) do
+            if own[e.joker] and not seen[e.joker] then
+                seen[e.joker] = true
+                list[#list + 1] = { v = DBB.STRENGTH[e.tier] * ig, why = e.why, with = name_of(e.joker) }
+            end
+        end
+    end
+    if #list == 0 then return 0, nil end
+    table.sort(list, function(a, b) return math.abs(a.v) > math.abs(b.v) end)
+    local total = 0
+    for _, e in ipairs(list) do total = total + e.v end
+    local e = list[1]
+    local why = ((e.v < 0) and 'anti-synergie : ' or 'synergie : ') .. e.with .. ', ' .. e.why
+    return U.clamp(total, -0.4, 0.5), why, list
+end
+
+-- Pieces to look for: the S / A partners (jokers and items) of the jokers owned that are not
+-- owned yet, strongest first: { { name, tier, why, with, item = true|nil } }
+function BD.wanted(state, max)
+    local own = owned_set(state)
+    local out, seen = {}, {}
+    local rank = { S = 1, A = 2 }
+    for k in pairs(own) do
+        for _, e in ipairs(BD.PAIRS_OF[k] or {}) do
+            local other = (e.a == k) and e.b or e.a
+            if rank[e.tier] and not own[other] and not seen[other] then
+                seen[other] = true
+                out[#out + 1] = { key = other, name = name_of(other), tier = e.tier, why = e.why, with = name_of(k) }
+            end
+        end
+        for _, e in ipairs(BD.ITEMS_OF_JOKER[k] or {}) do
+            local have = state.vouchers and state.vouchers[e.item]
+            if rank[e.tier] and not have and not seen[e.item] then
+                seen[e.item] = true
+                out[#out + 1] = { key = e.item, name = BD.item_name(e.item), tier = e.tier, why = e.why, with = name_of(k), item = true }
+            end
+        end
+    end
+    table.sort(out, function(a, b)
+        if rank[a.tier] ~= rank[b.tier] then return rank[a.tier] < rank[b.tier] end
+        if (a.item and 1 or 0) ~= (b.item and 1 or 0) then return not a.item end
+        return a.key < b.key
+    end)
+    local res = {}
+    for i = 1, math.min(max or 4, #out) do res[i] = out[i] end
+    return res, #out
 end
 
 -- Shop bonus of a joker (potential units) and the reason shown.
@@ -132,7 +340,7 @@ end
 function BD.active(state)
     local own = owned_set(state)
     local out = {}
-    for _, b in ipairs(DBB.BUILDS) do
+    for _, b in ipairs(BD.BUILDS) do
         local have, missing = {}, {}
         local core = 0
         for _, k in ipairs(b.core) do if own[k] then core = core + 1; have[#have + 1] = name_of(k) end end
