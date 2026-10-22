@@ -9,15 +9,22 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ## Comment le copilote s'en sert
 
-- **Boutique et paquets** : un joker qui forme une synergie avec vos jokers reçoit un bonus de « potentiel »
-  (S +0,4, A +0,28, B +0,16, C +0,07, X −0,25, total borné entre −0,5 et +0,6 ; ×0,7 aux antes 1-2, où les pros
-  ne forcent pas encore un build). La raison est affichée : « synergie : Baron, chaque Roi tenu compte deux fois ».
-- **Cartes, bons et paquets** : The Chariot avec Steel Joker, les planètes avec Constellation, un paquet Standard
-  avec Hologram, Wasteful avec Yorick… reçoivent le même bonus (borné entre −0,4 et +0,5).
-- **Bons achetés et cartes tenues** comptent aussi pour un joker en boutique (Perkeo quand Observatory est acheté).
+- Le moteur de score **mesure** ce que vos jokers font ensemble maintenant (Blueprint + The Duo, Jolly + Sly,
+  The Chariot avec Steel Joker : l'amélioration est simulée). Une synergie ne s'ajoute à la note que pour ce que
+  cette mesure ne voit pas encore : une pièce qui **grandit**, rapporte de l'argent, crée des cartes ou change le
+  deck plus tard (Hologram, Constellation, Yorick, Bull…), ou un objet dont l'effet n'est pas simulé (Cryptid,
+  Death, Observatory…). Les autres sont **affichées** (raisons des notes, « Synergies à chercher », cette liste)
+  sans être comptées deux fois ; elles sont marquées ° ci-dessous.
+- **Comptée**, une synergie ajoute au « potentiel » d'un joker en boutique ou dans un paquet : S +0,4, A +0,28,
+  B +0,16, C +0,07, X −0,25, total borné entre −0,5 et +0,6, ×0,7 aux antes 1-2 (les pros ne forcent pas encore
+  un build) ; pour une carte, un bon ou un paquet, entre −0,4 et +0,5. Les bons achetés et les cartes tenues
+  comptent aussi pour un joker (Perkeo quand Observatory est acheté).
+- La raison est toujours affichée : « synergie : Baron, chaque Roi tenu compte deux fois ».
 - **« Synergies à chercher »** (panneau de la boutique) : les pièces S et A qui manquent à vos jokers.
-- Le moteur de score **mesure** toujours ce qu'un joker apporte maintenant ; ces listes ajoutent ce que le build
-  deviendra. Vos corrections (touche « Mon choix », raison « synergie ») peuvent augmenter leur poids (×1,5 au plus).
+- Vos corrections (touche « Mon choix », raison « synergie ») augmentent le poids des synergies comptées (×1,5
+  au plus).
+- Réglages actuels (`engine/builds.lua`) : liste 1, objets 1, synergies déjà mesurées 0, règles générales 0 ;
+  129 synergies de la liste sont affichées seulement (°). Mesures : `docs/TRAINING.md`, « Résultats 1.0.12 ».
 
 ## Règles générales (engine/builds.lua)
 
@@ -29,6 +36,8 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **Blueprint / Brainstorm** avec un ×Mult ou un redéclencheur compatible (le jeu l'indique sur la carte) : A ;
   le joker ×Mult acheté quand une copie est déjà là : B.
 - Une paire nommée dans les listes remplace toujours la règle générale pour les deux mêmes jokers.
+- Ces règles portent sur des effets que le moteur de score mesure déjà : elles sont affichées, et comptées
+  seulement si `GENERIC_SCALE` n'est pas 0.
 
 ## Par joker
 
@@ -41,33 +50,33 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 ### Abstract Joker
 
 - **B** Riff-raff — deux jokers de plus : +6 Mult
-- **B** Antimatter — un emplacement de plus : un joker de plus (+3 Mult)
+- **B°** Antimatter — un emplacement de plus : un joker de plus (+3 Mult)
 - **B** Ectoplasm — un emplacement de plus : un joker de plus (+3 Mult)
-- **C** Joker — un joker de plus : +3 Mult
-- **X** Joker Stencil — Stencil veut peu de jokers, Abstract beaucoup
+- **C°** Joker — un joker de plus : +3 Mult
+- **X°** Joker Stencil — Stencil veut peu de jokers, Abstract beaucoup
 
 ### Acrobat
 
-- **B** Blueprint — ×3 de plus en dernière main
-- **B** Brainstorm — ×3 de plus en dernière main
+- **B°** Blueprint — ×3 de plus en dernière main
+- **B°** Brainstorm — ×3 de plus en dernière main
 - **B** Dusk — dernière main : redéclenchée et ×3
 
 ### Ancient Joker
 
-- **A** Blueprint — ×1,5 de plus par carte de la couleur
-- **A** Brainstorm — ×1,5 de plus par carte de la couleur
+- **A°** Blueprint — ×1,5 de plus par carte de la couleur
+- **A°** Brainstorm — ×1,5 de plus par carte de la couleur
 - **A** Smeared Joker — la couleur choisie couvre la moitié du deck
-- **B** Dusk — dernière main : chaque carte de la couleur deux fois
-- **B** Hanging Chad — première carte de la couleur : ×1,5 trois fois
+- **B°** Dusk — dernière main : chaque carte de la couleur deux fois
+- **B°** Hanging Chad — première carte de la couleur : ×1,5 trois fois
 - **B** Photograph — deux ×Mult par carte
 - **B** Seltzer — 10 mains : chaque carte de la couleur deux fois
-- **X** Flower Pot — Ancient Joker veut une couleur, Flower Pot les quatre
+- **X°** Flower Pot — Ancient Joker veut une couleur, Flower Pot les quatre
 - **X** Four Fingers — moins de cartes de la couleur marquent
 
 ### Arrowhead
 
-- **B** Wrathful Joker — Piques joués : +50 jetons et +3 Mult
-- **B** The World — The World : des Piques
+- **B°** Wrathful Joker — Piques joués : +50 jetons et +3 Mult
+- **B°** The World — The World : des Piques
 
 ### Astronomer
 
@@ -79,9 +88,9 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 ### Banner
 
 - **B** Delayed Gratification — garder ses défausses : jetons et argent
-- **B** Wasteful — une défausse de plus : +30 jetons
-- **X** Burglar — plus de défausses du tout
-- **X** Mystic Summit — Banner veut des défausses restantes, Mystic Summit aucune
+- **B°** Wasteful — une défausse de plus : +30 jetons
+- **X°** Burglar — plus de défausses du tout
+- **X°** Mystic Summit — Banner veut des défausses restantes, Mystic Summit aucune
 
 ### Baron
 
@@ -92,11 +101,11 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **A** DNA — ajoute des Rois (avec leur acier et leur sceau)
 - **A** Cryptid — deux copies du meilleur Roi
 - **A** Deja Vu — sceau rouge sur un Roi tenu : compte deux fois
-- **A** The Chariot — acier sur les Rois tenus : ×1,5 et ×1,5
-- **B** Juggler — une carte tenue de plus : un Roi de plus en main
+- **A°** The Chariot — acier sur les Rois tenus : ×1,5 et ×1,5
+- **B°** Juggler — une carte tenue de plus : un Roi de plus en main
 - **B** Shoot the Moon — Dames tenues (à gauche) puis Rois
-- **B** Troubadour — +2 cartes tenues : plus de Rois en main
-- **B** Turtle Bean — des cartes tenues de plus : plus de Rois en main
+- **B°** Troubadour — +2 cartes tenues : plus de Rois en main
+- **B°** Turtle Bean — des cartes tenues de plus : plus de Rois en main
 - **B** Death — Death : copier un Roi
 - **B** Strength — Strength : Dame → Roi
 - **C** Certificate — cartes à sceau ajoutées (parfois rouge)
@@ -105,25 +114,25 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Baseball Card
 
-- **A** Blueprint — ×1,5 de plus par joker inhabituel
-- **A** Brainstorm — ×1,5 de plus par joker inhabituel
+- **A°** Blueprint — ×1,5 de plus par joker inhabituel
+- **A°** Brainstorm — ×1,5 de plus par joker inhabituel
 
 ### Blackboard
 
-- **A** Blueprint — ×3 de plus, main tenue toute noire
-- **A** Brainstorm — ×3 de plus, main tenue toute noire
+- **A°** Blueprint — ×3 de plus, main tenue toute noire
+- **A°** Brainstorm — ×3 de plus, main tenue toute noire
 - **B** Stuntman — petite main : plus facile de ne tenir que du noir
-- **B** The Moon — The Moon : des Trèfles (noirs)
-- **B** The World — The World : des Piques (noirs)
+- **B°** The Moon — The Moon : des Trèfles (noirs)
+- **B°** The World — The World : des Piques (noirs)
 
 ### Bloodstone
 
 - **A** Oops! All 6s — ×1,5 garanti par Cœur
-- **A** The Sun — The Sun : des Cœurs
-- **B** Blueprint — deux tirages ×1,5 par Cœur
-- **B** Brainstorm — deux tirages ×1,5 par Cœur
-- **B** Dusk — dernière main : deux tirages par Cœur
-- **B** Hanging Chad — premier Cœur : trois tirages ×1,5
+- **A°** The Sun — The Sun : des Cœurs
+- **B°** Blueprint — deux tirages ×1,5 par Cœur
+- **B°** Brainstorm — deux tirages ×1,5 par Cœur
+- **B°** Dusk — dernière main : deux tirages par Cœur
+- **B°** Hanging Chad — premier Cœur : trois tirages ×1,5
 - **B** Smeared Joker — les Carreaux comptent aussi
 - **C** Lusty Joker — +3 par Cœur avant le ×Mult
 - **X** Four Fingers — moins de cartes de la couleur marquent
@@ -140,17 +149,17 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **S** Caino — ×Mult de Canio copié
 - **S** Triboulet — ×4 par Roi ou Dame
 - **S** Yorick — ×Mult de Yorick copié
-- **A** Ancient Joker — ×1,5 de plus par carte de la couleur
-- **A** Baseball Card — ×1,5 de plus par joker inhabituel
-- **A** Blackboard — ×3 de plus, main tenue toute noire
-- **A** Brainstorm — deux copies du même joker : Blueprint à sa gauche, la cible, Brainstorm n'importe où
+- **A°** Ancient Joker — ×1,5 de plus par carte de la couleur
+- **A°** Baseball Card — ×1,5 de plus par joker inhabituel
+- **A°** Blackboard — ×3 de plus, main tenue toute noire
+- **A°** Brainstorm — deux copies du même joker : Blueprint à sa gauche, la cible, Brainstorm n'importe où
 - **A** Campfire — ×Mult de Campfire copié
-- **A** Card Sharp — ×3 de plus sur la main rejouée
+- **A°** Card Sharp — ×3 de plus sur la main rejouée
 - **A** Cavendish — ×3 copié
 - **A** Constellation — ×Mult des planètes copié
 - **A** DNA — plusieurs copies par manche
 - **A** Driver's License — ×3 de plus avec 16 cartes améliorées
-- **A** Flower Pot — ×3 de plus sur quatre couleurs
+- **A°** Flower Pot — ×3 de plus sur quatre couleurs
 - **A** Glass Joker — ×Mult du verre brisé copié
 - **A** Hit the Road — ×Mult des Valets défaussés copié
 - **A** Hologram — ×Mult de Hologram copié
@@ -158,31 +167,31 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **A** Mime — un redéclenchement de plus des cartes tenues
 - **A** Obelisk — ×Mult d'Obelisk copié
 - **A** Perkeo — deux copies de planète par boutique
-- **A** Photograph — deux ×2 sur la première figure
-- **A** Seeing Double — ×2 de plus avec un Trèfle
+- **A°** Photograph — deux ×2 sur la première figure
+- **A°** Seeing Double — ×2 de plus avec un Trèfle
 - **A** Steel Joker — ×Mult de l'acier copié
-- **A** The Duo — ×2 de plus sur chaque paire
-- **A** The Family — ×4 de plus sur un carré
-- **A** The Idol — ×2 de plus par carte cible
-- **A** The Order — ×3 de plus sur une suite
-- **A** The Tribe — ×2 de plus sur une couleur
-- **A** The Trio — ×3 de plus sur un brelan
+- **A°** The Duo — ×2 de plus sur chaque paire
+- **A°** The Family — ×4 de plus sur un carré
+- **A°** The Idol — ×2 de plus par carte cible
+- **A°** The Order — ×3 de plus sur une suite
+- **A°** The Tribe — ×2 de plus sur une couleur
+- **A°** The Trio — ×3 de plus sur un brelan
 - **A** Vampire — ×Mult de Vampire copié
-- **B** Acrobat — ×3 de plus en dernière main
-- **B** Bloodstone — deux tirages ×1,5 par Cœur
+- **B°** Acrobat — ×3 de plus en dernière main
+- **B°** Bloodstone — deux tirages ×1,5 par Cœur
 - **B** Cartomancer — deux tarots par blinde
-- **B** Dusk — dernière main redéclenchée une fois de plus
-- **B** Hack — 2 à 5 redéclenchés une fois de plus
-- **B** Hanging Chad — la première carte jouée deux fois de plus
-- **B** Loyalty Card — ×4 de plus toutes les 6 mains
+- **B°** Dusk — dernière main redéclenchée une fois de plus
+- **B°** Hack — 2 à 5 redéclenchés une fois de plus
+- **B°** Hanging Chad — la première carte jouée deux fois de plus
+- **B°** Loyalty Card — ×4 de plus toutes les 6 mains
 - **B** Madness — ×Mult de Madness copié
 - **B** Mail-In Rebate — 5 $ devient 10 $ par défausse
 - **B** Ramen — ×Mult de Ramen copié
 - **B** Seltzer — redéclenchement copié
-- **B** Sock and Buskin — figures redéclenchées une fois de plus
+- **B°** Sock and Buskin — figures redéclenchées une fois de plus
 - **B** Stuntman — +250 jetons copiés sans perdre de cartes en main
 - **B** Throwback — ×Mult des passages copié
-- **C** Misprint — un second tirage de 0 à 23 Mult
+- **C°** Misprint — un second tirage de 0 à 23 Mult
 
 ### Bootstraps
 
@@ -205,42 +214,42 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **S** Caino — ×Mult de Canio copié
 - **S** Triboulet — ×4 par Roi ou Dame
 - **S** Yorick — ×Mult de Yorick copié
-- **A** Ancient Joker — ×1,5 de plus par carte de la couleur
-- **A** Baseball Card — ×1,5 de plus par joker inhabituel
-- **A** Blackboard — ×3 de plus, main tenue toute noire
-- **A** Blueprint — deux copies du même joker : Blueprint à sa gauche, la cible, Brainstorm n'importe où
+- **A°** Ancient Joker — ×1,5 de plus par carte de la couleur
+- **A°** Baseball Card — ×1,5 de plus par joker inhabituel
+- **A°** Blackboard — ×3 de plus, main tenue toute noire
+- **A°** Blueprint — deux copies du même joker : Blueprint à sa gauche, la cible, Brainstorm n'importe où
 - **A** Campfire — ×Mult de Campfire copié
-- **A** Card Sharp — ×3 de plus sur la main rejouée
+- **A°** Card Sharp — ×3 de plus sur la main rejouée
 - **A** Cavendish — ×3 copié
 - **A** Constellation — ×Mult des planètes copié
 - **A** DNA — plusieurs copies par manche
 - **A** Driver's License — ×3 de plus avec 16 cartes améliorées
-- **A** Flower Pot — ×3 de plus sur quatre couleurs
+- **A°** Flower Pot — ×3 de plus sur quatre couleurs
 - **A** Glass Joker — ×Mult du verre brisé copié
 - **A** Hit the Road — ×Mult des Valets défaussés copié
 - **A** Hologram — ×Mult de Hologram copié
 - **A** Lucky Cat — ×Mult de Lucky Cat copié
 - **A** Mime — un redéclenchement de plus des cartes tenues
 - **A** Obelisk — ×Mult d'Obelisk copié
-- **A** Photograph — deux ×2 sur la première figure
-- **A** Seeing Double — ×2 de plus avec un Trèfle
+- **A°** Photograph — deux ×2 sur la première figure
+- **A°** Seeing Double — ×2 de plus avec un Trèfle
 - **A** Steel Joker — ×Mult de l'acier copié
-- **A** The Duo — ×2 de plus sur chaque paire
-- **A** The Family — ×4 de plus sur un carré
-- **A** The Idol — ×2 de plus par carte cible
-- **A** The Order — ×3 de plus sur une suite
-- **A** The Tribe — ×2 de plus sur une couleur
-- **A** The Trio — ×3 de plus sur un brelan
+- **A°** The Duo — ×2 de plus sur chaque paire
+- **A°** The Family — ×4 de plus sur un carré
+- **A°** The Idol — ×2 de plus par carte cible
+- **A°** The Order — ×3 de plus sur une suite
+- **A°** The Tribe — ×2 de plus sur une couleur
+- **A°** The Trio — ×3 de plus sur un brelan
 - **A** Vampire — ×Mult de Vampire copié
-- **B** Acrobat — ×3 de plus en dernière main
-- **B** Bloodstone — deux tirages ×1,5 par Cœur
-- **B** Dusk — dernière main redéclenchée une fois de plus
-- **B** Hack — 2 à 5 redéclenchés une fois de plus
-- **B** Hanging Chad — la première carte jouée deux fois de plus
-- **B** Loyalty Card — ×4 de plus toutes les 6 mains
+- **B°** Acrobat — ×3 de plus en dernière main
+- **B°** Bloodstone — deux tirages ×1,5 par Cœur
+- **B°** Dusk — dernière main redéclenchée une fois de plus
+- **B°** Hack — 2 à 5 redéclenchés une fois de plus
+- **B°** Hanging Chad — la première carte jouée deux fois de plus
+- **B°** Loyalty Card — ×4 de plus toutes les 6 mains
 - **B** Madness — ×Mult de Madness copié
 - **B** Ramen — ×Mult de Ramen copié
-- **B** Sock and Buskin — figures redéclenchées une fois de plus
+- **B°** Sock and Buskin — figures redéclenchées une fois de plus
 - **B** Throwback — ×Mult des passages copié
 
 ### Bull
@@ -260,14 +269,14 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Burglar
 
-- **B** Card Sharp — +3 mains : rejouer la même main plus souvent
+- **B°** Card Sharp — +3 mains : rejouer la même main plus souvent
 - **B** Green Joker — plus de mains, plus de défausses perdues
-- **B** Loyalty Card — +3 mains : ×4 plus souvent
+- **B°** Loyalty Card — +3 mains : ×4 plus souvent
 - **B** Spare Trousers — plus de mains : grandit plus vite
 - **B** Supernova — plus de mains : grandit plus vite
 - **C** Runner — +3 mains : plus de suites
-- **C** Troubadour — Burglar rend la main perdue
-- **X** Banner — plus de défausses du tout
+- **C°** Troubadour — Burglar rend la main perdue
+- **X°** Banner — plus de défausses du tout
 - **X** Burnt Joker — plus de défausses du tout
 - **X** Castle — plus de défausses du tout
 - **X** Delayed Gratification — plus de défausses du tout
@@ -324,12 +333,12 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Card Sharp
 
-- **A** Blueprint — ×3 de plus sur la main rejouée
-- **A** Brainstorm — ×3 de plus sur la main rejouée
+- **A°** Blueprint — ×3 de plus sur la main rejouée
+- **A°** Brainstorm — ×3 de plus sur la main rejouée
 - **A** Chicot — plus de boss qui contrent la main répétée
-- **B** Burglar — +3 mains : rejouer la même main plus souvent
+- **B°** Burglar — +3 mains : rejouer la même main plus souvent
 - **B** Supernova — la même main rejouée : ×3 et Supernova grandit
-- **C** paquets Céleste — monter la main rejouée
+- **C°** paquets Céleste — monter la main rejouée
 - **X** Obelisk — Card Sharp veut rejouer la main, Obelisk veut en changer
 
 ### Cartomancer
@@ -406,15 +415,15 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Crafty Joker
 
-- **B** The Tribe — couleur : +80 jetons puis ×2
-- **C** Four Fingers — plus de couleurs
-- **C** Smeared Joker — plus de couleurs
+- **B°** The Tribe — couleur : +80 jetons puis ×2
+- **C°** Four Fingers — plus de couleurs
+- **C°** Smeared Joker — plus de couleurs
 
 ### Crazy Joker
 
-- **B** The Order — suite : +12 Mult puis ×3
-- **C** Four Fingers — plus de suites
-- **C** Shortcut — plus de suites
+- **B°** The Order — suite : +12 Mult puis ×3
+- **C°** Four Fingers — plus de suites
+- **C°** Shortcut — plus de suites
 
 ### Credit Card
 
@@ -434,9 +443,9 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Devious Joker
 
-- **B** The Order — suite : +100 jetons puis ×3
-- **C** Four Fingers — plus de suites
-- **C** Shortcut — plus de suites
+- **B°** The Order — suite : +100 jetons puis ×3
+- **C°** Four Fingers — plus de suites
+- **C°** Shortcut — plus de suites
 
 ### Diet Cola
 
@@ -471,9 +480,9 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Droll Joker
 
-- **B** The Tribe — couleur : +10 Mult puis ×2
-- **C** Four Fingers — plus de couleurs
-- **C** Smeared Joker — plus de couleurs
+- **B°** The Tribe — couleur : +10 Mult puis ×2
+- **C°** Four Fingers — plus de couleurs
+- **C°** Smeared Joker — plus de couleurs
 
 ### Drunkard
 
@@ -486,14 +495,14 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 ### Dusk
 
 - **B** Acrobat — dernière main : redéclenchée et ×3
-- **B** Ancient Joker — dernière main : chaque carte de la couleur deux fois
-- **B** Bloodstone — dernière main : deux tirages par Cœur
-- **B** Blueprint — dernière main redéclenchée une fois de plus
-- **B** Brainstorm — dernière main redéclenchée une fois de plus
+- **B°** Ancient Joker — dernière main : chaque carte de la couleur deux fois
+- **B°** Bloodstone — dernière main : deux tirages par Cœur
+- **B°** Blueprint — dernière main redéclenchée une fois de plus
+- **B°** Brainstorm — dernière main redéclenchée une fois de plus
 - **B** Hiker — dernière main : chaque carte gagne +5 jetons deux fois
-- **B** Photograph — dernière main : ×2 de la figure deux fois
-- **B** The Idol — dernière main : ×2 de la carte cible deux fois
-- **B** Triboulet — dernière main : Rois et Dames ×2 deux fois
+- **B°** Photograph — dernière main : ×2 de la figure deux fois
+- **B°** The Idol — dernière main : ×2 de la carte cible deux fois
+- **B°** Triboulet — dernière main : Rois et Dames ×2 deux fois
 
 ### Egg
 
@@ -517,7 +526,7 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Even Steven
 
-- **B** Hack — 2 et 4 redéclenchés : +4 Mult deux fois
+- **B°** Hack — 2 et 4 redéclenchés : +4 Mult deux fois
 
 ### Faceless Joker
 
@@ -527,7 +536,7 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 ### Fibonacci
 
 - **B** Hack — 2, 3, 5 redéclenchés : +8 Mult deux fois
-- **C** Hanging Chad — As, 2, 3, 5 ou 8 en tête trois fois
+- **C°** Hanging Chad — As, 2, 3, 5 ou 8 en tête trois fois
 - **C** Wee Joker — les 2 jouent pour les deux
 
 ### Flash Card
@@ -538,13 +547,13 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Flower Pot
 
-- **A** Blueprint — ×3 de plus sur quatre couleurs
-- **A** Brainstorm — ×3 de plus sur quatre couleurs
+- **A°** Blueprint — ×3 de plus sur quatre couleurs
+- **A°** Brainstorm — ×3 de plus sur quatre couleurs
 - **B** Seeing Double — ×6 sur une main de couleurs mêlées
-- **B** Smeared Joker — Smeared : deux cartes couvrent les quatre couleurs
+- **B°** Smeared Joker — Smeared : deux cartes couvrent les quatre couleurs
 - **B** Splash — quatre couleurs avec peu de cartes
-- **B** The Lovers — cartes joker : toutes les couleurs
-- **X** Ancient Joker — Ancient Joker veut une couleur, Flower Pot les quatre
+- **B°** The Lovers — cartes joker : toutes les couleurs
+- **X°** Ancient Joker — Ancient Joker veut une couleur, Flower Pot les quatre
 
 ### Fortune Teller
 
@@ -559,16 +568,16 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Four Fingers
 
-- **A** The Order — suites de 4 cartes : ×3 bien plus souvent
-- **A** The Tribe — couleurs de 4 cartes : ×2 bien plus souvent
+- **A°** The Order — suites de 4 cartes : ×3 bien plus souvent
+- **A°** The Tribe — couleurs de 4 cartes : ×2 bien plus souvent
 - **B** Runner — plus de suites : Runner grandit plus vite
 - **B** Seance — quintes flush plus faciles
 - **B** Shortcut — suites et quintes flush faciles
 - **B** Square Joker — couleurs et suites de 4 cartes : Square Joker grandit
-- **C** Crafty Joker — plus de couleurs
-- **C** Crazy Joker — plus de suites
-- **C** Devious Joker — plus de suites
-- **C** Droll Joker — plus de couleurs
+- **C°** Crafty Joker — plus de couleurs
+- **C°** Crazy Joker — plus de suites
+- **C°** Devious Joker — plus de suites
+- **C°** Droll Joker — plus de couleurs
 - **X** Ancient Joker — moins de cartes de la couleur marquent
 - **X** Bloodstone — moins de cartes de la couleur marquent
 
@@ -592,9 +601,9 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Gluttonous Joker
 
-- **B** Onyx Agate — Trèfles joués : +7 et +3 Mult
-- **B** Seeing Double — Trèfles joués : +3 Mult et ×2
-- **B** The Moon — The Moon : des Trèfles
+- **B°** Onyx Agate — Trèfles joués : +7 et +3 Mult
+- **B°** Seeing Double — Trèfles joués : +3 Mult et ×2
+- **B°** The Moon — The Moon : des Trèfles
 
 ### Golden Joker
 
@@ -613,7 +622,7 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 ### Greedy Joker
 
 - **B** Rough Gem — Carreaux joués : +3 Mult et 1 $
-- **B** The Star — The Star : des Carreaux
+- **B°** The Star — The Star : des Carreaux
 
 ### Green Joker
 
@@ -623,26 +632,26 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Gros Michel
 
-- **X** Oops! All 6s — Gros Michel détruit une fois sur trois
+- **X°** Oops! All 6s — Gros Michel détruit une fois sur trois
 
 ### Hack
 
 - **A** The Idol — carte cible basse : ×2 deux fois
-- **B** Blueprint — 2 à 5 redéclenchés une fois de plus
-- **B** Brainstorm — 2 à 5 redéclenchés une fois de plus
-- **B** Even Steven — 2 et 4 redéclenchés : +4 Mult deux fois
+- **B°** Blueprint — 2 à 5 redéclenchés une fois de plus
+- **B°** Brainstorm — 2 à 5 redéclenchés une fois de plus
+- **B°** Even Steven — 2 et 4 redéclenchés : +4 Mult deux fois
 - **B** Fibonacci — 2, 3, 5 redéclenchés : +8 Mult deux fois
-- **B** Odd Todd — 3 et 5 redéclenchés : +31 jetons deux fois
+- **B°** Odd Todd — 3 et 5 redéclenchés : +31 jetons deux fois
 - **B** Ride the Bus — petites cartes sans figures : Ride the Bus grandit
-- **B** Walkie Talkie — les 4 redéclenchés : +10 jetons et +4 Mult deux fois
+- **B°** Walkie Talkie — les 4 redéclenchés : +10 jetons et +4 Mult deux fois
 - **B** Wee Joker — +16 jetons permanents par 2
 - **C** Hiker — 2 à 5 redéclenchés : +5 jetons permanents deux fois
 
 ### Half Joker
 
-- **B** The Duo — paire jouée seule (2-3 cartes) : +20 Mult puis ×2
-- **C** Jolly Joker — paire jouée seule : +20 et +8 Mult
-- **C** Sly Joker — paire jouée seule : +20 Mult et +50 jetons
+- **B°** The Duo — paire jouée seule (2-3 cartes) : +20 Mult puis ×2
+- **C°** Jolly Joker — paire jouée seule : +20 et +8 Mult
+- **C°** Sly Joker — paire jouée seule : +20 Mult et +50 jetons
 - **X** Square Joker — Half Joker veut 3 cartes au plus, Square Joker exactement 4
 
 ### Hallucination
@@ -654,20 +663,20 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 ### Hanging Chad
 
 - **A** Photograph — figure en tête jouée 3 fois : ×8
-- **A** The Idol — carte cible en tête : ×2 trois fois
-- **A** Triboulet — Roi ou Dame en tête : ×2 trois fois
-- **B** Ancient Joker — première carte de la couleur : ×1,5 trois fois
-- **B** Bloodstone — premier Cœur : trois tirages ×1,5
-- **B** Blueprint — la première carte jouée deux fois de plus
-- **B** Brainstorm — la première carte jouée deux fois de plus
+- **A°** The Idol — carte cible en tête : ×2 trois fois
+- **A°** Triboulet — Roi ou Dame en tête : ×2 trois fois
+- **B°** Ancient Joker — première carte de la couleur : ×1,5 trois fois
+- **B°** Bloodstone — premier Cœur : trois tirages ×1,5
+- **B°** Blueprint — la première carte jouée deux fois de plus
+- **B°** Brainstorm — la première carte jouée deux fois de plus
 - **B** Golden Ticket — carte or en tête : 4 $ trois fois
 - **B** Hiker — +15 jetons permanents par main
 - **B** Lucky Cat — trois tirages chance par main
 - **B** Wee Joker — un 2 en tête : Wee Joker grandit trois fois
-- **C** Fibonacci — As, 2, 3, 5 ou 8 en tête trois fois
+- **C°** Fibonacci — As, 2, 3, 5 ou 8 en tête trois fois
 - **C** Rough Gem — Carreau en tête : 1 $ trois fois
-- **C** Scholar — As en tête : +20 jetons et +4 Mult trois fois
-- **C** Walkie Talkie — 10 ou 4 en tête trois fois
+- **C°** Scholar — As en tête : +20 jetons et +4 Mult trois fois
+- **C°** Walkie Talkie — 10 ou 4 en tête trois fois
 
 ### Hiker
 
@@ -720,38 +729,38 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 - **B** Caino — peut dupliquer Canio (moins de jokers, plus de chances)
 - **B** Perkeo — peut dupliquer Perkeo (moins de jokers, plus de chances)
-- **B** Triboulet — peut dupliquer Triboulet (moins de jokers, plus de chances)
+- **B°** Triboulet — peut dupliquer Triboulet (moins de jokers, plus de chances)
 - **B** Yorick — peut dupliquer Yorick (moins de jokers, plus de chances)
 - **X** Madness — Madness peut le détruire avant les deux manches
 
 ### Joker
 
-- **C** Abstract Joker — un joker de plus : +3 Mult
+- **C°** Abstract Joker — un joker de plus : +3 Mult
 
 ### Joker Stencil
 
-- **B** Antimatter — un emplacement vide de plus
+- **B°** Antimatter — un emplacement vide de plus
 - **B** Ectoplasm — joker négatif : pas d'emplacement pris
 - **C** Blank — vers Antimatter
-- **X** Abstract Joker — Stencil veut peu de jokers, Abstract beaucoup
+- **X°** Abstract Joker — Stencil veut peu de jokers, Abstract beaucoup
 - **X** Riff-raff — Joker Stencil veut des emplacements vides
 
 ### Jolly Joker
 
-- **B** The Duo — paire : +8 Mult puis ×2
-- **C** Half Joker — paire jouée seule : +20 et +8 Mult
+- **B°** The Duo — paire : +8 Mult puis ×2
+- **C°** Half Joker — paire jouée seule : +20 et +8 Mult
 
 ### Juggler
 
-- **B** Baron — une carte tenue de plus : un Roi de plus en main
-- **B** Mime — une carte tenue de plus redéclenchée
-- **B** Stuntman — compense la main réduite de Stuntman
+- **B°** Baron — une carte tenue de plus : un Roi de plus en main
+- **B°** Mime — une carte tenue de plus redéclenchée
+- **B°** Stuntman — compense la main réduite de Stuntman
 
 ### Loyalty Card
 
-- **B** Blueprint — ×4 de plus toutes les 6 mains
-- **B** Brainstorm — ×4 de plus toutes les 6 mains
-- **B** Burglar — +3 mains : ×4 plus souvent
+- **B°** Blueprint — ×4 de plus toutes les 6 mains
+- **B°** Brainstorm — ×4 de plus toutes les 6 mains
+- **B°** Burglar — +3 mains : ×4 plus souvent
 
 ### Luchador
 
@@ -769,7 +778,7 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Lusty Joker
 
-- **B** The Sun — The Sun : des Cœurs
+- **B°** The Sun — The Sun : des Cœurs
 - **C** Bloodstone — +3 par Cœur avant le ×Mult
 
 ### Mad Joker
@@ -829,16 +838,16 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **A** Blueprint — un redéclenchement de plus des cartes tenues
 - **A** Brainstorm — un redéclenchement de plus des cartes tenues
 - **A** Steel Joker — cartes d'acier tenues redéclenchées
-- **B** Juggler — une carte tenue de plus redéclenchée
-- **B** Raised Fist — la carte tenue la plus basse compte deux fois
-- **B** Shoot the Moon — chaque Dame tenue : +13 Mult deux fois
-- **B** The Chariot — cartes d'acier tenues redéclenchées
+- **B°** Juggler — une carte tenue de plus redéclenchée
+- **B°** Raised Fist — la carte tenue la plus basse compte deux fois
+- **B°** Shoot the Moon — chaque Dame tenue : +13 Mult deux fois
+- **B°** The Chariot — cartes d'acier tenues redéclenchées
 - **C** Reserved Parking — figures tenues : deux tirages à 1 $
 - **X** Stuntman — moins de cartes tenues
 
 ### Misprint
 
-- **C** Blueprint — un second tirage de 0 à 23 Mult
+- **C°** Blueprint — un second tirage de 0 à 23 Mult
 
 ### Mr. Bones
 
@@ -846,7 +855,7 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Mystic Summit
 
-- **X** Banner — Banner veut des défausses restantes, Mystic Summit aucune
+- **X°** Banner — Banner veut des défausses restantes, Mystic Summit aucune
 - **X** Delayed Gratification — ne pas défausser contre défausser tout
 
 ### Obelisk
@@ -859,14 +868,14 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Odd Todd
 
-- **B** Hack — 3 et 5 redéclenchés : +31 jetons deux fois
+- **B°** Hack — 3 et 5 redéclenchés : +31 jetons deux fois
 - **C** Ride the Bus — jouer sans figures
 
 ### Onyx Agate
 
-- **B** Gluttonous Joker — Trèfles joués : +7 et +3 Mult
-- **B** Seeing Double — Trèfles joués : +7 Mult et ×2
-- **B** The Moon — The Moon : des Trèfles
+- **B°** Gluttonous Joker — Trèfles joués : +7 et +3 Mult
+- **B°** Seeing Double — Trèfles joués : +7 Mult et ×2
+- **B°** The Moon — The Moon : des Trèfles
 
 ### Oops! All 6s
 
@@ -878,7 +887,7 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **B** Hallucination — un tarot à chaque paquet ouvert
 - **C** Business Card — argent garanti
 - **C** Reserved Parking — argent garanti
-- **X** Gros Michel — Gros Michel détruit une fois sur trois
+- **X°** Gros Michel — Gros Michel détruit une fois sur trois
 
 ### Pareidolia
 
@@ -899,13 +908,13 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Photograph
 
-- **A** Blueprint — deux ×2 sur la première figure
-- **A** Brainstorm — deux ×2 sur la première figure
+- **A°** Blueprint — deux ×2 sur la première figure
+- **A°** Brainstorm — deux ×2 sur la première figure
 - **A** Chicot — plus de The Plant contre les figures
 - **A** Hanging Chad — figure en tête jouée 3 fois : ×8
 - **A** Sock and Buskin — la figure en tête redéclenchée
 - **B** Ancient Joker — deux ×Mult par carte
-- **B** Dusk — dernière main : ×2 de la figure deux fois
+- **B°** Dusk — dernière main : ×2 de la figure deux fois
 - **B** Seltzer — 10 mains : ×2 de la figure deux fois
 - **B** Deja Vu — sceau rouge sur la figure de tête
 - **X** Ride the Bus — les figures remettent Ride the Bus à zéro
@@ -916,7 +925,7 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Raised Fist
 
-- **B** Mime — la carte tenue la plus basse compte deux fois
+- **B°** Mime — la carte tenue la plus basse compte deux fois
 - **C** Baron — carte tenue la plus basse
 
 ### Ramen
@@ -983,11 +992,11 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Scary Face
 
-- **B** Sock and Buskin — figures redéclenchées : +30 jetons deux fois
+- **B°** Sock and Buskin — figures redéclenchées : +30 jetons deux fois
 
 ### Scholar
 
-- **C** Hanging Chad — As en tête : +20 jetons et +4 Mult trois fois
+- **C°** Hanging Chad — As en tête : +20 jetons et +4 Mult trois fois
 - **C** Death — Death : copier un As
 
 ### Seance
@@ -998,13 +1007,13 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Seeing Double
 
-- **A** Blueprint — ×2 de plus avec un Trèfle
-- **A** Brainstorm — ×2 de plus avec un Trèfle
+- **A°** Blueprint — ×2 de plus avec un Trèfle
+- **A°** Brainstorm — ×2 de plus avec un Trèfle
 - **B** Flower Pot — ×6 sur une main de couleurs mêlées
-- **B** Gluttonous Joker — Trèfles joués : +3 Mult et ×2
-- **B** Onyx Agate — Trèfles joués : +7 Mult et ×2
+- **B°** Gluttonous Joker — Trèfles joués : +3 Mult et ×2
+- **B°** Onyx Agate — Trèfles joués : +7 Mult et ×2
 - **B** Smeared Joker — tout Pique compte comme Trèfle
-- **B** The Moon — The Moon : des Trèfles
+- **B°** The Moon — The Moon : des Trèfles
 
 ### Seltzer
 
@@ -1018,7 +1027,7 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 ### Shoot the Moon
 
 - **B** Baron — Dames tenues (à gauche) puis Rois
-- **B** Mime — chaque Dame tenue : +13 Mult deux fois
+- **B°** Mime — chaque Dame tenue : +13 Mult deux fois
 - **B** Cryptid — deux Dames de plus
 - **B** Death — Death : copier une Dame
 - **B** Strength — Strength : Valet → Dame
@@ -1026,12 +1035,12 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Shortcut
 
-- **A** The Order — suites avec trous : ×3 bien plus souvent
+- **A°** The Order — suites avec trous : ×3 bien plus souvent
 - **B** Four Fingers — suites et quintes flush faciles
 - **B** Runner — plus de suites : Runner grandit plus vite
 - **B** Seance — quintes flush plus faciles
-- **C** Crazy Joker — plus de suites
-- **C** Devious Joker — plus de suites
+- **C°** Crazy Joker — plus de suites
+- **C°** Devious Joker — plus de suites
 - **C** Superposition — suites avec As
 
 ### Showman
@@ -1045,34 +1054,34 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Sly Joker
 
-- **B** The Duo — paire : +50 jetons puis ×2
-- **C** Half Joker — paire jouée seule : +20 Mult et +50 jetons
+- **B°** The Duo — paire : +50 jetons puis ×2
+- **C°** Half Joker — paire jouée seule : +20 Mult et +50 jetons
 
 ### Smeared Joker
 
 - **A** Ancient Joker — la couleur choisie couvre la moitié du deck
-- **A** The Tribe — deux couleurs seulement : couleurs faciles, ×2
+- **A°** The Tribe — deux couleurs seulement : couleurs faciles, ×2
 - **B** Bloodstone — les Carreaux comptent aussi
-- **B** Flower Pot — Smeared : deux cartes couvrent les quatre couleurs
+- **B°** Flower Pot — Smeared : deux cartes couvrent les quatre couleurs
 - **B** Seance — quintes flush plus faciles
 - **B** Seeing Double — tout Pique compte comme Trèfle
-- **C** Crafty Joker — plus de couleurs
-- **C** Droll Joker — plus de couleurs
+- **C°** Crafty Joker — plus de couleurs
+- **C°** Droll Joker — plus de couleurs
 
 ### Smiley Face
 
-- **B** Sock and Buskin — figures redéclenchées : +5 Mult deux fois
+- **B°** Sock and Buskin — figures redéclenchées : +5 Mult deux fois
 
 ### Sock and Buskin
 
 - **S** Triboulet — Rois et Dames redéclenchés : ×4 chacun
 - **A** Photograph — la figure en tête redéclenchée
 - **A** The Idol — figure cible : ×2 deux fois
-- **B** Blueprint — figures redéclenchées une fois de plus
-- **B** Brainstorm — figures redéclenchées une fois de plus
+- **B°** Blueprint — figures redéclenchées une fois de plus
+- **B°** Brainstorm — figures redéclenchées une fois de plus
 - **B** Pareidolia — toutes les cartes redéclenchées
-- **B** Scary Face — figures redéclenchées : +30 jetons deux fois
-- **B** Smiley Face — figures redéclenchées : +5 Mult deux fois
+- **B°** Scary Face — figures redéclenchées : +30 jetons deux fois
+- **B°** Smiley Face — figures redéclenchées : +5 Mult deux fois
 - **C** Business Card — figures redéclenchées : deux tirages à 2 $
 - **C** Hiker — figures redéclenchées : +5 jetons permanents deux fois
 - **X** Ride the Bus — les figures remettent Ride the Bus à zéro
@@ -1121,8 +1130,8 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 - **B** Blackboard — petite main : plus facile de ne tenir que du noir
 - **B** Blueprint — +250 jetons copiés sans perdre de cartes en main
-- **B** Juggler — compense la main réduite de Stuntman
-- **B** Turtle Bean — compense la main réduite de Stuntman
+- **B°** Juggler — compense la main réduite de Stuntman
+- **B°** Turtle Bean — compense la main réduite de Stuntman
 - **X** Baron — moins de cartes tenues
 - **X** Mime — moins de cartes tenues
 - **X** Shoot the Moon — moins de Dames tenues
@@ -1150,63 +1159,63 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### The Duo
 
-- **A** Blueprint — ×2 de plus sur chaque paire
-- **A** Brainstorm — ×2 de plus sur chaque paire
-- **A** The Family — un carré contient une paire : ×4 et ×2
-- **A** The Trio — Full ou brelan contient une paire : ×2 et ×3 ensemble
-- **B** Half Joker — paire jouée seule (2-3 cartes) : +20 Mult puis ×2
-- **B** Jolly Joker — paire : +8 Mult puis ×2
-- **B** Sly Joker — paire : +50 jetons puis ×2
+- **A°** Blueprint — ×2 de plus sur chaque paire
+- **A°** Brainstorm — ×2 de plus sur chaque paire
+- **A°** The Family — un carré contient une paire : ×4 et ×2
+- **A°** The Trio — Full ou brelan contient une paire : ×2 et ×3 ensemble
+- **B°** Half Joker — paire jouée seule (2-3 cartes) : +20 Mult puis ×2
+- **B°** Jolly Joker — paire : +8 Mult puis ×2
+- **B°** Sly Joker — paire : +50 jetons puis ×2
 
 ### The Family
 
-- **A** Blueprint — ×4 de plus sur un carré
-- **A** Brainstorm — ×4 de plus sur un carré
-- **A** The Duo — un carré contient une paire : ×4 et ×2
-- **A** The Trio — un carré contient un brelan : ×4 et ×3
+- **A°** Blueprint — ×4 de plus sur un carré
+- **A°** Brainstorm — ×4 de plus sur un carré
+- **A°** The Duo — un carré contient une paire : ×4 et ×2
+- **A°** The Trio — un carré contient un brelan : ×4 et ×3
 
 ### The Idol
 
-- **A** Blueprint — ×2 de plus par carte cible
-- **A** Brainstorm — ×2 de plus par carte cible
+- **A°** Blueprint — ×2 de plus par carte cible
+- **A°** Brainstorm — ×2 de plus par carte cible
 - **A** Hack — carte cible basse : ×2 deux fois
-- **A** Hanging Chad — carte cible en tête : ×2 trois fois
+- **A°** Hanging Chad — carte cible en tête : ×2 trois fois
 - **A** Sock and Buskin — figure cible : ×2 deux fois
-- **B** Dusk — dernière main : ×2 de la carte cible deux fois
+- **B°** Dusk — dernière main : ×2 de la carte cible deux fois
 - **B** Seltzer — 10 mains : carte cible deux fois
 
 ### The Order
 
-- **A** Blueprint — ×3 de plus sur une suite
-- **A** Brainstorm — ×3 de plus sur une suite
-- **A** Four Fingers — suites de 4 cartes : ×3 bien plus souvent
+- **A°** Blueprint — ×3 de plus sur une suite
+- **A°** Brainstorm — ×3 de plus sur une suite
+- **A°** Four Fingers — suites de 4 cartes : ×3 bien plus souvent
 - **A** Runner — chaque suite : Runner grandit et ×3
-- **A** Shortcut — suites avec trous : ×3 bien plus souvent
-- **B** Crazy Joker — suite : +12 Mult puis ×3
-- **B** Devious Joker — suite : +100 jetons puis ×3
+- **A°** Shortcut — suites avec trous : ×3 bien plus souvent
+- **B°** Crazy Joker — suite : +12 Mult puis ×3
+- **B°** Devious Joker — suite : +100 jetons puis ×3
 
 ### The Tribe
 
-- **A** Blueprint — ×2 de plus sur une couleur
-- **A** Brainstorm — ×2 de plus sur une couleur
-- **A** Four Fingers — couleurs de 4 cartes : ×2 bien plus souvent
-- **A** Smeared Joker — deux couleurs seulement : couleurs faciles, ×2
+- **A°** Blueprint — ×2 de plus sur une couleur
+- **A°** Brainstorm — ×2 de plus sur une couleur
+- **A°** Four Fingers — couleurs de 4 cartes : ×2 bien plus souvent
+- **A°** Smeared Joker — deux couleurs seulement : couleurs faciles, ×2
 - **A** Sigil — tout le deck d'une seule couleur
-- **B** Crafty Joker — couleur : +80 jetons puis ×2
-- **B** Droll Joker — couleur : +10 Mult puis ×2
-- **B** The Moon — convertir vers une couleur
-- **B** The Star — convertir vers une couleur
-- **B** The Sun — convertir vers une couleur
-- **B** The World — convertir vers une couleur
+- **B°** Crafty Joker — couleur : +80 jetons puis ×2
+- **B°** Droll Joker — couleur : +10 Mult puis ×2
+- **B°** The Moon — convertir vers une couleur
+- **B°** The Star — convertir vers une couleur
+- **B°** The Sun — convertir vers une couleur
+- **B°** The World — convertir vers une couleur
 
 ### The Trio
 
-- **A** Blueprint — ×3 de plus sur un brelan
-- **A** Brainstorm — ×3 de plus sur un brelan
-- **A** The Duo — Full ou brelan contient une paire : ×2 et ×3 ensemble
-- **A** The Family — un carré contient un brelan : ×4 et ×3
-- **B** Wily Joker — brelan : +100 jetons puis ×3
-- **B** Zany Joker — brelan : +12 Mult puis ×3
+- **A°** Blueprint — ×3 de plus sur un brelan
+- **A°** Brainstorm — ×3 de plus sur un brelan
+- **A°** The Duo — Full ou brelan contient une paire : ×2 et ×3 ensemble
+- **A°** The Family — un carré contient un brelan : ×4 et ×3
+- **B°** Wily Joker — brelan : +100 jetons puis ×3
+- **B°** Zany Joker — brelan : +12 Mult puis ×3
 
 ### Throwback
 
@@ -1243,23 +1252,23 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **S** Blueprint — ×4 par Roi ou Dame
 - **S** Brainstorm — ×4 par Roi ou Dame
 - **S** Sock and Buskin — Rois et Dames redéclenchés : ×4 chacun
-- **A** Hanging Chad — Roi ou Dame en tête : ×2 trois fois
+- **A°** Hanging Chad — Roi ou Dame en tête : ×2 trois fois
 - **A** Cryptid — deux Rois ou Dames de plus
 - **A** Death — Death : copier un Roi ou une Dame
 - **A** Strength — Strength : Valet → Dame, Dame → Roi
-- **B** Dusk — dernière main : Rois et Dames ×2 deux fois
-- **B** Invisible Joker — peut dupliquer Triboulet (moins de jokers, plus de chances)
+- **B°** Dusk — dernière main : Rois et Dames ×2 deux fois
+- **B°** Invisible Joker — peut dupliquer Triboulet (moins de jokers, plus de chances)
 - **B** Seltzer — 10 mains : Rois et Dames ×2 deux fois
 
 ### Troubadour
 
-- **B** Baron — +2 cartes tenues : plus de Rois en main
-- **C** Burglar — Burglar rend la main perdue
+- **B°** Baron — +2 cartes tenues : plus de Rois en main
+- **C°** Burglar — Burglar rend la main perdue
 
 ### Turtle Bean
 
-- **B** Baron — des cartes tenues de plus : plus de Rois en main
-- **B** Stuntman — compense la main réduite de Stuntman
+- **B°** Baron — des cartes tenues de plus : plus de Rois en main
+- **B°** Stuntman — compense la main réduite de Stuntman
 
 ### Vagabond
 
@@ -1287,8 +1296,8 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Walkie Talkie
 
-- **B** Hack — les 4 redéclenchés : +10 jetons et +4 Mult deux fois
-- **C** Hanging Chad — 10 ou 4 en tête trois fois
+- **B°** Hack — les 4 redéclenchés : +10 jetons et +4 Mult deux fois
+- **C°** Hanging Chad — 10 ou 4 en tête trois fois
 
 ### Wee Joker
 
@@ -1300,12 +1309,12 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Wily Joker
 
-- **B** The Trio — brelan : +100 jetons puis ×3
+- **B°** The Trio — brelan : +100 jetons puis ×3
 
 ### Wrathful Joker
 
-- **B** Arrowhead — Piques joués : +50 jetons et +3 Mult
-- **B** The World — The World : des Piques
+- **B°** Arrowhead — Piques joués : +50 jetons et +3 Mult
+- **B°** The World — The World : des Piques
 
 ### Yorick
 
@@ -1323,7 +1332,7 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Zany Joker
 
-- **B** The Trio — brelan : +12 Mult puis ×3
+- **B°** The Trio — brelan : +12 Mult puis ×3
 
 ## Builds
 
@@ -1512,3 +1521,4 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **B** : bonne
 - **C** : mineure
 - **X** : anti-synergie
+- **°** : déjà mesurée par le moteur de score : affichée, pas comptée une seconde fois

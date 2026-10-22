@@ -20,12 +20,25 @@ function DOC.render()
     -- per joker: its partners (both directions) and its items
     local by = {}
     local function push(k, e) by[k] = by[k] or {}; table.insert(by[k], e) end
+    -- counted in the note, or shown only (the score engine measures it already)
+    local function counted_pair(p)
+        if p.list == 'builds' then return true end
+        return BD.LIST_SCALE ~= 0 and (p.future or BD.STATIC_SCALE ~= 0)
+    end
+    local function counted_item(e) return (BD.ITEM_SCALE or 1) ~= 0 and (e.future or BD.STATIC_SCALE ~= 0) end
+    local n_shown = 0
     for _, p in ipairs(BD.PAIRS) do
-        push(p.a, { tier = p.tier, other = name(p.b), why = p.why })
-        push(p.b, { tier = p.tier, other = name(p.a), why = p.why })
+        local c = counted_pair(p)
+        if not c then n_shown = n_shown + 1 end
+        push(p.a, { tier = p.tier, other = name(p.b), why = p.why, shown = not c })
+        push(p.b, { tier = p.tier, other = name(p.a), why = p.why, shown = not c })
     end
     for k, list in pairs(BD.ITEMS_OF_JOKER) do
-        for _, e in ipairs(list) do push(k, { tier = e.tier, other = BD.item_name(e.item), why = e.why, item = true }) end
+        for _, e in ipairs(list) do
+            local c = counted_item(e)
+            if not c then n_shown = n_shown + 1 end
+            push(k, { tier = e.tier, other = BD.item_name(e.item), why = e.why, item = true, shown = not c })
+        end
     end
     local keys = DB.all_keys()
     table.sort(keys, function(a, b) return name(a):lower() < name(b):lower() end)
@@ -43,15 +56,23 @@ function DOC.render()
     w()
     w('## Comment le copilote s\'en sert')
     w()
-    w('- **Boutique et paquets** : un joker qui forme une synergie avec vos jokers reçoit un bonus de « potentiel »')
-    w('  (S +0,4, A +0,28, B +0,16, C +0,07, X −0,25, total borné entre −0,5 et +0,6 ; ×0,7 aux antes 1-2, où les pros')
-    w('  ne forcent pas encore un build). La raison est affichée : « synergie : Baron, chaque Roi tenu compte deux fois ».')
-    w('- **Cartes, bons et paquets** : The Chariot avec Steel Joker, les planètes avec Constellation, un paquet Standard')
-    w('  avec Hologram, Wasteful avec Yorick… reçoivent le même bonus (borné entre −0,4 et +0,5).')
-    w('- **Bons achetés et cartes tenues** comptent aussi pour un joker en boutique (Perkeo quand Observatory est acheté).')
+    w('- Le moteur de score **mesure** ce que vos jokers font ensemble maintenant (Blueprint + The Duo, Jolly + Sly,')
+    w('  The Chariot avec Steel Joker : l\'amélioration est simulée). Une synergie ne s\'ajoute à la note que pour ce que')
+    w('  cette mesure ne voit pas encore : une pièce qui **grandit**, rapporte de l\'argent, crée des cartes ou change le')
+    w('  deck plus tard (Hologram, Constellation, Yorick, Bull…), ou un objet dont l\'effet n\'est pas simulé (Cryptid,')
+    w('  Death, Observatory…). Les autres sont **affichées** (raisons des notes, « Synergies à chercher », cette liste)')
+    w('  sans être comptées deux fois ; elles sont marquées ° ci-dessous.')
+    w('- **Comptée**, une synergie ajoute au « potentiel » d\'un joker en boutique ou dans un paquet : S +0,4, A +0,28,')
+    w('  B +0,16, C +0,07, X −0,25, total borné entre −0,5 et +0,6, ×0,7 aux antes 1-2 (les pros ne forcent pas encore')
+    w('  un build) ; pour une carte, un bon ou un paquet, entre −0,4 et +0,5. Les bons achetés et les cartes tenues')
+    w('  comptent aussi pour un joker (Perkeo quand Observatory est acheté).')
+    w('- La raison est toujours affichée : « synergie : Baron, chaque Roi tenu compte deux fois ».')
     w('- **« Synergies à chercher »** (panneau de la boutique) : les pièces S et A qui manquent à vos jokers.')
-    w('- Le moteur de score **mesure** toujours ce qu\'un joker apporte maintenant ; ces listes ajoutent ce que le build')
-    w('  deviendra. Vos corrections (touche « Mon choix », raison « synergie ») peuvent augmenter leur poids (×1,5 au plus).')
+    w('- Vos corrections (touche « Mon choix », raison « synergie ») augmentent le poids des synergies comptées (×1,5')
+    w('  au plus).')
+    w(string.format('- Réglages actuels (`engine/builds.lua`) : liste %s, objets %s, synergies déjà mesurées %s, règles générales %s ;',
+        tostring(BD.LIST_SCALE), tostring(BD.ITEM_SCALE), tostring(BD.STATIC_SCALE), tostring(BD.GENERIC_SCALE)))
+    w(string.format('  %d synergies de la liste sont affichées seulement (°). Mesures : `docs/TRAINING.md`, « Résultats 1.0.12 ».', n_shown))
     w()
     w('## Règles générales (engine/builds.lua)')
     w()
@@ -63,6 +84,8 @@ function DOC.render()
     w('- **Blueprint / Brainstorm** avec un ×Mult ou un redéclencheur compatible (le jeu l\'indique sur la carte) : A ;')
     w('  le joker ×Mult acheté quand une copie est déjà là : B.')
     w('- Une paire nommée dans les listes remplace toujours la règle générale pour les deux mêmes jokers.')
+    w('- Ces règles portent sur des effets que le moteur de score mesure déjà : elles sont affichées, et comptées')
+    w('  seulement si `GENERIC_SCALE` n\'est pas 0.')
     w()
     w('## Par joker')
     w()
@@ -77,7 +100,7 @@ function DOC.render()
             w('### ' .. name(k))
             w()
             for _, e in ipairs(list) do
-                w(string.format('- **%s** %s — %s', e.tier, e.other, e.why))
+                w(string.format('- **%s%s** %s — %s', e.tier, e.shown and '°' or '', e.other, e.why))
             end
             w()
         else
@@ -102,6 +125,7 @@ function DOC.render()
     w('## Niveaux')
     w()
     for _, t in ipairs({ 'S', 'A', 'B', 'C', 'X' }) do w('- **' .. t .. '** : ' .. TIER_LABEL[t]:match('%((.*)%)')) end
+    w('- **°** : déjà mesurée par le moteur de score : affichée, pas comptée une seconde fois')
     return table.concat(out, '\n') .. '\n'
 end
 
