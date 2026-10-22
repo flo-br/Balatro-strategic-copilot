@@ -100,7 +100,7 @@ différents dossiers de sauvegarde (l'équivalent de `%AppData%\Balatro`) rempli
 
 | Scénario | Résultat |
 |---|---|
-| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.0.11 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 281) ; panneau et badges « JOUER » affichés (capture) |
+| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.0.11 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 247) ; panneau et badges « JOUER » affichés (capture) |
 | mod seul, sans amorce | jeu normal, pas de copilote (témoin) |
 | amorce sans le dossier du mod | jeu normal jusqu'au bout ; bandeau rouge « dossier introuvable » ; erreur dans `amorce.log` |
 | Steamodded a déjà chargé le copilote | l'amorce se retire (« Steamodded gère déjà le copilote »), pas de double chargement |
@@ -140,7 +140,7 @@ passés aux deux chargeurs (0509c et récent) : bandeau « 1.0.11 actif » dans 
 | Score exact d'une main, 8 jokers | 0,03–0,04 ms |
 | Lecture de l'état (instantané) | 0,17–0,19 ms |
 | Analyse de main complète (218 jeux + simulations, 64 manches/candidat) | 290–420 ms de CPU, en 60–80 tranches |
-| Analyse de boutique complète | 630–810 ms de CPU |
+| Analyse de boutique complète | 630–810 ms de CPU (48 mains simulées) ; **1.0.11 : 420–460 ms** (24 mains, réglage du jeu ; 630 ms avec 48 dans les mêmes conditions, 2026-10-22) |
 | Plus longue tranche de calcul par image (budget 4 ms) | 6–10 ms |
 | Sauvegarde du profil (2 000 observations) | ≈ 4 ms |
 

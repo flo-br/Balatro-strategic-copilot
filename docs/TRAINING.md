@@ -20,7 +20,8 @@ luajit tools/trainer/run.lua <première_graine> <nombre> <sortie.jsonl> [réglag
 luajit tools/trainer/report.lua sortie.jsonl [autre.jsonl ...]
 ```
 
-* Réglages : `rollouts=32` et `shop_samples=80` par défaut (le mod utilise 64 et 120 : plus lent),
+* Réglages : `rollouts=32` et `shop_samples=80` par défaut (le mod utilise 64 et 60 depuis 1.0.11 ; les mesures
+  des versions 1.0.9 à 1.0.11 ont été faites avec `rollouts=24 shop_samples=60`),
   `deck=b_red` (15 decks, ci-dessous), `stake=1` à `8` (1.0.9), et tout réglage de la section
   `advice` de `config.lua` (ex. `buy_note=58`).
 * `learn=1` (1.0.9) : les parties de la série partagent **un profil**, comme les parties du joueur
@@ -362,12 +363,20 @@ remplacement sur 67 refusés). Corrigé derrière une option : notes 39 → 52-6
 | R1 croissance du joker acheté comptée en remplacement | −0,21 ± 0,13 | non |
 | R2 R1 + bonus ×Mult +0,3 aux mises élevées | −0,90 ± 0,34 (58 parties) | non |
 | X3 bonus ×Mult −0,15 aux mises élevées | −0,41 ± 0,31 (59 parties) | non |
-| X1 deux fois plus d'échantillons en boutique (120, la valeur du jeu) | {X1} | non |
-| X2 estimation des antes futures mêlée à la note (0,5) | {X2} | non |
+| X1 deux fois plus d'échantillons en boutique (120, la valeur du jeu jusqu'en 1.0.10) | **−0,99 ± 0,52** (moins d'achats : 17,6 par partie contre 20,1) | **non : le jeu passe à 60** |
+| X2 estimation des antes futures mêlée à la note (0,5) | +0,02 ± 0,05 | non |
 
 **Lecture honnête.** Remplacer un joker solide par un joker qui grandit « à condition » (ajouter
 des cartes, vendre, déclencher des cartes chance) coûte plus qu'il ne rapporte ; pousser les ×Mult
-dans un sens ou dans l'autre fait moins bien : le réglage actuel est au bon niveau. Plus
-d'échantillons en boutique ne fait pas mieux : le bruit de l'estimation n'est pas ce qui limite le
-copilote. **La 1.0.11 garde donc les conseils de la 1.0.10** ; les options restent coupées
-(`replace_growth`, `xmult_extra`), pour reproduire ces mesures.
+dans un sens ou dans l'autre fait moins bien : le réglage actuel est au bon niveau. Les options
+restent coupées (`replace_growth`, `xmult_extra`), pour reproduire ces mesures.
+
+**Le seul changement de la 1.0.11 : le jeu utilise désormais les réglages mesurés.** Toutes les
+mesures des versions 1.0.9 à 1.0.11 ont été faites avec 24 mains simulées par analyse de boutique
+(`shop_samples=60`) ; le mod, lui, en utilisait 48 (`shop_samples=120`). X1 joue exactement ce
+réglage du jeu : −0,99 ± 0,52 blinde par partie, avec moins d'achats (17,6 par partie contre 20,1 :
+moins de hasard dans les notes, donc une meilleure note moins souvent au-dessus du seuil d'achat,
+et l'épargne en trop fait perdre, comme E6b). Le jeu passe donc à `shop_samples = 60`, la valeur
+avec laquelle les conseils ont été réglés et validés (et l'analyse de boutique demande ≈ 30 % de
+calcul en moins). Écart restant entre le jeu et le simulateur : la fin de manche est simulée 64 fois par
+candidat en jeu, 24 fois dans les mesures (les probabilités de la main restent bien calibrées).

@@ -2,8 +2,15 @@
 
 ## 1.0.11 — 2026-10-22
 
-Demande : continuer à progresser aux mises élevées. **Les conseils restent ceux de la 1.0.10** :
-aucune des pistes mesurées ne fait mieux (détails : `docs/TRAINING.md`, « Résultats 1.0.11 »).
+Demande : continuer à progresser aux mises élevées. Détails : `docs/TRAINING.md`, « Résultats 1.0.11 ».
+
+### Le changement : le jeu utilise les réglages avec lesquels les conseils ont été mesurés
+* `shop_samples` passe de 120 à **60** (24 mains simulées par analyse de boutique au lieu de 48) :
+  c'est la valeur de toutes les mesures des versions 1.0.9 à 1.0.11. Joué tel quel, l'ancien
+  réglage du jeu fait **−0,99 ± 0,52 blinde par partie** sur 60 parties à la mise noire (moins
+  d'achats : 17,6 par partie contre 20,1). L'analyse de boutique est aussi plus courte (≈ 30 % de
+  calcul en moins : 420-460 ms au lieu de ≈ 630 ms, mesuré sur le même état).
+* Pour le reste, **les conseils sont ceux de la 1.0.10** : aucune autre piste ne fait mieux.
 
 ### Nouvelles mesures
 * **Bifurcations** (`tools/trainer/branch.lua`) : à une décision de boutique, la partie simulée est
@@ -18,7 +25,7 @@ aucune des pistes mesurées ne fait mieux (détails : `docs/TRAINING.md`, « Ré
   joker vendu était comptée ; corrigée, mais −0,21 ± 0,13 : un joker qui grandit « à condition »
   ne vaut pas le joker solide qu'on revend pour lui) — `replace_growth`.
 * Bonus ×Mult relevé (−0,90 ± 0,34) ou baissé (−0,41 ± 0,31) aux mises élevées — `xmult_extra`.
-* Deux fois plus d'échantillons en boutique ; estimation des antes futures dans la note.
+* Estimation des antes futures mêlée à la note (+0,02 ± 0,05 : rien).
 
 ### Outils
 * Options du simulateur partagées (`tools/trainer/options.lua`) ; `branch.lua` (Linux, LuaJIT).

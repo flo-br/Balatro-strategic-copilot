@@ -35,7 +35,9 @@ return {
         max_branches = 48,       -- exact enumeration limit of random events per hand
         samples = 160,           -- Monte-Carlo samples when enumeration is too large
         poll_interval = 0.15,    -- seconds between state-change checks
-        shop_samples = 120,      -- simulated hands to estimate build power
+        shop_samples = 60,       -- simulated hands to estimate build power (1.0.11: 60, the value every
+                                 -- setting was measured with on the simulator; 120 measured -0.99 +- 0.52
+                                 -- blinds per run at the Black Stake: fewer purchases)
     },
     advice = {                   -- the "À FAIRE" step (engine/advice.lua)
         buy_note = 56,           -- buy / take an item from this strategic score (/100, 50 = neutral)

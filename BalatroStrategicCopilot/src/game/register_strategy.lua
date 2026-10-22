@@ -26,7 +26,7 @@ end
 function RS.attach(Ctl)
     Ctl.register('shop', function(state, task, c)
         local o = model_opts(c)
-        o.n = math.max(24, math.floor((c.compute.shop_samples or 120) / 2.5))
+        o.n = math.max(24, math.floor((c.compute.shop_samples or 60) / 2.5))
         o.publish = task.publish
         return SH.analyse(state, o, task)
     end, FS.shop_panel, FS.shop_badges)

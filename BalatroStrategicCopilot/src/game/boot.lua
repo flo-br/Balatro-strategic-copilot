@@ -14,7 +14,7 @@ local DEFAULTS = {
     ui = { anchor = 'right', scale = 1.0, show_badges = true, show_compact = true, panel_open = false, detail = true, use_game_font = true },
     alerts = { enabled = true, danger_threshold = 0.5, great_buy_note = 80, joker_order_gain = 0.10, cooldown = 25, duration = 5 },
     thresholds = { prob_good = 0.80, prob_mid = 0.50, note_good = 70, note_mid = 45 },
-    compute = { budget_ms = 4, rollouts = 64, max_branches = 48, samples = 160, poll_interval = 0.15, shop_samples = 120 },
+    compute = { budget_ms = 4, rollouts = 64, max_branches = 48, samples = 160, poll_interval = 0.15, shop_samples = 60 },
     advice = { buy_note = 56, sell_note = 60, sell_max_contribution = 0.03, order_min_gain = 0.01, luchador_below = 0.80,
         booster_note = 52, strong_note = 75, save_from_ante = 2, interest_weight = 3, safe_next = 0.85, safe_boss = 0.70,
         reroll_once = true, reroll_once_max_loss = 1, rich_reserve = 10,

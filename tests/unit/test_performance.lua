@@ -102,7 +102,8 @@ function S.shop_analysis_sliced(T)
         { set = 'Joker', key = 'j_duo', name = 'The Duo', cost = 8, uid = 'a', joker = F.joker('j_duo') },
         { set = 'Planet', key = 'c_mercury', name = 'Mercury', cost = 3, uid = 'b', hand_type = 'Pair' } },
         vouchers = { { set = 'Voucher', key = 'v_grabber', name = 'Grabber', cost = 10, uid = 'c' } }, boosters = {} }
-    local res, total, max_slice, slices = run_sliced('shop', function(task) return SH.analyse(s, { n = 48 }, task) end, 0.004)
+    -- n as in the game (register_strategy: shop_samples 60 / 2.5 = 24 since 1.0.11)
+    local res, total, max_slice, slices = run_sliced('shop', function(task) return SH.analyse(s, { n = 24 }, task) end, 0.004)
     T.ok(type(res) == 'table' and res.options, 'shop analysis completed: ' .. tostring(res))
     report('analyse de boutique complète (CPU total)', total)
     report('  tranche maximale (budget 4 ms)', max_slice)

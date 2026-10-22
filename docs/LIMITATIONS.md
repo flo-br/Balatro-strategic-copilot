@@ -91,6 +91,11 @@
   possibles (moins de 0,5 blinde) n'ont pas pu être départagées, et plusieurs corrections justes
   en principe restent coupées faute de gain mesuré. Le simulateur simplifie le jeu
   (TRAINING.md) ; le niveau réel à ces mises reste à observer en jeu.
+* Réglages du jeu et du simulateur (1.0.11) : l'analyse de boutique utilise désormais en jeu les
+  mêmes 24 mains simulées que les mesures (`shop_samples = 60`). Reste un écart : la fin de manche
+  est simulée 64 fois par candidat en jeu (24 dans les mesures, pour la vitesse) ; les probabilités
+  de la main sont bien calibrées dans les deux cas, mais l'effet de ce réglage sur les résultats
+  n'a pas été mesuré.
 
 ## Interface
 
