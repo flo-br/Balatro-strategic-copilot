@@ -8,6 +8,8 @@ local function env()
     return F, BSCopilot.require('engine/builds'), BSCopilot.require('model/synergies_db'), BSCopilot.require('model/jokers_db')
 end
 
+local function DBB_A() return BSCopilot.require('model/builds_db').STRENGTH.A end
+
 local function has(list, pattern)
     for _, e in ipairs(list or {}) do if e.why:find(pattern, 1, true) then return e end end
 end
@@ -60,12 +62,21 @@ end
 
 function S.named_pairs_and_generic_rules(T)
     local F, BD = env()
-    -- 1.0.12 list: Blueprint copies The Duo
-    local _, _, list = BD.joker_bonus('j_blueprint', F.state({ ante = 4, jokers = { F.joker('j_duo') } }))
+    -- 1.0.12 list: Blueprint copies The Duo; the score engine measures it now: shown, not counted
+    local tot, why, list = BD.joker_bonus('j_blueprint', F.state({ ante = 4, jokers = { F.joker('j_duo') } }))
     T.ok(has(list, '×2 de plus sur chaque paire'))
-    -- generic: two Pair jokers no list names together
+    T.eq(tot, 0, 'a static pair is not counted twice')
+    T.ok(why and why:find('The Duo', 1, true), 'but its reason is shown: ' .. tostring(why))
+    -- a piece that grows (Hologram): what the measurement cannot see yet counts
+    tot = BD.joker_bonus('j_blueprint', F.state({ ante = 4, jokers = { F.joker('j_hologram') } }))
+    T.ok(tot > 0, 'Blueprint + Hologram counted')
+    -- generic: two Pair jokers no list names together (shown; counted with GENERIC_SCALE)
     local v, l2 = BD.synergies('j_jolly', F.state({ ante = 4, jokers = { F.joker('j_sly') } }))
-    T.ok(has(l2, 'même main : Paire') and v > 0, 'Jolly + Sly')
+    T.ok(has(l2, 'même main : Paire') and v == 0, 'Jolly + Sly shown, not counted')
+    local was_g = BD.GENERIC_SCALE
+    BD.GENERIC_SCALE = 1
+    v = BD.synergies('j_jolly', F.state({ ante = 4, jokers = { F.joker('j_sly') } }))
+    T.ok(v > 0, 'GENERIC_SCALE = 1: counted')
     -- a Three of a Kind contains a Pair
     _, l2 = BD.synergies('j_zany', F.state({ ante = 4, jokers = { F.joker('j_jolly') } }))
     T.ok(has(l2, 'déclenche aussi'), 'Zany + Jolly')
@@ -78,17 +89,19 @@ function S.named_pairs_and_generic_rules(T)
     T.ok(has(l2, 'couleurs différentes') and v < 0, 'Spades + Hearts pull the deck two ways')
     v = BD.synergies('j_wrathful_joker', F.state({ ante = 4, jokers = { F.joker('j_gluttenous_joker'), F.joker('j_smeared') } }))
     T.ok(v > 0, 'Smeared Joker: Spades and Clubs together')
+    BD.GENERIC_SCALE = was_g
     -- hand_size is not a hand type
     _, l2 = BD.synergies('j_juggler', F.state({ ante = 4, jokers = { F.joker('j_troubadour') } }))
     T.ok(not has(l2, 'même main'), 'Juggler + Troubadour are not "the same hand"')
     -- a copy joker wants a Blueprint-compatible target
     T.eq((BD.synergies('j_blueprint', F.state({ ante = 4, jokers = { F.joker('j_joker') } }))), 0, 'nothing worth copying')
-    -- with the list off, only builds_db and the generic rules count
+    -- with the list off, it is still shown but never counted
     local was = BD.LIST_SCALE
     BD.LIST_SCALE = 0
-    _, list = BD.synergies('j_blueprint', F.state({ ante = 4, jokers = { F.joker('j_duo') } }))
+    v, list = BD.synergies('j_blueprint', F.state({ ante = 4, jokers = { F.joker('j_hologram') } }))
     BD.LIST_SCALE = was
-    T.ok(not has(list, '×2 de plus sur chaque paire'), 'LIST_SCALE = 0: shown nowhere in the notes')
+    T.ok(has(list, 'Hologram') or #list > 0, 'shown')
+    T.ok(v <= DBB_A(), 'LIST_SCALE = 0: only the generic copy rule of 1.0.8 counts')
 end
 
 function S.vouchers_bought_and_cards_held_count(T)

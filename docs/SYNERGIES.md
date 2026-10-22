@@ -4,7 +4,7 @@ Fichier généré par `luajit tools/synergies_doc.lua docs/SYNERGIES.md` à part
 `BalatroStrategicCopilot/src/model/builds_db.lua` et `BalatroStrategicCopilot/src/model/synergies_db.lua`
 (ne pas modifier à la main : modifier les listes puis relancer l'outil).
 
-**373 paires joker + joker, 111 synergies joker + carte / bon / paquet, 26 builds**, et des règles
+**366 paires joker + joker, 111 synergies joker + carte / bon / paquet, 26 builds**, et des règles
 générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu de base (150) y figurent.
 
 ## Comment le copilote s'en sert
@@ -41,8 +41,8 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 ### Abstract Joker
 
 - **B** Riff-raff — deux jokers de plus : +6 Mult
-- **B** Antimatter — un joker de plus
-- **B** Ectoplasm — un joker de plus
+- **B** Antimatter — un emplacement de plus : un joker de plus (+3 Mult)
+- **B** Ectoplasm — un emplacement de plus : un joker de plus (+3 Mult)
 - **C** Joker — un joker de plus : +3 Mult
 - **X** Joker Stencil — Stencil veut peu de jokers, Abstract beaucoup
 
@@ -115,7 +115,6 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **B** Stuntman — petite main : plus facile de ne tenir que du noir
 - **B** The Moon — The Moon : des Trèfles (noirs)
 - **B** The World — The World : des Piques (noirs)
-- **C** Smeared Joker — Cœurs et Carreaux restent rouges : garder les cartes noires
 
 ### Bloodstone
 
@@ -183,9 +182,7 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **B** Sock and Buskin — figures redéclenchées une fois de plus
 - **B** Stuntman — +250 jetons copiés sans perdre de cartes en main
 - **B** Throwback — ×Mult des passages copié
-- **C** Cloud 9 — deux fois l'argent des 9
 - **C** Misprint — un second tirage de 0 à 23 Mult
-- **C** Rocket — deux fois l'argent de Rocket
 
 ### Bootstraps
 
@@ -245,8 +242,6 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **B** Ramen — ×Mult de Ramen copié
 - **B** Sock and Buskin — figures redéclenchées une fois de plus
 - **B** Throwback — ×Mult des passages copié
-- **C** Cloud 9 — deux fois l'argent des 9
-- **C** Rocket — deux fois l'argent de Rocket
 
 ### Bull
 
@@ -374,7 +369,7 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Chaos the Clown
 
-- **A** Flash Card — relance gratuite : Flash Card grandit sans payer
+- **B** Flash Card — relance gratuite : Flash Card grandit sans payer
 - **C** Reroll Surplus — relances moins chères
 
 ### Chicot
@@ -390,9 +385,7 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Cloud 9
 
-- **C** Blueprint — deux fois l'argent des 9
 - **C** Bootstraps — argent des 9 : plus de Mult
-- **C** Brainstorm — deux fois l'argent des 9
 - **C** Bull — argent des 9 : plus de jetons
 - **C** Death — Death : copier un 9
 
@@ -539,9 +532,9 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 ### Flash Card
 
-- **A** Chaos the Clown — relance gratuite : Flash Card grandit sans payer
-- **A** Reroll Glut — relances moins chères
-- **A** Reroll Surplus — relances moins chères
+- **B** Chaos the Clown — relance gratuite : Flash Card grandit sans payer
+- **B** Reroll Glut — relances moins chères
+- **B** Reroll Surplus — relances moins chères
 
 ### Flower Pot
 
@@ -615,7 +608,6 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **B** Bootstraps — 4 $ par carte or : plus de Mult
 - **B** Bull — 4 $ par carte or : plus de jetons
 - **B** Hanging Chad — carte or en tête : 4 $ trois fois
-- **C** Mime — cartes or tenues en fin de manche : argent redéclenché
 - **X** Vampire — Vampire mange l'Or
 
 ### Greedy Joker
@@ -700,7 +692,6 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **X** Burglar — plus de défausses du tout
 - **X** Delayed Gratification — ne pas défausser contre défausser des Valets
 - **X** Green Joker — Green Joker perd 1 Mult par défausse
-- **X** Pareidolia — Pareidolia ne fait pas des Valets
 - **X** Ramen — Ramen perd ×0,01 par carte défaussée
 
 ### Hologram
@@ -842,7 +833,6 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **B** Raised Fist — la carte tenue la plus basse compte deux fois
 - **B** Shoot the Moon — chaque Dame tenue : +13 Mult deux fois
 - **B** The Chariot — cartes d'acier tenues redéclenchées
-- **C** Golden Ticket — cartes or tenues en fin de manche : argent redéclenché
 - **C** Reserved Parking — figures tenues : deux tirages à 1 $
 - **X** Stuntman — moins de cartes tenues
 
@@ -896,7 +886,6 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **A** Midas Mask — toutes les cartes jouées deviennent Or
 - **B** Faceless Joker — toutes les cartes sont des figures : 5 $ à chaque défausse de 3 cartes
 - **B** Sock and Buskin — toutes les cartes redéclenchées
-- **X** Hit the Road — Pareidolia ne fait pas des Valets
 - **X** Ride the Bus — chaque main remet Ride the Bus à zéro
 
 ### Perkeo
@@ -968,8 +957,6 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 
 - **B** Bootstraps — l'argent devient du score
 - **B** Bull — l'argent devient du score
-- **C** Blueprint — deux fois l'argent de Rocket
-- **C** Brainstorm — deux fois l'argent de Rocket
 - **X** Throwback — passer contre jouer les manches
 
 ### Rough Gem
@@ -1069,7 +1056,6 @@ générales pour ce qu'aucune liste ne peut énumérer. Tous les jokers du jeu d
 - **B** Flower Pot — Smeared : deux cartes couvrent les quatre couleurs
 - **B** Seance — quintes flush plus faciles
 - **B** Seeing Double — tout Pique compte comme Trèfle
-- **C** Blackboard — Cœurs et Carreaux restent rouges : garder les cartes noires
 - **C** Crafty Joker — plus de couleurs
 - **C** Droll Joker — plus de couleurs
 

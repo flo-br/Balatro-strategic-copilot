@@ -21,6 +21,7 @@ local SWITCHES = {
     syn_list = { 'engine/builds', 'LIST_SCALE', 'number' },
     syn_items = { 'engine/builds', 'ITEM_SCALE', 'number' },
     syn_generic = { 'engine/builds', 'GENERIC_SCALE', 'number' },
+    syn_static = { 'engine/builds', 'STATIC_SCALE', 'number' },
 }
 
 -- args: list of strings; cfg: config.lua table; opts: simulator options (modified)

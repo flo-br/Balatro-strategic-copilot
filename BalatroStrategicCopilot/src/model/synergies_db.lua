@@ -53,8 +53,6 @@ S.PAIRS = {
     { 'j_blueprint', 'j_sock_and_buskin', 'B', 'figures redéclenchées une fois de plus' }, { 'j_brainstorm', 'j_sock_and_buskin', 'B', 'figures redéclenchées une fois de plus' },
     { 'j_blueprint', 'j_dusk', 'B', 'dernière main redéclenchée une fois de plus' }, { 'j_brainstorm', 'j_dusk', 'B', 'dernière main redéclenchée une fois de plus' },
     { 'j_blueprint', 'j_hack', 'B', '2 à 5 redéclenchés une fois de plus' }, { 'j_brainstorm', 'j_hack', 'B', '2 à 5 redéclenchés une fois de plus' },
-    { 'j_blueprint', 'j_rocket', 'C', 'deux fois l\'argent de Rocket' }, { 'j_brainstorm', 'j_rocket', 'C', 'deux fois l\'argent de Rocket' },
-    { 'j_blueprint', 'j_cloud_9', 'C', 'deux fois l\'argent des 9' }, { 'j_brainstorm', 'j_cloud_9', 'C', 'deux fois l\'argent des 9' },
 
     -- retriggers and per-card effects
     { 'j_hanging_chad', 'j_idol', 'A', 'carte cible en tête : ×2 trois fois' },
@@ -90,7 +88,6 @@ S.PAIRS = {
     { 'j_mime', 'j_shoot_the_moon', 'B', 'chaque Dame tenue : +13 Mult deux fois' },
     { 'j_mime', 'j_raised_fist', 'B', 'la carte tenue la plus basse compte deux fois' },
     { 'j_mime', 'j_reserved_parking', 'C', 'figures tenues : deux tirages à 1 $' },
-    { 'j_mime', 'j_ticket', 'C', 'cartes or tenues en fin de manche : argent redéclenché' },
     { 'j_hiker', 'j_splash', 'B', 'toutes les cartes jouées comptent : +5 jetons permanents chacune' },
 
     -- hand types
@@ -131,7 +128,6 @@ S.PAIRS = {
     { 'j_arrowhead', 'j_wrathful_joker', 'B', 'Piques joués : +50 jetons et +3 Mult' },
     { 'j_onyx_agate', 'j_gluttenous_joker', 'B', 'Trèfles joués : +7 et +3 Mult' },
     { 'j_ancient', 'j_flower_pot', 'X', 'Ancient Joker veut une couleur, Flower Pot les quatre' },
-    { 'j_blackboard', 'j_smeared', 'C', 'Cœurs et Carreaux restent rouges : garder les cartes noires' },
 
     -- economy and money as score
     { 'j_bull', 'j_golden', 'B', '4 $ par manche : plus de jetons' }, { 'j_bootstraps', 'j_golden', 'B', '4 $ par manche : plus de Mult' },
@@ -152,7 +148,7 @@ S.PAIRS = {
     { 'j_campfire', 'j_8_ball', 'C', 'des tarots à vendre' }, { 'j_campfire', 'j_hallucination', 'C', 'des tarots à vendre' },
     { 'j_campfire', 'j_superposition', 'C', 'des tarots à vendre' }, { 'j_campfire', 'j_vagabond', 'C', 'des tarots à vendre' },
     { 'j_campfire', 'j_gift', 'C', 'les cartes vendues valent plus' },
-    { 'j_flash', 'j_chaos', 'A', 'relance gratuite : Flash Card grandit sans payer' },
+    { 'j_flash', 'j_chaos', 'B', 'relance gratuite : Flash Card grandit sans payer' },
     { 'j_fortune_teller', 'j_8_ball', 'B', 'plus de tarots utilisés' }, { 'j_fortune_teller', 'j_hallucination', 'B', 'plus de tarots utilisés' },
     { 'j_fortune_teller', 'j_superposition', 'B', 'plus de tarots utilisés' }, { 'j_fortune_teller', 'j_vagabond', 'B', 'plus de tarots utilisés' },
     { 'j_astronomer', 'j_satellite', 'B', 'planètes gratuites : Satellite rapporte plus' },
@@ -181,7 +177,6 @@ S.PAIRS = {
     { 'j_burnt', 'j_drunkard', 'C', 'une défausse de plus' },
     { 'j_faceless', 'j_pareidolia', 'B', 'toutes les cartes sont des figures : 5 $ à chaque défausse de 3 cartes' },
     { 'j_trading', 'j_erosion', 'B', 'cartes détruites : le deck s\'amincit, +4 Mult par carte' },
-    { 'j_hit_the_road', 'j_pareidolia', 'X', 'Pareidolia ne fait pas des Valets' },
 
     -- deck building
     { 'j_marble', 'j_stone', 'A', 'une pierre de plus à chaque blinde : +25 jetons chacune' },
@@ -300,11 +295,11 @@ S.ITEMS = {
     { 'j_bull', 'v_seed_money', 'B', 'plus d\'argent gardé' }, { 'j_bootstraps', 'v_seed_money', 'B', 'plus d\'argent gardé' },
     { 'j_to_the_moon', 'v_seed_money', 'A', 'plafond d\'intérêts 50 $ : To the Moon rapporte plus' },
     { 'j_to_the_moon', 'v_money_tree', 'A', 'plafond d\'intérêts 100 $' },
-    { 'j_flash', 'v_reroll_surplus', 'A', 'relances moins chères' }, { 'j_flash', 'v_reroll_glut', 'A', 'relances moins chères' },
+    { 'j_flash', 'v_reroll_surplus', 'B', 'relances moins chères' }, { 'j_flash', 'v_reroll_glut', 'B', 'relances moins chères' },
     { 'j_chaos', 'v_reroll_surplus', 'C', 'relances moins chères' },
     { 'j_stencil', 'c_ectoplasm', 'B', 'joker négatif : pas d\'emplacement pris' },
     { 'j_stencil', 'v_antimatter', 'B', 'un emplacement vide de plus' }, { 'j_stencil', 'v_blank', 'C', 'vers Antimatter' },
-    { 'j_abstract', 'c_ectoplasm', 'B', 'un joker de plus' }, { 'j_abstract', 'v_antimatter', 'B', 'un joker de plus' },
+    { 'j_abstract', 'c_ectoplasm', 'B', 'un emplacement de plus : un joker de plus (+3 Mult)' }, { 'j_abstract', 'v_antimatter', 'B', 'un emplacement de plus : un joker de plus (+3 Mult)' },
     { 'j_cloud_9', 'c_death', 'C', 'Death : copier un 9' }, { 'j_scholar', 'c_death', 'C', 'Death : copier un As' },
     { 'j_sixth_sense', 'c_death', 'C', 'Death : copier un 6' },
     { 'j_campfire', 'tarot', 'C', 'des cartes à vendre' }, { 'j_campfire', 'planet', 'C', 'des cartes à vendre' },

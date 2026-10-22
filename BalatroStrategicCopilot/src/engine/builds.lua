@@ -16,6 +16,7 @@ local C = BSC.require('model/cards')
 local DB = BSC.require('model/jokers_db')
 local DBB = BSC.require('model/builds_db')
 local SDB = BSC.require('model/synergies_db')
+local IT = BSC.require('model/items_db')
 local I = BSC.require('core/i18n')
 local PL = BSC.require('engine/plan')
 
@@ -59,7 +60,30 @@ end
 -- relative to the builds_db pairs (simulator A/B: docs/TRAINING.md; 0 = shown, never counted).
 BD.LIST_SCALE = 1
 BD.ITEM_SCALE = 1
-BD.GENERIC_SCALE = 1
+-- The score engine already MEASURES what two jokers do together now (Blueprint + The Duo, Jolly
+-- + Sly, The Chariot with Steel Joker: simulated). A synergy of the 1.0.12 list counts in the note
+-- only for what that measurement cannot see: a piece that grows, earns money, generates cards or
+-- changes the deck later ("future" piece), or an item whose effect is not simulated. The others
+-- are shown (reasons, "Synergies à chercher", docs/SYNERGIES.md) with this weight (measured on
+-- the simulator: counting them all did -0.33 +- 0.32 blind per run, docs/TRAINING.md).
+BD.STATIC_SCALE = 0
+-- generic rules (same hand, same suit...): static by nature, shown only by default
+BD.GENERIC_SCALE = 0
+
+-- tags of model/jokers_db.lua whose value depends on what comes later
+local FUTURE_TAGS = { scaling = true, decaying = true, econ = true, money = true, permanent = true, tarots = true,
+    planets = true, skips = true, tarot_gen = true, spectral_gen = true, joker_gen = true, tag_gen = true, deck_add = true,
+    deck_copy = true, add_cards = true, consumable_dup = true, deck_steel = true, deck_stone = true, small_deck = true,
+    deck_size = true, enhanced_deck = true, gold = true, glass = true, lucky = true, sell_value = true, levels = true,
+    destroys_jokers = true }
+local FUTURE_KEYS = { j_supernova = true }
+local function future_joker(key)
+    if FUTURE_KEYS[key] then return true end
+    local d = DB.get(key)
+    for _, t in ipairs((d and d.tags) or {}) do if FUTURE_TAGS[t] then return true end end
+    return false
+end
+BD.future_joker = future_joker
 
 local function pair_id(a, b) if a > b then a, b = b, a end return a .. '|' .. b end
 
@@ -73,7 +97,8 @@ do
             local id = pair_id(p[1], p[2])
             if p[1] ~= p[2] and not seen[id] then
                 seen[id] = true
-                local e = { a = p[1], b = p[2], tier = p[3], why = p[4], list = (li == 1) and 'builds' or 'synergies' }
+                local e = { a = p[1], b = p[2], tier = p[3], why = p[4], list = (li == 1) and 'builds' or 'synergies',
+                    future = future_joker(p[1]) or future_joker(p[2]) }
                 BD.PAIRS[#BD.PAIRS + 1] = e
                 for _, k in ipairs({ p[1], p[2] }) do
                     local t = BD.PAIRS_OF[k] or {}
@@ -93,16 +118,28 @@ local function builds() return ((BD.LIST_SCALE or 1) == 0) and DBB.BUILDS or BD.
 
 -- Joker + consumable / voucher / booster synergies, indexed both ways
 BD.ITEMS_OF_JOKER, BD.JOKERS_OF_ITEM = {}, {}
+-- an item whose effect the shop simulates (tarots that enhance or convert cards, planets, packs,
+-- vouchers with a simulated effect) only counts with a "future" joker
+local function simulated(item)
+    if item == 'planet' or item == 'tarot' or item == 'spectral' or item:match('^pack:') then return true end
+    local info = IT.consumable(item) or IT.VOUCHERS[item]
+    return (info and info.sim) and true or false
+end
 for _, p in ipairs(SDB.ITEMS) do
-    local e = { joker = p[1], item = p[2], tier = p[3], why = p[4] }
+    local e = { joker = p[1], item = p[2], tier = p[3], why = p[4], future = future_joker(p[1]) or not simulated(p[2]) }
     BD.ITEMS_OF_JOKER[p[1]] = BD.ITEMS_OF_JOKER[p[1]] or {}
     table.insert(BD.ITEMS_OF_JOKER[p[1]], e)
     BD.JOKERS_OF_ITEM[p[2]] = BD.JOKERS_OF_ITEM[p[2]] or {}
     table.insert(BD.JOKERS_OF_ITEM[p[2]], e)
 end
 
+-- weight counted in the note (shown with DBB.STRENGTH[e.tier] whatever the weight)
 local function strength(e)
-    return DBB.STRENGTH[e.tier] * ((e.list == 'synergies') and BD.LIST_SCALE or 1)
+    if e.list == 'builds' then return DBB.STRENGTH[e.tier] end
+    return DBB.STRENGTH[e.tier] * BD.LIST_SCALE * (e.future and 1 or BD.STATIC_SCALE)
+end
+local function item_strength(e)
+    return DBB.STRENGTH[e.tier] * (BD.ITEM_SCALE or 1) * (e.future and 1 or BD.STATIC_SCALE)
 end
 
 function BD.item_name(k)
@@ -146,9 +183,9 @@ end
 local function hand_fr(h) return I.hand_name(h) end
 local function suit_fr(su) return I.suit_name(su) end
 
+-- returns the strength shown and the reason (counted: strength * BD.GENERIC_SCALE)
 local function generic(key, jkey, def, jdef, xm, smeared)
-    local g = BD.GENERIC_SCALE or 1
-    if g == 0 then return nil end
+    local g = 1
     local S = DBB.STRENGTH
     local h1, h2 = tag_set(def, 'hand'), tag_set(jdef, 'hand')
     local contained
@@ -188,13 +225,16 @@ function BD.synergies(key, state, without)
     local own = owned_set(state, without)
     local list, seen = {}, {}
     local S = DBB.STRENGTH
-    local function add(v, why, with, tag)
+    -- v: counted in the note; d: strength shown (a synergy the score engine measures is shown
+    -- with v = 0)
+    local function add(v, why, with, tag, d)
         if tag then if seen[tag] then return end seen[tag] = true end
-        if v ~= 0 then list[#list + 1] = { v = v, why = why, with = with } end
+        d = d or v
+        if v ~= 0 or d ~= 0 then list[#list + 1] = { v = v, d = d, why = why, with = with } end
     end
     for _, e in ipairs(BD.PAIRS_OF[key] or {}) do
         local other = (e.a == key) and e.b or e.a
-        if own[other] then add(strength(e), e.why, name_of(other), 'pair:' .. other) end
+        if own[other] then add(strength(e), e.why, name_of(other), 'pair:' .. other, DBB.STRENGTH[e.tier]) end
     end
     for _, d in ipairs(DBB.DECK) do
         if d[1] == key and deck_value(state, d[2], key) >= d[3] then add(S[d[4]], d[5], nil, 'deck:' .. d[2]) end
@@ -220,20 +260,17 @@ function BD.synergies(key, state, without)
     for _, j in ipairs(state.jokers or {}) do
         if j ~= without and j.key and j.key ~= key and not seen['pair:' .. j.key] and not seen['gen:' .. j.key] then
             local jd = DB.get(j.key, j.name)
-            local v, why = generic(key, j.key, def, jd, xm or PL.joker_kind(jd) == 'xmult', own.j_smeared)
-            if v then add(v, why, j.name or name_of(j.key), 'gen:' .. j.key) end
+            local d, why = generic(key, j.key, def, jd, xm or PL.joker_kind(jd) == 'xmult', own.j_smeared)
+            if d then add(d * (BD.GENERIC_SCALE or 0), why, j.name or name_of(j.key), 'gen:' .. j.key, d) end
         end
     end
     -- vouchers bought and consumables held (Perkeo with Observatory, Baron with a Cryptid held)
-    local ig = BD.ITEM_SCALE or 1
-    if ig ~= 0 then
-        for _, e in ipairs(BD.ITEMS_OF_JOKER[key] or {}) do
-            local have = (state.vouchers and state.vouchers[e.item]) and true or false
-            if not have and e.item:match('^c_') then
-                for _, c in ipairs(state.consumables or {}) do if c.key == e.item then have = true end end
-            end
-            if have then add(S[e.tier] * ig, e.why, BD.item_name(e.item), 'item:' .. e.item) end
+    for _, e in ipairs(BD.ITEMS_OF_JOKER[key] or {}) do
+        local have = (state.vouchers and state.vouchers[e.item]) and true or false
+        if not have and e.item:match('^c_') then
+            for _, c in ipairs(state.consumables or {}) do if c.key == e.item then have = true end end
         end
+        if have then add(item_strength(e), e.why, BD.item_name(e.item), 'item:' .. e.item, S[e.tier]) end
     end
     -- builds: support of a build under way, core piece of a build whose support is there,
     -- anti-synergy with a build under way
@@ -262,24 +299,26 @@ end
 -- the jokers owned (The Chariot with Steel Joker, planets with Constellation, a Standard pack
 -- with Hologram, Wasteful with Yorick...). Returns total (potential units), why, list.
 function BD.item_bonus(it, state)
-    local ig = BD.ITEM_SCALE or 1
-    if not it or ig == 0 then return 0, nil end
+    if not it then return 0, nil end
     local own = owned_set(state)
     local list, seen = {}, {}
     for _, cls in ipairs(BD.item_classes(it)) do
         for _, e in ipairs(BD.JOKERS_OF_ITEM[cls] or {}) do
             if own[e.joker] and not seen[e.joker] then
                 seen[e.joker] = true
-                list[#list + 1] = { v = DBB.STRENGTH[e.tier] * ig, why = e.why, with = name_of(e.joker) }
+                list[#list + 1] = { v = item_strength(e), d = DBB.STRENGTH[e.tier], why = e.why, with = name_of(e.joker) }
             end
         end
     end
     if #list == 0 then return 0, nil end
-    table.sort(list, function(a, b) return math.abs(a.v) > math.abs(b.v) end)
+    table.sort(list, function(a, b)
+        if math.abs(a.v) ~= math.abs(b.v) then return math.abs(a.v) > math.abs(b.v) end
+        return math.abs(a.d) > math.abs(b.d)
+    end)
     local total = 0
     for _, e in ipairs(list) do total = total + e.v end
     local e = list[1]
-    local why = ((e.v < 0) and 'anti-synergie : ' or 'synergie : ') .. e.with .. ', ' .. e.why
+    local why = ((e.d < 0) and 'anti-synergie : ' or 'synergie : ') .. e.with .. ', ' .. e.why
     return U.clamp(total, -0.4, 0.5), why, list
 end
 
@@ -319,7 +358,7 @@ end
 function BD.joker_bonus(key, state, without)
     if not key then return 0, nil end
     local total, list = BD.synergies(key, state, without)
-    if total == 0 then return 0, nil end
+    if #list == 0 then return 0, nil end
     -- "synergie avec mes jokers": the player's corrections make the synergies weigh more
     local lr = BSC.learning_runtime
     local fbp = lr and lr.player_feedback and lr.player_feedback()
@@ -327,11 +366,14 @@ function BD.joker_bonus(key, state, without)
     local ante = (state.run and state.run.ante) or 1
     -- do not force a build before the shop has offered its pieces
     if total > 0 and ante <= 2 then total = total * 0.7 end
-    table.sort(list, function(a, b) return math.abs(a.v) > math.abs(b.v) end)
+    table.sort(list, function(a, b)
+        if math.abs(a.v) ~= math.abs(b.v) then return math.abs(a.v) > math.abs(b.v) end
+        return math.abs(a.d or 0) > math.abs(b.d or 0)
+    end)
     local e = list[1]
     local why
     if e then
-        why = ((e.v < 0) and 'anti-synergie : ' or 'synergie : ') .. (e.with and (e.with .. ', ') or '') .. e.why
+        why = (((e.d or e.v) < 0) and 'anti-synergie : ' or 'synergie : ') .. (e.with and (e.with .. ', ') or '') .. e.why
     end
     return total, why, list
 end

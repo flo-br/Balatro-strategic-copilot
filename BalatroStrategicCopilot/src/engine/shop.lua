@@ -469,10 +469,10 @@ function SH.analyse(state, opts, task)
         local cc, loss = cost_component(cost)
         opt.interest_loss = loss
         if it.set ~= 'Joker' and not it.card then
-            local ib, iwhy = BD.item_bonus(it, state)
-            if ib ~= 0 then
+            local ib, iwhy, ilist = BD.item_bonus(it, state)
+            if iwhy then
                 opt.item_synergy = ib
-                local into = (ib > 0) and opt.reasons or opt.risks
+                local into = ((ilist[1].d or 0) >= 0) and opt.reasons or opt.risks
                 into[#into + 1] = iwhy
             end
         end
