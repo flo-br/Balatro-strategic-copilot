@@ -49,6 +49,16 @@ A.DEFAULTS = {
     first_jokers = 3,              -- antes 1-2: the first jokers fill empty slots from excess_note, savings or not
     xmult_hunt = 0,                -- high stakes, from ante 3, x Mult missing: rerolls per shop (a budget; 0 = off)
     xmult_hunt_reserve = 15,       -- ... while this much money stays after the reroll
+    -- "25 $ d'abord" (1.0.13, the player's strategy): from ante 1 until the interest cap ($25,
+    -- $5 of interest per round) is reached, the money goes to the cap. Bought meanwhile: what
+    -- keeps the next blinds safe (power first when they are not), a very strong item, a money
+    -- joker that pays its price back quickly. No "first jokers" shortcut, no pack, no reroll
+    -- below the cap while the blinds are safe. Then the usual discipline (save_from_ante...).
+    rush_cap = true,
+    rush_until_ante = 3,           -- ... during the first antes only
+    rush_safe_next = 0.85,         -- "safe" during the rush (at least the stake's own thresholds)
+    rush_safe_boss = 0.70,
+    rush_payback = 3,              -- a money joker paying its price back within this many rounds
 }
 
 -- adjustments the copilot made to itself after its past runs (learning/adapt.lua); cfg.adapt_deltas
@@ -63,7 +73,10 @@ A.adapt_deltas = adapt_deltas
 local function settings(cfg)
     local a = (cfg and cfg.advice) or {}
     local out = {}
-    for k, v in pairs(A.DEFAULTS) do out[k] = (a[k] ~= nil) and a[k] or v end
+    -- (a setting set to false in config.lua is kept: no "x and x or default" here)
+    for k, v in pairs(A.DEFAULTS) do
+        if a[k] ~= nil then out[k] = a[k] else out[k] = v end
+    end
     local d = adapt_deltas(cfg)
     if d then
         local AD = BSC.require('learning/adapt')
@@ -477,25 +490,31 @@ local function money_policy(state, r, S)
     -- high stakes: "safe" asks more (the blinds grow x2 to x3 per ante: money kept for the
     -- interest buys less power than the same money spent now; measured on the simulator)
     local high = PL.high_stakes(state)
-    local sn, sb = S.safe_next, S.safe_boss
-    if high then sn, sb = math.max(sn, S.hs_safe_next or sn), math.max(sb, S.hs_safe_boss or sb) end
-    local safe = (b.p_next or 0) >= sn and (b.p_boss or b.p_next or 0) >= sb
-    -- falling behind: a typical hand below the ante's base chips; off the track of the winning
-    -- runs: not ready for the next ante (engine/plan.lua)
-    if r.plan and (r.plan.falling_behind or r.plan.off_track) then safe = false end
     local cap = econ.no_interest and 0 or (econ.interest_cap or 25)
     -- the rent is paid before the interest: $3 more per rental to keep the interest
     local rentals = 0
     for _, j in ipairs(state.jokers or {}) do if j.rental then rentals = rentals + 1 end end
     if cap > 0 then cap = cap + 3 * rentals end
-    local target = (safe and ante >= S.save_from_ante) and cap or 0
+    -- "25 $ d'abord": the first antes, until the cap is reached
+    local win_ante = (state.run and state.run.win_ante) or 8
+    local rush = (S.rush_cap and S.rush_cap ~= 0 and cap > 0 and ante <= (S.rush_until_ante or 3) and ante < win_ante
+        and (econ.dollars or 0) < cap) and true or false
+    local sn, sb = S.safe_next, S.safe_boss
+    if high then sn, sb = math.max(sn, S.hs_safe_next or sn), math.max(sb, S.hs_safe_boss or sb) end
+    if rush then sn, sb = math.max(sn, S.rush_safe_next or sn), math.max(sb, S.rush_safe_boss or sb) end
+    local safe = (b.p_next or 0) >= sn and (b.p_boss or b.p_next or 0) >= sb
+    -- falling behind: a typical hand below the ante's base chips; off the track of the winning
+    -- runs: not ready for the next ante (engine/plan.lua)
+    if r.plan and (r.plan.falling_behind or r.plan.off_track) then safe = false end
+    local target = (safe and (ante >= S.save_from_ante or rush)) and cap or 0
     -- last ante: interest no longer pays back, money goes into score (spend for reliability)
     if ante >= ((state.run and state.run.win_ante) or 8) then target = 0 end
     -- The Ox comes next: playing the most played hand will set the money to $0 anyway
     for _, u in ipairs(state.upcoming or {}) do
         if u.boss and u.key == 'bl_ox' and u.state ~= 'Defeated' then target = 0 end
     end
-    return { safe = safe, ante = ante, target = target, cap = cap, rentals = rentals, high = high }
+    return { safe = safe, ante = ante, target = target, cap = cap, rentals = rentals, high = high,
+        rush = rush and target > 0 }
 end
 
 local function required_note(o, money, pol, S, state)
@@ -516,6 +535,11 @@ local function required_note(o, money, pol, S, state)
     -- and on track: seen in simulated high-stake runs, Overstock / Clearance Sale bought for $10
     -- at ante 2 with the boss at 0-4 %, the run lost at ante 3
     if o.kind == 'voucher' and not o.power_voucher and not pol.safe then return math.max(base, S.strong_note) end
+    -- "25 $ d'abord": a money joker that pays its price back within a few rounds brings the
+    -- cap closer (Golden Joker, Rocket, Delayed Gratification...)
+    if pol.rush and o.kind == 'joker' and (o.econ_per_round or 0) > 0 and cost <= (S.rush_payback or 3) * o.econ_per_round then
+        return base
+    end
     -- money above the interest cap earns nothing: once the purchase still leaves the cap (and a
     -- little more), any real improvement is worth it (top players: "don't get rich")
     if pol.cap and money - cost >= math.max(pol.target, pol.cap) + S.excess_reserve then
@@ -523,7 +547,9 @@ local function required_note(o, money, pol, S, state)
     end
     -- antes 1-2: any scoring joker beats an empty slot (top players)
     -- (high stakes: 4-5 jokers by the end of ante 2, top players)
-    if o.kind == 'joker' and pol.ante <= 2 and #(state and state.jokers or {}) < S.first_jokers + (pol.high and 1 or 0) then
+    -- ("25 $ d'abord": not while the next blinds are safe without it and the cap is not reached)
+    if o.kind == 'joker' and pol.ante <= 2 and #(state and state.jokers or {}) < S.first_jokers + (pol.high and 1 or 0)
+        and not (pol.rush and money - cost < pol.target) then
         return math.min(base, S.excess_note)
     end
     if not pol.safe or (o.note or 0) >= S.strong_note then return base end
@@ -684,6 +710,10 @@ function A.shop_step(state, r, cfg, partial)
     local p = r.base and r.base.p_next
     local why = T('why_keep_money', E.interest(money, econ))
     if saved then why = T('why_save', E.interest(money, econ), saved.name or saved.key or '?', saved.note or 0) end
+    if pol.rush then
+        why = saved and T('why_rush_save', money, pol.cap, saved.name or saved.key or '?', saved.note or 0)
+            or T('why_rush_keep', money, pol.cap, E.interest(money, econ))
+    end
     return { action = 'next_round', label = T('lbl_next_round'), button = 'next_round', text = T('step_next_round'),
         why = why, p = p, p_text = T('p_next_blind'), cls = 'good' }
 end

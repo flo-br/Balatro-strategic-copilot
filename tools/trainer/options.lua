@@ -33,7 +33,10 @@ function O.apply(args, from, cfg, opts, own)
             local num = tonumber(v)
             if v == 'true' then num = true elseif v == 'false' then num = false end
             local sw = SWITCHES[k]
-            if own and own[k] then opts.extra[k] = (num ~= nil) and num or v
+            -- (num may be false: no "x and x or y" below)
+            local val = v
+            if num ~= nil then val = num end
+            if own and own[k] then opts.extra[k] = val
             elseif k == 'deck' then opts.deck = v
             elseif sw then
                 local val = num
@@ -46,7 +49,7 @@ function O.apply(args, from, cfg, opts, own)
                 opts.learn_lessons = opts.learn and v ~= 'adapt'
                 opts.learn_adapt = opts.learn and v ~= 'lessons'
             elseif cfg.compute[k] ~= nil then cfg.compute[k] = num
-            else cfg.advice[k] = (num ~= nil) and num or v end
+            else cfg.advice[k] = val end
         end
     end
     return opts

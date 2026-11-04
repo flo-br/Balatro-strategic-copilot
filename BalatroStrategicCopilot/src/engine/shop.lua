@@ -529,6 +529,7 @@ function SH.analyse(state, opts, task)
                 if ewhy then opt.reasons[#opt.reasons + 1] = ewhy end
                 -- the rent is already in the cost (cost_component above)
                 if j.rental then ev = ev + 3 end
+                opt.econ_per_round = ev
                 if not def then opt.risks[#opt.risks + 1] = 'joker non reconnu : effet non simulé'; opt.method = 'partial' end
                 local pb, pwhy = PL.joker_bonus(def, plan)
                 if pwhy then opt.reasons[#opt.reasons + 1] = pwhy end
