@@ -66,13 +66,16 @@ return {
         idle_reserve = 20,       -- money above the cap + this is rerolled even without a gap (idle money)
         first_jokers = 3,        -- antes 1-2: the first 3 jokers fill empty slots from excess_note, savings or not
         -- "25 $ d'abord": from ante 1 until $25 (the interest cap: $5 per round), the money goes to
-        -- the cap; bought meanwhile only what keeps the next blinds safe, a very strong item
-        -- (strong_note) or a money joker paying its price back in rush_payback rounds; no pack
+        -- the cap; bought meanwhile only what the next blind needs to be safe (items that raise
+        -- the chances), a very strong item (strong_note) or a money joker paying its price back
+        -- in rush_payback rounds; the boss must be safe from the last shop before it; no pack
         -- and no reroll below $25 while safe. Then the usual discipline above. false: off
         rush_cap = true,
         rush_until_ante = 3,     -- ... during the first antes only
-        rush_safe_next = 0.85,   -- "safe" during the rush: next blind at least 85 % ...
-        rush_safe_boss = 0.70,   -- ... and the boss at least 70 % (from the Green Stake: 95 % / 85 %)
+        rush_safe_next = 0.90,   -- next blind at least 90 % (the shop's estimate, pessimistic)
+        rush_safe_boss = 0.80,   -- the boss, at the last shop before it: at least 80 %
+        rush_early_boss = 0.40,  -- the boss, at an earlier shop: at least 40 % (prepared at the next shop)
+        rush_min_gain = 0.02,    -- not safe: only items raising the next blind or the boss by 2 points
         rush_payback = 3,        -- a money joker (Golden Joker, Rocket...) paying its price back in 3 rounds
     },
     learning = {

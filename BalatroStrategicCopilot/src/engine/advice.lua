@@ -51,13 +51,18 @@ A.DEFAULTS = {
     xmult_hunt_reserve = 15,       -- ... while this much money stays after the reroll
     -- "25 $ d'abord" (1.0.13, the player's strategy): from ante 1 until the interest cap ($25,
     -- $5 of interest per round) is reached, the money goes to the cap. Bought meanwhile: what
-    -- keeps the next blinds safe (power first when they are not), a very strong item, a money
-    -- joker that pays its price back quickly. No "first jokers" shortcut, no pack, no reroll
-    -- below the cap while the blinds are safe. Then the usual discipline (save_from_ante...).
+    -- the next blind needs to be safe (only items that raise the chances), a very strong item,
+    -- a money joker that pays its price back quickly. The boss must be safe only from the last
+    -- shop before it (the money saved until then is there to prepare it). No "first jokers"
+    -- shortcut, no pack, no reroll below the cap. Then the usual discipline (save_from_ante...).
+    -- (the chances are those of the shop analysis: pessimistic, typical hands without discards;
+    -- announced 0.30-0.90, bosses were won 80-97 % of the time in 965 simulated bosses)
     rush_cap = true,
     rush_until_ante = 3,           -- ... during the first antes only
-    rush_safe_next = 0.85,         -- "safe" during the rush (at least the stake's own thresholds)
-    rush_safe_boss = 0.70,
+    rush_safe_next = 0.90,         -- next blind: at least 90 % (whatever the stake)
+    rush_safe_boss = 0.80,         -- the boss, at the last shop before it: at least 80 %
+    rush_early_boss = 0.40,        -- the boss, at an earlier shop: at least 40 % (prepared later)
+    rush_min_gain = 0.02,          -- not safe: only items raising the next blind or boss by 2 points
     rush_payback = 3,              -- a money joker paying its price back within this many rounds
 }
 
@@ -183,6 +188,10 @@ local function target_of(info)
 end
 A.target_of = target_of
 
+-- Death in hand: kept while a card this much more useful (enhancement, edition, seal, a rank
+-- the build wants) is still in the deck
+A.COPY_WAIT_GAIN = 8
+
 -- Cards to select for a consumable: { cards = {...} (in selection order), roles = {...},
 -- hint = text|nil } or nil when no selection is clearly worth it.
 -- ctx: play_cards / discard_cards (hand recommendation), strict (hand phase: only clear gains)
@@ -266,6 +275,24 @@ function A.targets(info, state, hand, ctx)
         local victim = victims[1]
         if not model or not victim then return nil end
         if U_(model) - U_(victim) < 6 then return nil end
+        -- in hand (Death kept for later): a much better card to copy is still in the deck (the
+        -- Ace made Steel earlier...): keep Death until it is drawn (the player's advice). In a
+        -- pack the card must be used now: the best one in hand.
+        if ctx.strict then
+            local in_hand = {}
+            for _, c in ipairs(hand or {}) do if c.uid ~= nil then in_hand[c.uid] = true end end
+            local best, bu
+            for _, c in ipairs(state.full_deck or {}) do
+                if c.uid ~= nil and not in_hand[c.uid] then
+                    local u = U_(c)
+                    if not bu or u > bu then best, bu = c, u end
+                end
+            end
+            if best and bu - U_(model) >= A.COPY_WAIT_GAIN then
+                ctx.held = { card = best, why = 'copy_wait' }
+                return nil
+            end
+        end
         picked = { victim, model }
         roles = { T('role_becomes'), T('role_model') }
         local vx, mx = victim.pos_x, model.pos_x
@@ -501,7 +528,12 @@ local function money_policy(state, r, S)
         and (econ.dollars or 0) < cap) and true or false
     local sn, sb = S.safe_next, S.safe_boss
     if high then sn, sb = math.max(sn, S.hs_safe_next or sn), math.max(sb, S.hs_safe_boss or sb) end
-    if rush then sn, sb = math.max(sn, S.rush_safe_next or sn), math.max(sb, S.rush_safe_boss or sb) end
+    if rush then
+        -- the next blind must be safe; the boss only from the last shop before it
+        local boss_next = r.next_blind and r.next_blind.boss
+        sn = S.rush_safe_next or sn
+        sb = boss_next and (S.rush_safe_boss or sb) or (S.rush_early_boss or sb)
+    end
     local safe = (b.p_next or 0) >= sn and (b.p_boss or b.p_next or 0) >= sb
     -- falling behind: a typical hand below the ante's base chips; off the track of the winning
     -- runs: not ready for the next ante (engine/plan.lua)
@@ -514,7 +546,7 @@ local function money_policy(state, r, S)
         if u.boss and u.key == 'bl_ox' and u.state ~= 'Defeated' then target = 0 end
     end
     return { safe = safe, ante = ante, target = target, cap = cap, rentals = rentals, high = high,
-        rush = rush and target > 0 }
+        rush = rush and target > 0, rush_on = rush }
 end
 
 local function required_note(o, money, pol, S, state)
@@ -547,12 +579,19 @@ local function required_note(o, money, pol, S, state)
     end
     -- antes 1-2: any scoring joker beats an empty slot (top players)
     -- (high stakes: 4-5 jokers by the end of ante 2, top players)
-    -- ("25 $ d'abord": not while the next blinds are safe without it and the cap is not reached)
+    -- ("25 $ d'abord": not below the cap; a joker the next blinds need is bought below)
     if o.kind == 'joker' and pol.ante <= 2 and #(state and state.jokers or {}) < S.first_jokers + (pol.high and 1 or 0)
-        and not (pol.rush and money - cost < pol.target) then
+        and not pol.rush_on then
         return math.min(base, S.excess_note)
     end
-    if not pol.safe or (o.note or 0) >= S.strong_note then return base end
+    if (o.note or 0) >= S.strong_note then return base end
+    -- "25 $ d'abord", not safe: only what raises the chances of the next blind or the boss
+    if pol.rush_on and not pol.safe then
+        local gain = math.max(o.d_next or 0, o.d_boss or 0)
+        if gain < (S.rush_min_gain or 0.02) then return 101 end
+        return base
+    end
+    if not pol.safe then return base end
     if pol.target > 0 and money - cost < pol.target then return S.strong_note end
     return base + S.interest_weight * (o.interest_loss or 0)
 end

@@ -117,6 +117,16 @@ local function advice_brief(step, state)
         for i, c in ipairs(step.cards) do t2[i] = card_label(c) end
         a.cards = t2
     end
+    -- a tarot / spectral used on cards: the cards and their role (Death: becomes / model)
+    if step.use_cards and not a.cards then
+        local t2 = {}
+        for i, c in ipairs(step.use_cards) do
+            local role = step.use_roles and step.use_roles[i]
+            t2[i] = card_label(c) .. ((c.enh and c.enh ~= '') and ('(' .. tostring(c.enh):gsub('^m_', '') .. ')') or '')
+                .. (role and (' ' .. role) or '')
+        end
+        a.cards = t2
+    end
     return a
 end
 

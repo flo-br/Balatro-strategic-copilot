@@ -51,6 +51,13 @@ function S.capture_reads_what_the_player_highlighted(T)
     local hc = FB.capture(F.state({ hand_cards = cards }), 'hand', { action = 'play', label = 'JOUER', text = 'Jouer', cards = { cards[3] } })
     T.eq(hc.choices[1].kind, 'play'); T.eq(hc.choices[2].kind, 'discard')
     T.ok(hc.choices[1].label:find('A', 1, true), hc.choices[1].label)
+    -- a tarot used on cards: the cards and their role are kept (Death: becomes / model)
+    local steel = C.parse_list('As')[1]; steel.enh = 'm_steel'
+    local two = C.parse_list('2c')[1]
+    local dc = FB.capture(F.state({ hand_cards = cards }), 'hand', { action = 'use', label = 'UTILISER', text = 'Utiliser Death sur : ',
+        use_cards = { two, steel }, use_roles = { 'devient la copie', 'modèle' } })
+    local txt = table.concat(dc.advice.cards, ' ')
+    T.ok(txt:find('2', 1, true) and txt:find('steel', 1, true) and txt:find('modèle', 1, true), txt)
 end
 
 function S.corrections_learn_bounded_preferences(T)

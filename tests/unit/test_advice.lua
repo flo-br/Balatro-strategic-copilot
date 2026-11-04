@@ -228,6 +228,31 @@ function S.death_left_becomes_right(T)
     T.eq(A().hand_step(s0, r).hint, nil, 'already in the right order')
 end
 
+-- the player's advice (1.0.13): a Steel Ace still in the deck is the card to copy: Death waits
+function S.death_waits_for_the_best_card_in_the_deck(T)
+    local k = card('k', 13, 'Hearts', { pos_x = 1 })
+    local two = card('two', 2, 'Clubs', { pos_x = 5 })
+    local q = card('q', 12, 'Hearts', { pos_x = 3 })
+    local hand = { k, q, two }
+    local ace = card('ace', 14, 'Spades', { enh = 'm_steel', h_x_mult = 1.5 })
+    local full = deck_of(hand)
+    full[#full + 1] = ace
+    for i = 1, 8 do full[#full + 1] = card('h' .. i, 9, 'Hearts') end
+    local s0 = state({ phase = 'hand', hand = hand, consumables = { { uid = 'death', key = 'c_death', set = 'Tarot', name = 'Death' } } })
+    s0.full_deck = full
+    local r = { remaining = 500, round = { p_clear = 0.6 }, recommendation = { type = 'play', ref = { cards = { k, q } } } }
+    local st = A().hand_step(s0, r)
+    T.ok(not (st and st.action == 'use' and st.targets[1] == 'death'), 'Death kept: the Steel Ace is still in the deck')
+    -- the Ace drawn: it is the model
+    local hand2 = { k, q, two, ace }
+    s0.hand_cards = hand2
+    st = A().hand_step(s0, r)
+    T.eq(st.action, 'use'); T.eq(st.use_on[2], 'ace', 'the Steel Ace is copied'); T.eq(st.use_on[1], 'two')
+    -- in an Arcana pack the card is used now: the best card in hand
+    local t = A().targets(BSCopilot.require('model/items_db').consumable('c_death'), s0, hand, {})
+    T.ok(t and t.cards[2] == k, 'pack: the King of the hand')
+end
+
 function S.strength_hanged_man_and_seals(T)
     local A_ = A()
     local IT = BSCopilot.require('model/items_db')
@@ -328,12 +353,21 @@ function S.rush_to_25_first(T)
     local st = A().shop_step(state({ dollars = 10 }), shop_result({ options = opts }))
     T.eq(st.action, 'next_round'); T.ok(st.why:find('25 $ d\'abord', 1, true) and st.why:find('10 $ sur 25', 1, true), st.why)
     T.eq(A().shop_step(state({ dollars = 10 }), shop_result({ options = opts }), NORUSH).action, 'buy', 'without the rush: bought')
-    -- the next blinds in danger: power first
-    local res = shop_result({ options = opts }); res.base.p_boss = 0.4
+    -- the boss is not next: it is prepared at the last shop before it (40 % is enough here)
+    local res = shop_result({ options = opts }); res.base.p_boss = 0.45
+    T.eq(A().shop_step(state({ dollars = 10 }), res).action, 'next_round', 'boss two shops away: saved')
+    -- the boss next: it must be safe (80 %): power first, with what raises its chances
+    res = shop_result({ options = opts }); res.base.p_next = 0.75; res.base.p_boss = 0.75; res.next_blind = { chips = 600, boss = true }
+    T.eq(A().shop_step(state({ dollars = 10 }), res).action, 'next_round', 'nothing raises the chances: kept')
+    opts[1].d_boss = 0.1; opts[1].d_next = 0.1
+    T.eq(A().shop_step(state({ dollars = 10 }), res).action, 'buy')
+    -- the next blind in danger
+    res = shop_result({ options = opts }); res.base.p_next = 0.7
     T.eq(A().shop_step(state({ dollars = 10 }), res).action, 'buy')
     -- the board falling behind the ante: power first
     res = shop_result({ options = opts }); res.plan = { falling_behind = true, gaps = {} }
     T.eq(A().shop_step(state({ dollars = 10 }), res).action, 'buy')
+    opts[1].d_boss = nil; opts[1].d_next = nil
     -- a very strong item is bought anyway
     opts[1].note = 80
     T.eq(A().shop_step(state({ dollars = 10 }), shop_result({ options = opts })).action, 'buy')
@@ -413,7 +447,11 @@ function S.pro_money_rules(T)
     local res = shop_result({ options = opts })
     T.eq(A().shop_step(state({ dollars = 20, ante = 3 }), res).action, 'next_round', 'saving for interest')
     res.plan = { falling_behind = true, gaps = { power = true } }
+    T.eq(A().shop_step(state({ dollars = 20, ante = 3 }), res, NORUSH).action, 'buy', 'falling behind: buy power')
+    -- "25 $ d'abord": only what raises the chances of the next blinds
+    opts[1].d_next = 0.08
     T.eq(A().shop_step(state({ dollars = 20, ante = 3 }), res).action, 'buy', 'falling behind: buy power')
+    opts[1].d_next = nil
     local s8 = state({ dollars = 20, ante = 8 }); s8.run.win_ante = 8
     T.eq(A().shop_step(s8, shop_result({ options = opts })).action, 'buy', 'last ante: money into score')
     local sox = state({ dollars = 20, ante = 6 }); sox.upcoming = { { slot = 'Boss', boss = true, key = 'bl_ox', state = 'Select' } }
