@@ -37,6 +37,15 @@ function love.load()
         opts.shop = { FG.joker('j_duo', 'The Duo', { x_mult = 2, type = 'Pair' }, { rarity = 3, cost = 8 }),
                       FG.joker('j_credit_card', 'Credit Card', { extra = 20 }, { rarity = 1, cost = 1 }) }
     end
+    if scenario == 'observe' then
+        -- "Je joue, tu apprends" (1.0.14): O pressed in the shop, no advice shown; the player
+        -- buys Hologram where the copilot would have advised The Duo
+        opts.state = 5
+        opts.dollars = 30
+        opts.jokers = { FG.joker('j_joker', 'Joker', { mult = 4 }) }
+        opts.shop = { FG.joker('j_duo', 'The Duo', { x_mult = 2, type = 'Pair' }, { rarity = 3, cost = 8 }),
+                      FG.joker('j_hologram', 'Hologram', { extra = 0.25, x_mult = 1 }, { rarity = 2, cost = 7 }) }
+    end
     if scenario == 'choice' then
         -- "Mon choix" (1.0.12): the synergies to look for in the shop panel, then the player
         -- highlights another joker than the advised one and explains why (key X)
@@ -99,7 +108,7 @@ function love.load()
     -- simulated game buttons, as UI trees (box.UIRoot.children, config.button / config.id)
     local function btn(fn, id, x, y, label) return { config = { button = fn, id = id }, T = { x = x, y = y, w = 3, h = 0.9 }, label = label, children = {} } end
     HARNESS_BUTTONS = {}
-    if scenario == 'shop' or scenario == 'choice' then
+    if scenario == 'shop' or scenario == 'choice' or scenario == 'observe' then
         local nb, rr = btn('toggle_shop', 'next_round_button', 1, 3.2, 'Blinde suivante'), btn('reroll_shop', nil, 1, 4.5, 'Relancer 5 $')
         G.shop = { UIRoot = { config = {}, children = { nb, rr } } }
         HARNESS_BUTTONS = { nb, rr }
@@ -141,7 +150,7 @@ function love.update(dt)
     if frame == 20 then love.graphics.captureScreenshot('banner_' .. scenario .. '.png') end -- banner_shot
     Game.update(G, dt)
     local Ctl = BSCopilot.controller
-    local ph = ((scenario == 'shop' or scenario == 'choice') and 'shop') or (scenario == 'blind' and 'blind_select') or 'hand'
+    local ph = ((scenario == 'shop' or scenario == 'choice' or scenario == 'observe') and 'shop') or (scenario == 'blind' and 'blind_select') or 'hand'
     if done_at and frame == done_at + 1 then
         local st = Ctl.step(ph)
         log('step: %s %s (%s)', tostring(st and st.label), tostring(st and st.text), tostring(st and st.why))
@@ -156,7 +165,27 @@ function love.update(dt)
         -- simulate a selection by the player (the mod never selects cards itself)
         G.hand.highlighted = { G.hand.cards[1], G.hand.cards[2] }
     end
-    local quit_at = (scenario == 'choice') and 60 or 40
+    local quit_at = (scenario == 'choice' or scenario == 'observe') and 60 or 40
+    if scenario == 'observe' and done_at then
+        if frame == done_at + 2 then
+            local st = Ctl.step('shop')
+            log('advice before the mode: %s %s', tostring(st and st.label), tostring(st and st.text))
+            Ctl.toggle_observe()
+            log('observe mode: %s', tostring(BSCopilot.learning_runtime.observe_on()))
+        end
+        if frame == done_at + 20 then love.graphics.captureScreenshot('overlay_observe.png'); shots = shots + 1 end
+        if frame == done_at + 22 then
+            -- the game reports the purchase of Hologram (what Steamodded / the polling would emit)
+            Ctl.emit('event', { kind = 'buying_card', uid = tostring(G.shop_jokers.cards[2].sort_id), key = 'j_hologram' })
+            local fb = BSCopilot.learning_runtime.profile().feedback or {}
+            local items = fb.items or {}
+            log('learned: Hologram %s, The Duo %s, observed %s', tostring(items.j_hologram), tostring(items.j_duo),
+                tostring(fb.observed and fb.observed.learned))
+            log('mes_choix.txt: %s', tostring(love.filesystem.read(BSCopilot.store:path('mes_choix.txt'))))
+        end
+        if frame == done_at + 30 then love.graphics.captureScreenshot('overlay_observe_learned.png') end
+        if frame == done_at + 40 then BSCopilot.learning_runtime.set_observe(false) end
+    end
     if scenario == 'choice' and done_at then
         -- the player's own choice: the copilot advises The Duo, the player highlights Mime (the
         -- game does it on a click), presses X, 1 (buy it), 1 (reason: synergy), types, Enter
@@ -175,7 +204,7 @@ function love.update(dt)
             log('saved: %d correction(s), Duo %+d, Mime %+d', fb.count or 0, fb.items.j_duo or 0, fb.items.j_mime or 0)
             log('mes_choix.txt: %s', tostring(love.filesystem.read(BSCopilot.store:path('mes_choix.txt'))))
         end
-    elseif done_at and frame == done_at + 30 then
+    elseif scenario ~= 'observe' and done_at and frame == done_at + 30 then
         love.graphics.captureScreenshot('overlay_' .. scenario .. '.png')
         shots = shots + 1
     end

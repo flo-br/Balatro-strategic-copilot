@@ -49,9 +49,15 @@ function RS.attach(Ctl)
 
     Ctl.register('round_eval', function(state) return { econ = state.econ } end, FS.round_panel, nil)
 
+    -- "Je joue, tu apprends": no advice at all, alerts included (the player plays alone)
+    local function observing()
+        local lr = BSC.learning_runtime
+        return lr and lr.observe_on and lr.observe_on()
+    end
+
     -- alerts from completed analyses
     Ctl.on(function(kind, data)
-        if kind ~= 'analysis' then return end
+        if kind ~= 'analysis' or observing() then return end
         local c = BSC.config or {}
         local a = c.alerts or {}
         local r = data.result
@@ -81,7 +87,7 @@ function RS.attach(Ctl)
     -- alerts on player actions (after the fact, informative only)
     local reroll_streak = 0
     Ctl.on(function(kind, ev)
-        if kind ~= 'event' then return end
+        if kind ~= 'event' or observing() then return end
         local r = Ctl.results.shop
         if ev.kind == 'reroll_shop' then
             reroll_streak = reroll_streak + 1

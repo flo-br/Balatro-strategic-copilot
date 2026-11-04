@@ -13,8 +13,8 @@ Aucune dépendance de test : `tests/testlib.lua` fournit assertions, exécution 
 
 ```bash
 python3 tools/build.py                                    # paquet dist/…zip
-pwsh -NoProfile -File tests/installer/test_installer.ps1 -Zip dist/BalatroStrategicCopilot-1.0.13-installateur.zip [-Smods <sources Steamodded>]
-tests/standalone/run_love_standalone.sh dist/BalatroStrategicCopilot-1.0.13.zip [dossier]      # mode autonome, vrai LÖVE
+pwsh -NoProfile -File tests/installer/test_installer.ps1 -Zip dist/BalatroStrategicCopilot-1.0.14-installateur.zip [-Smods <sources Steamodded>]
+tests/standalone/run_love_standalone.sh dist/BalatroStrategicCopilot-1.0.14.zip [dossier]      # mode autonome, vrai LÖVE
 luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai chargeur Steamodded
 ```
 
@@ -34,6 +34,7 @@ luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai
 | `unit/test_high_stakes` | 9 | **1.0.10** (mises verte et au-delà) : seuils « sûr » plus stricts (95 % / 85 % : mêmes chances, épargne gardée à la mise blanche, achat à la mise noire) ; presque jamais passer une blinde (tag Investissement aux antes 1-2, tag Boss contre un boss qui contre le jeu) ; pas de ×Mult à l'ante 4 → plus d'épargne ; trajectoire des parties gagnées (option coupée) ; une seule location avant l'ante 6 et seulement pour un ×Mult ou un joker qui grandit, éternels non ×Mult plus risqués ; bons sans score attendus sur un plateau sûr ; calibrage a priori des chances de la boutique (option coupée) ; planètes de la main principale (option coupée) ; jokers que le jeu ne rend jamais éternels / périssables (listes du wiki, identiques dans le mod et le simulateur) |
 | `unit/test_synergies` | 7 | **1.0.12** : la grande liste de synergies : toutes les clés existent (jokers, cartes, bons, classes), aucune paire en double ni d'un joker avec lui-même, les 150 jokers couverts, plus de 350 paires ; Blueprint + The Duo nommée, règles générales (Jolly + Sly même main, Zany + Jolly main contenue, Blackboard + Pique, deux couleurs différentes en malus, Seeing Double exclu, Smeared Joker, taille de main ≠ main), Perkeo avec Observatory acheté, Baron avec Cryptid tenu ; The Chariot avec Steel Joker, planète avec Constellation, paquet Standard contre Erosion ; **notes de la boutique** (planète et paquet Céleste mieux notés avec Constellation, raison affichée) ; « Synergies à chercher » (Mime pour Baron, dans le panneau) ; `docs/SYNERGIES.md` à jour |
 | `unit/test_feedback` | 5 | **1.0.12** « Mon choix » : ce que le joueur a sélectionné lu (boutique, main), choix proposés ; préférences bornées (+4 / −4 par correction, ±15), texte coupé à 200 caractères, raisons « garder » / « dépenser » qui se compensent, effacement ; note de la boutique qui suit la correction (« vos choix ») ; **la boîte garde toutes les touches** (aucune n'atteint le jeu, la touche d'ouverture et son relâchement si, saisie de texte LÖVE activée puis remise, retour arrière UTF-8, Échap sans enregistrer) ; ligne de `mes_choix.txt`, bilan de partie, urgence des ×Mult |
+| `unit/test_observe` | 4 | **1.0.14** « Je joue, tu apprends » : un achat différent du conseil est appris (+2 / −2, borné à ±15, marqué « observé »), un achat identique est compté sans rien changer, un conseil calculé pour un autre état n'est jamais utilisé ; partir avec l'argent (« garder ») et relancer contre l'avis (« dépenser ») se compensent ; jeux et défausses comptés (même jeu dans un autre ordre = accord), pas appris ; le runtime n'apprend que mode actif, et le dit au joueur |
 | `unit/test_builds` | 5 | **1.0.8** : synergies des builds (Baron + Mime, réduites aux antes 1-2), anti-synergie (Vampire et cartes chance), Steel Joker et cartes d'acier, Blueprint qui veut un ×Mult à copier, build en cours et cartes voulues, cibles des tarots selon le build (Strength Dame → Roi avec Baron, Hanged Man sur les figures avec Canio, The Sun vers les Cœurs avec Bloodstone) |
 | `unit/test_plan` | 5 | **1.0.9** : remplacer le seul ×Mult attendu à l'ante suivante par un joker sans ×Mult est pénalisé ; plan de partie : types de jokers, sources de ×Mult (Polychrome comprise), objectifs par ante, « en retard », bonus selon la phase, affichage en boutique |
 | `unit/test_persistence` | 8 | aller-retour, **écriture interrompue** (A/B), corruption détectée par somme de contrôle, migration avec sauvegarde, schéma futur jamais écrasé, export/import, rotation des logs, fichiers jamais exécutés |
@@ -41,7 +42,7 @@ luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai
 | `unit/test_learning` | 13 | **scénarios synthétiques à vérité connue** (voir ci-dessous) ; **1.0.7** : bilan sans « malchance », causes d'une défaite (déficit, décrochage, ×Mult, argent dormant, boss, marge), causes retenues pour le plan |
 | `unit/test_recorder` | 3 | manche complète journalisée, fin de partie, abandon détecté |
 | `unit/test_format` | 7 | pourcentages, classes + symboles, méthode et confiance affichées, couverture partielle, panneau boutique, traduction anglaise, **effets des cartes et autocollants affichés** |
-| `integration/test_mod_load` | 8 | `main.lua` réellement chargé via un faux Steamodded : accroches, touches (4 dont X depuis 1.0.12), onglet de config, **première recommandation réelle**, rendu, sélection notée exactement, `calculate` renvoie toujours `nil`, robustesse à un état cassé, **aucune action de jeu appelée** (fonctions piégées), rafraîchissement du panneau |
+| `integration/test_mod_load` | 8 | `main.lua` réellement chargé via un faux Steamodded : accroches, touches (5 : X depuis 1.0.12, O depuis 1.0.14), onglet de config, **première recommandation réelle**, rendu, sélection notée exactement, `calculate` renvoie toujours `nil`, robustesse à un état cassé, **aucune action de jeu appelée** (fonctions piégées), rafraîchissement du panneau |
 | `integration/test_state_reader` | 6 | lecture complète, **ordre du deck non divulgué**, cartes face cachée masquées, améliorations/éditions/sceaux, jokers et boutique, erreurs confinées par section |
 | `integration/test_compat` | 5 | mods détectés, nombres Talisman, contrôle croisé avec le jeu, dégradation des scores « exacts », multiplicateur appris |
 | `integration/test_old_smods` | 6 | Steamodded sans événements de mod (1.0.0~BETA-0509c) : mode de repli, **1.0.9 : toutes les cartes jouées capturées alors qu'elles arrivent une à une** (avant : la première seulement, scores prévus faux), main/défausse/achat/vente/relance reconstruits, bandeau actif, **bandeau encore visible au menu après l'intro**, **bandeau d'erreur au démarrage**, retour au mode natif sans double comptage |
@@ -49,7 +50,7 @@ luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai
 | `integration/test_steps_ui` | 5 | étiquette sur le bouton « blinde suivante », bouton absent : étape gardée en texte et boutons vus écrits au journal, étiquette « passer » sur la colonne de la blinde en cours, numéros d'ordre sous les jokers puis disparition une fois l'ordre corrigé, **The House** toutes cartes cachées (plus de « Aucune analyse disponible ») |
 | `integration/test_full_flow` | 2 | partie complète (main → défaite → bilan → fichiers → **redémarrage avec profil conservé**), boutique de bout en bout avec badges |
 | `unit/test_performance` | 6 | mesures (ci-dessous) |
-| **Total** | **287** | |
+| **Total** | **291** | |
 
 ### Tests de référence (scores)
 
@@ -98,11 +99,11 @@ prédiction (journal + diagnostic de compatibilité).
 Le script construit un **exécutable fusionné** (binaire LÖVE 11.5 + archive d'un Balatro simulé
 contenant `conf.lua` et `main.lua`), exactement comme `Balatro.exe`, puis le lance sous Xvfb avec
 différents dossiers de sauvegarde (l'équivalent de `%AppData%\Balatro`) remplis depuis l'archive
-`BalatroStrategicCopilot-1.0.13.zip`. Résultats (2026-11-04, paquet 1.0.13) :
+`BalatroStrategicCopilot-1.0.14.zip`. Résultats (2026-11-04, paquet 1.0.14) :
 
 | Scénario | Résultat |
 |---|---|
-| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.0.13 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 308) ; panneau et badges « JOUER » affichés (capture) |
+| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.0.14 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 309) ; panneau et badges « JOUER » affichés (capture) |
 | mod seul, sans amorce | jeu normal, pas de copilote (témoin) |
 | amorce sans le dossier du mod | jeu normal jusqu'au bout ; bandeau rouge « dossier introuvable » ; erreur dans `amorce.log` |
 | Steamodded a déjà chargé le copilote | l'amorce se retire (« Steamodded gère déjà le copilote »), pas de double chargement |
@@ -132,8 +133,8 @@ exécute l'installateur **extrait de l'archive réelle**, puis contrôle le rés
 
 Les dossiers `Mods` produits par S1, S4, S5, S7 et S9 sont ensuite passés aux **deux vrais
 chargeurs** de Steamodded (ci-dessous) : copilote trouvé, activé, bandeau « 1.0.3 actif » dans
-chaque cas. Paquet 1.0.13 (2026-11-04) : **53 vérifications réussies, 0 échec** ; S1, S4, S5 et S9
-passés aux deux chargeurs (0509c et récent) : bandeau « 1.0.13 actif » dans les 8 cas.
+chaque cas. Paquet 1.0.14 (2026-11-04) : **53 vérifications réussies, 0 échec** ; S1, S4, S5 et S9
+passés aux deux chargeurs (0509c et récent) : bandeau « 1.0.14 actif » dans les 8 cas.
 
 ### Performances mesurées (LuaJIT, conteneur Linux, plusieurs exécutions)
 
@@ -193,7 +194,9 @@ ordre des cartes (1.0.9 : Photograph + Hanging Chad, JOUER 1 sur le Roi, les ét
 décalées d'une rangée pour rester lisibles, « +335 % » dans le panneau) et « Mon choix » (1.0.12 :
 « Synergies à chercher » dans le panneau de la boutique avec Baron ; le copilote conseille The Duo,
 le joueur sélectionne Mime, touche X, 1, 1, texte tapé, Entrée : correction enregistrée, Mime +4,
-The Duo −4, ligne écrite dans `mes_choix.txt` par le vrai `love.filesystem`) : accroches
+The Duo −4, ligne écrite dans `mes_choix.txt` par le vrai `love.filesystem`) et « Je joue, tu apprends »
+(1.0.14 : touche O dans la boutique, conseils et alertes masqués, achat de Hologram rapporté par le jeu
+à la place de The Duo conseillé : Hologram +2, The Duo −2, ligne « observé » dans `mes_choix.txt`) : accroches
 installées, analyses terminées (28–298 images), sauvegarde/rechargement réels dans le dossier de
 sauvegarde LÖVE, **0 erreur**. Captures : `docs/img/overlay_*.png`.
 

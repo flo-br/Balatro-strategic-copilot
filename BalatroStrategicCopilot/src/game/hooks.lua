@@ -91,6 +91,7 @@ function Hooks.install(Ctl, UI)
         bind(keys.detail or 'v', Ctl.toggle_detail)
         bind(keys.badges or 'b', Ctl.toggle_badges)
         bind(keys.my_choice or 'x', Ctl.open_feedback)
+        bind(keys.observe or 'o', Ctl.toggle_observe)
         Hooks.installed.keys = true
     elseif love and love.keyboard and love.keyboard.isDown then
         local keys = (BSC.config and BSC.config.keys) or {}
@@ -104,6 +105,7 @@ function Hooks.install(Ctl, UI)
         bind(keys.detail or 'v', Ctl.toggle_detail)
         bind(keys.badges or 'b', Ctl.toggle_badges)
         bind(keys.my_choice or 'x', Ctl.open_feedback)
+        bind(keys.observe or 'o', Ctl.toggle_observe)
         Hooks.polled = P
         Hooks.installed.keys = #P > 0
         L.info('hooks', 'no SMODS.Keybind: %d keys read directly from the keyboard', #P)

@@ -1,4 +1,4 @@
-Balatro Strategic Copilot 1.0.13
+Balatro Strategic Copilot 1.0.14
 ================================
 
 Copilote stratégique pour Balatro : il analyse, calcule, recommande et apprend.
@@ -31,6 +31,9 @@ Installation (Windows)
      choisissez avec les chiffres, donnez la raison et une explication : le copilote en tient
      compte ensuite (préférences bornées, effaçables avec Suppr). Vos choix sont aussi écrits
      dans %AppData%\Balatro\BSC\mes_choix.txt.
+     Touche O (« Je joue, tu apprends ») : plus aucun conseil affiché, vous jouez ; le copilote
+     compare chacun de vos choix à ce qu'il aurait conseillé et apprend des différences.
+     O à nouveau : les conseils reviennent.
 
 Désinstallation
   - Supprimer le dossier %AppData%\Balatro\Mods\BalatroStrategicCopilot

@@ -10,6 +10,8 @@ local LE = BSC.require('learning/learning')
 local Rec = BSC.require('learning/recorder')
 local RV = BSC.require('learning/review')
 local AD = BSC.require('learning/adapt')
+local FB = BSC.require('learning/feedback')
+local OB = BSC.require('learning/observe')
 
 local RT = {}
 
@@ -47,6 +49,38 @@ function RT.player_feedback()
     if type(d) ~= 'table' or (d.count or 0) == 0 then return nil end
     return RT.profile_data
 end
+
+-- "Je joue, tu apprends" (1.0.14, learning/observe.lua): the mode is kept in the profile (it
+-- survives a restart); learning.observe = false in config.lua forbids it
+function RT.observe_on()
+    if cfg().enabled == false or cfg().observe == false then return false end
+    return (RT.profile_data and RT.profile_data.observe_mode == true) or false
+end
+function RT.set_observe(on)
+    if not RT.profile_data then return false end
+    RT.profile_data.observe_mode = on and true or nil
+    RT.save_profile()
+    return RT.observe_on()
+end
+-- { seen, agree, learned, by = { shop = {seen, agree}, hand = ..., other = ... } } or nil
+function RT.observed_stats()
+    local d = RT.profile_data and RT.profile_data.feedback
+    return type(d) == 'table' and d.observed or nil
+end
+
+-- an observed action: learned (bounded preferences), kept in mes_choix.txt, told to the player
+local function learn(o)
+    if not o or not RT.profile_data then return end
+    local changes, kept = FB.observe(RT.profile_data, o, os.time())
+    if not kept then return end
+    pcall(RT.save_profile)
+    local store = BSC.store
+    if store and store.be and store.be.append then
+        pcall(function() store.be.append(store:path('mes_choix.txt'), FB.export_line(kept) .. '\n') end)
+    end
+    if RT.on_learned then pcall(RT.on_learned, changes, kept) end
+end
+RT.learn_observed = learn
 
 function RT.calibrator(kind)
     return function(p)
@@ -142,10 +176,13 @@ end
 function RT.attach(Ctl)
     BSC.learning_runtime = RT
     RT.init(BSC.store)
+    RT.on_learned = Ctl.on_observed
     Ctl.on(function(kind, data)
         if cfg().enabled == false then return end
+        local observing = RT.observe_on()
         if kind == 'state' then
             local s = data.state
+            if observing then learn(OB.on_state(data.prev, s)) end
             -- resume a saved active run (game reloaded from its own save)
             if not RT.rec.run and RT.active and s and s.run and RT.active.identity then
                 local id = table.concat({ tostring(s.run.seed), tostring(s.run.deck_key), tostring(s.run.stake), tostring(s.run.challenge) }, '|')
@@ -159,8 +196,11 @@ function RT.attach(Ctl)
                 RT.save_active()
             end
         elseif kind == 'event' then
+            -- (the state the action was taken from: polling emits before the new snapshot)
+            if observing then learn(OB.on_event(data, Ctl.state)) end
             RT.rec:on_event(data, { results = Ctl.results, state = Ctl.state })
         elseif kind == 'analysis' then
+            if observing then OB.on_analysis(data.phase, data.result, data.state, BSC.config) end
             RT.rec:on_analysis(data.phase, data.result, data.state)
         end
     end)

@@ -5,7 +5,7 @@ partie, calcule les scores exacts, les probabilités, évalue la boutique, conse
 défausses, et **apprend de vos parties**. **Il ne joue jamais à votre place** : il n'effectue
 aucune action (sélection, jeu, défausse, achat, vente, relance).
 
-> Statut : version 1.0.13. Développée **hors du jeu** (aucune installation de Balatro n'était
+> Statut : version 1.0.14. Développée **hors du jeu** (aucune installation de Balatro n'était
 > disponible dans l'environnement de développement), puis essayée par l'utilisateur dans le vrai
 > jeu (mode copier-coller). Validée par des tests automatisés, un environnement Balatro/Steamodded
 > simulé, le vrai runtime LÖVE 11.5 et des parties complètes simulées ([entraînement](docs/TRAINING.md)).
@@ -36,7 +36,7 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 **Méthode sans programme (recommandée, 1.0.4+)** — ni Lovely, ni Steamodded, ni script, ni DLL ;
 fonctionne aussi sur un PC protégé (contrôle parental, antivirus strict) :
 
-1. Extraire l'archive `BalatroStrategicCopilot-1.0.13.zip`.
+1. Extraire l'archive `BalatroStrategicCopilot-1.0.14.zip`.
 2. Copier le **contenu** du dossier `COPIER_DANS_AppData_Balatro` (`main.lua` + `Mods`) dans
    `%AppData%\Balatro\` (touche Windows + R, `%AppData%\Balatro`).
 3. Lancer Balatro : bandeau vert « … actif — touche C : panneau (mode autonome, sans Steamodded) ».
@@ -48,7 +48,7 @@ Balatro tourne sur LÖVE 11, qui lit `main.lua` d'abord dans le dossier de sauve
 **Avec Lovely + Steamodded** : copier le dossier `BalatroStrategicCopilot` dans
 `%AppData%\Balatro\Mods\` (de sorte que `Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json`
 existe ; une archive `.zip` déposée telle quelle est ignorée par les anciens Steamodded). L'archive
-`BalatroStrategicCopilot-1.0.13-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
+`BalatroStrategicCopilot-1.0.14-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
 répare toute la chaîne (dossier du jeu, Lovely, Steamodded, copilote) puis confirme que tout s'est
 chargé. Un **bandeau vert « actif »** s'affiche au lancement ; **aucun bandeau = mod non trouvé**
 ([pièges vérifiés](docs/INSTALL.md)).
@@ -65,6 +65,7 @@ les données apprises `%AppData%\Balatro\BSC\`). Détails dans [docs/INSTALL.md]
 | `V` | afficher / masquer les alternatives et les détails |
 | `B` | afficher / masquer les badges sur les cartes |
 | `X` | **« Mon choix »** : votre choix à la place du conseil, avec la raison et une explication (ci-dessous) |
+| `O` | **« Je joue, tu apprends »** : plus aucun conseil, vous jouez, le copilote apprend de ce que vous faites (ci-dessous) |
 
 ### Une étape à la fois (« À FAIRE »)
 
@@ -97,6 +98,29 @@ Panneau fermé, un résumé compact reste visible. Au menu principal, `C` affich
 dernier bilan de partie, taux de victoire avec intervalle, calibration et précision des scores.
 Les options (badges, alertes, apprentissage, export, import, réinitialisation) sont dans
 *Mods → Balatro Strategic Copilot → Config*.
+
+### « Je joue, tu apprends » (touche `O`, 1.0.14)
+
+Appuyez sur `O` : le copilote **n'affiche plus aucun conseil** (ni étiquettes, ni « À FAIRE », ni
+alertes d'achat) et vous jouez comme d'habitude. Il continue d'analyser chaque situation en
+silence et compare **chacune de vos actions** au conseil qu'il aurait donné pour exactement le
+même état du jeu :
+
+* en boutique et dans les paquets, ce que vous achetez, prenez, vendez, si vous relancez ou partez
+  sans acheter : quand c'est différent de son conseil, il **apprend** (l'objet que vous prenez +2
+  points de note, celui qu'il aurait pris −2 ; partir avec l'argent ou relancer quand il conseillait
+  l'inverse règle son habitude d'épargne). C'est la moitié du poids d'une correction avec `X`, dans
+  les mêmes limites (±15 par objet), puisque vous ne donnez pas de raison ;
+* vos jeux, défausses, consommables et blindes passées sont **comptés** (combien de fois vous
+  faites comme lui), sans en tirer de règle pour l'instant.
+
+Une ligne « MODE APPRENTISSAGE — vous jouez, j'observe : 12 choix vus, 7 comme mon conseil,
+5 appris » reste visible ; un message dit ce qui est appris (« Hologram +2 · The Duo −2 »). Chaque
+leçon est écrite dans `mes_choix.txt` (marquée « observé ») et le bilan de fin de partie les liste.
+`O` à nouveau : les conseils reviennent, avec ce qu'il a appris. Le mode reste actif d'une partie à
+l'autre jusqu'à ce que vous le coupiez ; `Suppr` dans la boîte `X` efface tout ce qui a été appris.
+
+![Je joue, tu apprends](docs/img/overlay_observe.png)
 
 ### « 25 $ d'abord » (1.0.13)
 

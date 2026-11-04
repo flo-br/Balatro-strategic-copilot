@@ -115,6 +115,27 @@ de la partie. `Suppr` dans la boîte (puis Entrée) efface tout ce qui a été a
 **Limite** : ces préférences n'existent que dans votre jeu ; le simulateur d'entraînement ne les
 applique pas, leur effet sur les résultats n'a donc pas pu être mesuré.
 
+## 4 ter. « Je joue, tu apprends » (touche O, 1.0.14)
+
+`learning/observe.lua`, `FB.observe`. Le mode se garde dans le profil (`observe_mode`) ; tant qu'il
+est actif, aucun conseil n'est affiché (étiquettes, « À FAIRE », ordre des jokers, alertes
+d'achat et de danger). À la fin de chaque analyse, le conseil de l'état est calculé et gardé ;
+chaque action rapportée par le jeu (ou reconstruite par comparaison d'états en mode autonome) est
+comparée au conseil de **l'état exact** d'où elle part (sinon elle est ignorée) :
+
+| Action du joueur | Conseil différent | Appris |
+|---|---|---|
+| achat / prise d'un objet X | acheter Y, relancer, partir | X +2 (type +1) ; Y −2 ; si le conseil était de partir : « dépenser » +0,5 |
+| relance | acheter Y, partir | Y −2 ; si le conseil était de partir : « dépenser » +0,5 |
+| partir sans acheter | acheter Y, relancer | Y −2 ; « garder l'argent » +0,5 |
+| vente d'un joker X | autre chose | X −2 |
+| jeu, défausse, consommable, blinde | autre chose | compté seulement (accord du joueur et du conseil) |
+
+Les bornes sont celles des corrections (±15 par objet, ±8 par type, intérêts ±2) ; une action
+identique au conseil est comptée comme accord et ne change rien. Chaque leçon va dans
+`profile.feedback.entries` (raison « observé ») et dans `mes_choix.txt`. `learning.observe = false`
+interdit le mode.
+
 ## 5. Export, import, réinitialisation
 
 Depuis *Mods → Balatro Strategic Copilot → Config* :

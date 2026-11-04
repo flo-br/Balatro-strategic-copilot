@@ -115,6 +115,12 @@
   (stratégie demandée par le joueur) ;
   `rush_cap = false` dans `config.lua` la coupe.
 
+* « Je joue, tu apprends » (1.0.14) : seuls les choix de boutique et de paquet font apprendre
+  (préférences d'objets et habitude d'argent) ; vos jeux et défausses sont comptés, pas encore
+  imités. Une action dont le conseil n'a pas pu être calculé avant (analyse pas finie) est ignorée.
+  En mode autonome, les actions sont reconstruites en comparant deux états du jeu : une action très
+  rapide entre deux états peut être manquée.
+
 ## Interface
 
 * Overlay dessiné par-dessus le jeu (pas d'objets UI Balatro) : pas de survol à la souris ;

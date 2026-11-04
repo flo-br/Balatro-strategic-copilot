@@ -512,10 +512,20 @@ function Ctl.ui_model()
         for i = #sel, 1, -1 do table.insert(lines, 1, sel[i]) end
     end
     -- the next step comes first, then the joker order when it should change
-    local step = Ctl.step(view_phase)
-    local om = Ctl.order_marks()
-    local head = step_lines(step, view_phase, Ctl.partial[view_phase])
-    for _, l in ipairs(order_lines(om)) do head[#head + 1] = l end
+    -- ("Je joue, tu apprends": the player plays, no advice is shown; the copilot watches)
+    local lr = BSC.learning_runtime
+    local observing = lr and lr.observe_on and lr.observe_on()
+    local step, om, head
+    if observing then
+        local ob = lr.observed_stats and lr.observed_stats() or {}
+        local keys0 = c.keys or {}
+        head = { { { t = I.T('obs_status', ob.seen or 0, ob.agree or 0, ob.learned or 0, (keys0.observe or 'o'):upper()), c = 'accent' } } }
+    else
+        step = Ctl.step(view_phase)
+        om = Ctl.order_marks()
+        head = step_lines(step, view_phase, Ctl.partial[view_phase])
+        for _, l in ipairs(order_lines(om)) do head[#head + 1] = l end
+    end
     for i = #head, 1, -1 do table.insert(lines, 1, head[i]) end
     m.title = I.T('title') .. ' — ' .. I.T('phase_' .. view_phase)
     m.lines = lines
@@ -535,7 +545,7 @@ function Ctl.ui_model()
     end
     local keys = c.keys or {}
     m.footer = I.T('keys_help', (keys.panel or 'c'):upper(), (keys.detail or 'v'):upper(), (keys.badges or 'b'):upper(),
-        (keys.my_choice or 'x'):upper())
+        (keys.my_choice or 'x'):upper(), (keys.observe or 'o'):upper())
     -- badges: the step label above what to act on, order numbers under the jokers
     local show_badges = not (c.ui and c.ui.show_badges == false)
     if show_badges then
@@ -595,6 +605,29 @@ FI.on_saved = function(changes)
     Ctl.version = (Ctl.version or 0) + 1
     Ctl.last_sig = nil
 end
+-- "Je joue, tu apprends" (learning/observe.lua): the player plays, the copilot learns
+function Ctl.toggle_observe()
+    local lr = BSC.learning_runtime
+    if not (lr and lr.set_observe) then return end
+    local on = lr.set_observe(not lr.observe_on())
+    -- turned on in the middle of a phase: the advice of the current state is kept now (the
+    -- first action is compared with it)
+    if on and Ctl.state then
+        local ph = Ctl.state.phase
+        local res = ph and Ctl.results[ph]
+        if res and not Ctl.partial[ph] then
+            pcall(BSC.require('learning/observe').on_analysis, ph, res, Ctl.state, cfg())
+        end
+    end
+    local key = ((cfg().keys or {}).observe or 'o'):upper()
+    -- the advice alerts already shown go away with the advice
+    if on then Ctl.alerts = {} end
+    Ctl.alert('observe', I.T(on and 'obs_on' or 'obs_off', key), on and 'good' or 'mid')
+end
+local function on_learned(changes)
+    Ctl.alert('observe_learned', I.T('obs_learned', table.concat(changes or {}, ' · ')), 'good')
+end
+Ctl.on_observed = on_learned
 function Ctl.toggle_panel() Ctl.panel_open = not Ctl.panel_open end
 function Ctl.toggle_detail() Ctl.detail = not Ctl.detail end
 function Ctl.toggle_badges()

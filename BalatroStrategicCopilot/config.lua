@@ -9,6 +9,7 @@ return {
         badges = 'b',            -- show/hide badges over cards
         my_choice = 'x',         -- "Mon choix": what YOU selected in the game instead of the advice, and why
                                  -- (not 'm': Steamodded restarts the game when M is held)
+        observe = 'o',           -- "Je joue, tu apprends": no advice shown, the copilot learns from what you do
     },
     ui = {
         anchor = 'right',        -- 'right' or 'left'
@@ -88,6 +89,10 @@ return {
         -- "Mon choix" (keys.my_choice): your corrections move the notes of the items and a few
         -- settings (bounded, shown in the panel); false: they are only kept and shown
         player_feedback = true,
+        -- "Je joue, tu apprends" (keys.observe): you play, the copilot compares each of your
+        -- choices with the advice it would have given and learns from the differences (half the
+        -- weight of a "Mon choix" correction, same bounds); false: the mode cannot be turned on
+        observe = true,
     },
     log = {
         level = 'info',          -- off, error, warn, info, debug, trace

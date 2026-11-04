@@ -1,5 +1,26 @@
 # Historique des versions
 
+## 1.0.14 — 2026-11-04
+
+Demande : « une option où c'est moi qui joue et l'IA apprend de ce que je fais ».
+
+### « Je joue, tu apprends » (touche O)
+* Plus aucun conseil affiché : ni étiquettes, ni « À FAIRE », ni ordre des jokers, ni alertes
+  d'achat. Vous jouez seul ; le copilote analyse en silence.
+* Chaque action (achat, prise dans un paquet, vente, relance, départ de la boutique, consommable,
+  jeu, défausse, blinde passée) est comparée au conseil qu'il aurait donné pour exactement le même
+  état. Boutique et paquets : chaque choix différent fait apprendre (l'objet pris +2, celui qu'il
+  aurait pris −2, l'habitude d'argent quand vous partez ou relancez contre son avis), la moitié du
+  poids d'une correction `X`, mêmes limites. Jeux, défausses, blindes : comptés.
+* Ligne « MODE APPRENTISSAGE — vous jouez, j'observe : N choix vus, A comme mon conseil, L
+  appris » ; message à chaque leçon (« Hologram +2 · The Duo −2 ») ; leçons écrites dans
+  `mes_choix.txt` (« observé ») et listées dans le bilan de partie.
+* Le mode reste actif d'une partie à l'autre ; `O` le coupe (les conseils reviennent, avec ce
+  qui a été appris). `learning.observe = false` dans `config.lua` l'interdit.
+* Vérifié dans le vrai LÖVE 11.5 (état du jeu simulé) : `O` dans la boutique, conseil « acheter
+  The Duo » masqué, achat de Hologram rapporté par le jeu, appris (Hologram +2, The Duo −2),
+  ligne écrite dans `mes_choix.txt`, 0 erreur.
+
 ## 1.0.13 — 2026-11-04
 
 Demande : « se concentrer en début de partie sur les 25 $ pour avoir les 5 $ d'intérêts à

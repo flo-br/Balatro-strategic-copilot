@@ -38,6 +38,12 @@ FB.REASONS = {
 }
 FB.REASON_LABEL = {}
 for _, r in ipairs(FB.REASONS) do FB.REASON_LABEL[r.key] = r.label end
+-- what the "Je joue, tu apprends" mode records (learning/observe.lua): no reason given
+FB.REASON_LABEL.observed = 'observé (mode apprentissage, sans raison)'
+
+-- Observation ("Je joue, tu apprends", 1.0.14): what the player did instead of the advice is
+-- learned with half the weight of a correction given with the X key (no reason is given).
+FB.OBS_ITEM_STEP, FB.OBS_KIND_STEP, FB.OBS_MONEY = 2, 1, 0.5
 
 local function new_data() return { entries = {}, items = {}, kinds = {}, reasons = {}, count = 0 } end
 
@@ -102,6 +108,10 @@ end
 local function advice_brief(step, state)
     if not step then return nil end
     local a = { action = step.action, label = step.label, text = step.text, why = step.why }
+    if step.targets then
+        a.targets = {}
+        for i, u in ipairs(step.targets) do a.targets[i] = tostring(u) end
+    end
     local t = step.targets and step.targets[1]
     if t ~= nil then
         local function find(list, area)
@@ -129,6 +139,9 @@ local function advice_brief(step, state)
     end
     return a
 end
+
+FB.advice_brief = advice_brief
+FB.item_brief = item_brief
 
 -- Context of a correction: what the player highlighted, what the copilot advises.
 -- Returns ctx or nil, reason ('no_run', 'nothing_selected').
@@ -273,6 +286,91 @@ function FB.item_adjust(profile, x)
     v = U.clamp(v, -FB.ITEM_CAP - FB.KIND_CAP, FB.ITEM_CAP + FB.KIND_CAP)
     if v == 0 then return 0, nil end
     return v, string.format('vos choix : %+d', v)
+end
+
+-- Does the action the player took match the advice? (same action, same item or cards)
+local function same_targets(a, b)
+    if not a or not b or #a ~= #b then return false end
+    local set = {}
+    for _, u in ipairs(a) do set[tostring(u)] = true end
+    for _, u in ipairs(b) do if not set[tostring(u)] then return false end end
+    return true
+end
+local SAME_ACTION = { buy = { buy = true, take = true }, take = { buy = true, take = true }, reroll = { reroll = true },
+    leave = { next_round = true }, sell = { sell = true }, use = { use = true }, play = { play = true },
+    discard = { discard = true }, skip_blind = { skip_blind = true }, play_blind = { select_blind = true } }
+function FB.agrees(adv, o)
+    if not adv or not adv.action or not o then return false end
+    local ok = SAME_ACTION[o.action]
+    if not (ok and ok[adv.action]) then return false end
+    if o.action == 'buy' or o.action == 'take' or o.action == 'sell' or o.action == 'use' then
+        local au = adv.targets and adv.targets[1]
+        local ou = o.item and o.item.uid
+        return au ~= nil and ou ~= nil and tostring(au) == tostring(ou)
+    end
+    if o.action == 'play' or o.action == 'discard' then return same_targets(adv.targets, o.uids) end
+    return true
+end
+
+-- An observed action (learning/observe.lua): o = { phase, ante, round, stake, deck, dollars,
+-- advice (advice_brief of the step shown for that state), action ('buy', 'take', 'reroll',
+-- 'leave', 'sell', 'use', 'play', 'discard', 'skip_blind', 'play_blind'), item (item_brief),
+-- uids (cards), label }. Shop and pack choices move the preferences (OBS steps, same caps as
+-- the corrections) and the money habit; plays, discards, blinds and consumables are counted
+-- (how often the player does what the copilot would have advised). Returns changes, entry
+-- kept (nil when nothing was learned), agreed.
+function FB.observe(profile, o, now)
+    local d = FB.data(profile)
+    if not d or not o or not o.action then return {}, nil, false end
+    local ob = d.observed or { seen = 0, agree = 0, learned = 0, by = {} }
+    d.observed = ob
+    ob.by = ob.by or {}
+    local cat = (o.phase == 'shop' or o.phase == 'pack') and 'shop' or (o.phase == 'hand' and 'hand' or 'other')
+    local bc = ob.by[cat] or { seen = 0, agree = 0 }
+    ob.by[cat] = bc
+    ob.seen = (ob.seen or 0) + 1; bc.seen = bc.seen + 1
+    local adv = o.advice or {}
+    if FB.agrees(adv, o) then
+        ob.agree = (ob.agree or 0) + 1; bc.agree = bc.agree + 1
+        return {}, nil, true
+    end
+    if cat ~= 'shop' then return {}, nil, false end
+    local changes = {}
+    local money
+    local function prefer(it, sign)
+        if not it or not it.key then return end
+        local delta = bump(d.items, it.key, sign * FB.OBS_ITEM_STEP, FB.ITEM_CAP)
+        if delta ~= 0 then changes[#changes + 1] = string.format('%s %+d', tostring(it.name or it.key), delta) end
+        if it.kind then bump(d.kinds, it.kind, sign * FB.OBS_KIND_STEP, FB.KIND_CAP) end
+    end
+    local advice_buys = adv.action == 'buy' or adv.action == 'take'
+    local adv_item = advice_buys and adv.item or nil
+    if o.action == 'buy' or o.action == 'take' then
+        prefer(o.item, 1)
+        if adv_item then prefer(adv_item, -1) end
+        if adv.action == 'next_round' then money = 'spend' end
+    elseif o.action == 'reroll' then
+        if adv_item then prefer(adv_item, -1) end
+        if adv.action == 'next_round' then money = 'spend' end
+    elseif o.action == 'leave' then
+        if adv_item then prefer(adv_item, -1) end
+        if adv_item or adv.action == 'reroll' then money = 'economy' end
+    elseif o.action == 'sell' then
+        prefer(o.item, -1)
+    end
+    if money then
+        d.reasons[money] = (d.reasons[money] or 0) + FB.OBS_MONEY
+        changes[#changes + 1] = (money == 'economy') and 'garder l\'argent' or 'dépenser'
+    end
+    if #changes == 0 then return {}, nil, false end
+    local kept = { t = now or os.time(), phase = o.phase, ante = o.ante, round = o.round, stake = o.stake, deck = o.deck,
+        dollars = o.dollars, advice = adv, choice = { kind = o.action, label = o.label, item = o.item }, reason = 'observed',
+        text = '', observed = true }
+    d.entries[#d.entries + 1] = kept
+    while #d.entries > FB.MAX_ENTRIES do table.remove(d.entries, 1) end
+    d.count = (d.count or 0) + 1
+    ob.learned = (ob.learned or 0) + 1
+    return changes, kept, false
 end
 
 -- Settings moved by the reasons given (each reason a little, bounded). Returns a table of
