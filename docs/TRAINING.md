@@ -456,3 +456,7 @@ saut entre le boss de l'ante 1 (600) et l'ante 2 (1 000 à 2 000) punit un jeu t
 `rush_cap = false` la coupe. Après ces mesures, « joker d'argent » ne compte plus Credit Card ni
 Chaos the Clown (ils ne rapportent rien) : la stratégie livrée en est un peu plus stricte.
 
+Contrôle à la mise noire (4), graines 301-320, contre la 1.0.12 : 25 $ atteints vers la 5,7ᵉ blinde
+au lieu de la 6,4ᵉ, 3 parties perdues aux antes 1 à 3 au lieu de 1, **−1,48 ± 1,59** blinde par
+partie (20 parties : très bruité, même sens qu'à la mise orange).
+

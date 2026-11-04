@@ -32,7 +32,8 @@ copilote ; et les retours de vos parties (dossier `BSC`, mise orange, deck rouge
   mais pas en faveur de la stratégie sur le simulateur. Une première version (boss jugé « sûr »
   dès 40 % aux premières boutiques) faisait pire (−0,65 ± 0,81, 10 défaites précoces sur 30
   contre 8) : retirée. La stratégie reste active par défaut parce que c'est la vôtre ; le
-  simulateur simplifie le jeu, vos parties diront si elle marche mieux que là-bas.
+  simulateur simplifie le jeu, vos parties diront si elle marche mieux que là-bas. Contrôle à la
+  mise noire (20 parties) : −1,48 ± 1,59, même sens.
 
 ### Vos corrections (`mes_choix.txt`)
 * Paquet Jumbo Arcana à 6 $ en ante 1, relance à 5 $ avec 15 $ en ante 2 : plus conseillés.
