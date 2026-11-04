@@ -59,9 +59,11 @@ A.DEFAULTS = {
     -- announced 0.30-0.90, bosses were won 80-97 % of the time in 965 simulated bosses)
     rush_cap = true,
     rush_until_ante = 3,           -- ... during the first antes only
-    rush_safe_next = 0.90,         -- next blind: at least 90 % (whatever the stake)
-    rush_safe_boss = 0.80,         -- the boss, at the last shop before it: at least 80 %
-    rush_early_boss = 0.40,        -- the boss, at an earlier shop: at least 40 % (prepared later)
+    -- (simulated orange-stake runs: 0.90 / 0.80 / 0.40 lost more blinds early, -0.65 +- 0.81
+    -- blind per run on 30 runs; these: -0.44 +- 0.68 on 40, docs/TRAINING.md)
+    rush_safe_next = 0.95,         -- next blind: at least 95 % (whatever the stake)
+    rush_safe_boss = 0.85,         -- the boss, at the last shop before it: at least 85 %
+    rush_early_boss = 0.70,        -- the boss, at an earlier shop: at least 70 % (prepared later)
     rush_min_gain = 0.02,          -- not safe: only items raising the next blind or boss by 2 points
     rush_payback = 3,              -- a money joker paying its price back within this many rounds
 }
@@ -554,6 +556,14 @@ local function required_note(o, money, pol, S, state)
     local cost = o.cost or 0
     -- selling a joker to replace it loses its sale value and its growth: a clear gain only
     if o.kind == 'replace' then return math.max(S.replace_note, base) end
+    -- "25 $ d'abord", not safe: only what raises the chances of the next blind or the boss
+    -- (a very strong item still passes, a rental too only if it raises them)
+    if pol.rush_on and not pol.safe then
+        local gain = math.max(o.d_next or 0, o.d_boss or 0)
+        if gain < (S.rush_min_gain or 0.02) and (o.note or 0) < S.strong_note then return 101 end
+        if o.rental and gain < (S.rush_min_gain or 0.02) then return 101 end
+        return base
+    end
     -- a rental ($3 every round): only a strong joker, or one needed to survive the next blinds;
     -- never the "spend the excess" / "fill an empty slot" shortcuts
     if o.rental then
@@ -585,12 +595,6 @@ local function required_note(o, money, pol, S, state)
         return math.min(base, S.excess_note)
     end
     if (o.note or 0) >= S.strong_note then return base end
-    -- "25 $ d'abord", not safe: only what raises the chances of the next blind or the boss
-    if pol.rush_on and not pol.safe then
-        local gain = math.max(o.d_next or 0, o.d_boss or 0)
-        if gain < (S.rush_min_gain or 0.02) then return 101 end
-        return base
-    end
     if not pol.safe then return base end
     if pol.target > 0 and money - cost < pol.target then return S.strong_note end
     return base + S.interest_weight * (o.interest_loss or 0)

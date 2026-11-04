@@ -47,7 +47,8 @@ luajit tools/trainer/report.lua sortie.jsonl [autre.jsonl ...]
   `engine/builds.lua`) : `syn_list` (1 : la grande liste), `syn_items` (1 : cartes, bons, paquets),
   `syn_static` (0 : synergies que le moteur de score mesure déjà), `syn_generic` (0 : règles
   générales). `syn_list=0 syn_items=0` rejoue exactement les choix de la 1.0.11 (vérifié graine
-  par graine).
+  par graine). 1.0.13 : `rush_cap=false` (coupe « 25 $ d'abord »), `rush_safe_next`,
+  `rush_safe_boss`, `rush_early_boss`, `rush_min_gain`, `rush_payback`, `rush_until_ante`.
 * Une ligne JSON par partie : résultat, ante atteinte, blinde perdue, historique des manches,
   décisions, plateau, niveaux, et les anomalies (étape absente ou impossible à exécuter).
 * `report.lua` applique à chaque défaite **le bilan de partie du mod** (`learning/review.lua`) et
@@ -427,3 +428,31 @@ de parties sur le simulateur (2 sur 60, 0 sur 12, 4 sur 12 de part et d'autre). 
 principal est pour vous : elle dit en boutique quelle synergie porte une note et quelles pièces
 chercher. Les préférences apprises par « Mon choix » ne sont pas appliquées par le simulateur et
 n'ont pas été mesurées.
+
+## Résultats 1.0.13 (2026-11-04) : « 25 $ d'abord », mise orange
+
+Demande du joueur (qui joue en mise orange, deck rouge) : atteindre 25 $ le plus vite possible en
+début de partie, sans perdre de blinde, puis la stratégie du copilote. Ses deux dernières parties
+réelles (perdues aux antes 5 et 2) : argent entre 0 et 3 $ presque tout le temps, aucun
+intérêt ; le copilote achetait tout dès l'ante 1 parce qu'il se croyait en danger (chances
+pessimistes, seuils des mises élevées).
+
+Mesures graine par graine, mise orange (7), deck rouge, contre la même version sans la stratégie
+(`rush_cap=false`), graines 601-640 :
+
+| Version | 25 $ atteints (blinde) | Intérêts antes 1-3 | Perdues antes 1-3 | Écart (blindes par partie) |
+|---|---|---|---|---|
+| sans la stratégie | 5,7ᵉ (21 parties sur 40) | 6,8 $ | 12 sur 40 | — |
+| v2 : prochaine blinde 90 %, boss 80 % avant lui, 40 % plus tôt (30 parties) | 4,8ᵉ | 10,5 $ | 10 sur 30 (8 sans) | −0,65 ± 0,81 |
+| **livrée : 95 %, boss 85 % avant lui, 70 % plus tôt** | **4,8ᵉ** (19 sur 40) | **9,5 $** | **16 sur 40** | **−0,41 ± 0,62** |
+
+Une première version (seuils des mises élevées partout) ne changeait presque rien à la mise
+noire : avec un jeu vide, le boss paraissait toujours « pas sûr » et le copilote achetait.
+
+**Lecture honnête.** La stratégie fait ce qu'elle promet (25 $ plus tôt, plus d'intérêts), mais
+sur le simulateur elle coûte des parties en début de partie à la mise orange : à cette mise, le
+saut entre le boss de l'ante 1 (600) et l'ante 2 (1 000 à 2 000) punit un jeu trop maigre. Les
+écarts restent dans le bruit. Elle est livrée active parce que c'est la stratégie demandée ;
+`rush_cap = false` la coupe. Après ces mesures, « joker d'argent » ne compte plus Credit Card ni
+Chaos the Clown (ils ne rapportent rien) : la stratégie livrée en est un peu plus stricte.
+

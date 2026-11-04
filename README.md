@@ -5,7 +5,7 @@ partie, calcule les scores exacts, les probabilités, évalue la boutique, conse
 défausses, et **apprend de vos parties**. **Il ne joue jamais à votre place** : il n'effectue
 aucune action (sélection, jeu, défausse, achat, vente, relance).
 
-> Statut : version 1.0.12. Développée **hors du jeu** (aucune installation de Balatro n'était
+> Statut : version 1.0.13. Développée **hors du jeu** (aucune installation de Balatro n'était
 > disponible dans l'environnement de développement), puis essayée par l'utilisateur dans le vrai
 > jeu (mode copier-coller). Validée par des tests automatisés, un environnement Balatro/Steamodded
 > simulé, le vrai runtime LÖVE 11.5 et des parties complètes simulées ([entraînement](docs/TRAINING.md)).
@@ -36,7 +36,7 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 **Méthode sans programme (recommandée, 1.0.4+)** — ni Lovely, ni Steamodded, ni script, ni DLL ;
 fonctionne aussi sur un PC protégé (contrôle parental, antivirus strict) :
 
-1. Extraire l'archive `BalatroStrategicCopilot-1.0.12.zip`.
+1. Extraire l'archive `BalatroStrategicCopilot-1.0.13.zip`.
 2. Copier le **contenu** du dossier `COPIER_DANS_AppData_Balatro` (`main.lua` + `Mods`) dans
    `%AppData%\Balatro\` (touche Windows + R, `%AppData%\Balatro`).
 3. Lancer Balatro : bandeau vert « … actif — touche C : panneau (mode autonome, sans Steamodded) ».
@@ -48,7 +48,7 @@ Balatro tourne sur LÖVE 11, qui lit `main.lua` d'abord dans le dossier de sauve
 **Avec Lovely + Steamodded** : copier le dossier `BalatroStrategicCopilot` dans
 `%AppData%\Balatro\Mods\` (de sorte que `Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json`
 existe ; une archive `.zip` déposée telle quelle est ignorée par les anciens Steamodded). L'archive
-`BalatroStrategicCopilot-1.0.12-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
+`BalatroStrategicCopilot-1.0.13-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
 répare toute la chaîne (dossier du jeu, Lovely, Steamodded, copilote) puis confirme que tout s'est
 chargé. Un **bandeau vert « actif »** s'affiche au lancement ; **aucun bandeau = mod non trouvé**
 ([pièges vérifiés](docs/INSTALL.md)).
@@ -78,7 +78,7 @@ qu'il faut toucher ; dès que vous l'avez faite, il recalcule et montre la suiva
 | **À PRENDRE** | sur l'objet de boutique ou la carte du paquet | le meilleur achat rentable (avec sa note /100) |
 | **À VENDRE** | sur un joker ou un consommable | pour remplacer un joker par un meilleur, faire de la place, gagner de l'argent avec un joker inutile, ou un effet de vente (Luchador contre un boss dangereux, Invisible Joker prêt) |
 | **RELANCER** | sur le bouton de relance | relance gratuite, meilleure boutique assez probable, ou une relance avant de partir (habitude des meilleurs joueurs), sans casser l'épargne des intérêts |
-| **BLINDE SUIVANTE** | sur le bouton pour quitter la boutique | quand plus rien n'est rentable, ou pour garder 25 $ d'intérêts (à partir de l'ante 2, si la suite est sûre) |
+| **BLINDE SUIVANTE** | sur le bouton pour quitter la boutique | quand plus rien n'est rentable, ou pour garder 25 $ d'intérêts : **« 25 $ d'abord » dès l'ante 1** (1.0.13, ci-dessous), puis à partir de l'ante 2 si la suite est sûre |
 | **JOUER** / **PASSER** | sur les boutons du choix de blinde | passer quand le tag vaut plus que ce que coûte le passage (récompense, mains, intérêts, boutique) et que la blinde suivante reste sûre sans boutique ; détail affiché dans le panneau ; seul le choix définitif s'affiche |
 | **UTILISER** + **CIBLE** | sur un consommable (+ les cartes à sélectionner) | planètes, argent (Hermit, Temperance), tarots et spectrales sur les cartes visées ; **Death** : DEVIENT (gauche) et MODÈLE (droite), avec la consigne de glisser la carte à gauche si besoin ; Hanged Man : À DÉTRUIRE |
 | **PASSER** | sur le bouton du paquet | quand aucune carte du paquet n'améliore le jeu |
@@ -97,6 +97,19 @@ Panneau fermé, un résumé compact reste visible. Au menu principal, `C` affich
 dernier bilan de partie, taux de victoire avec intervalle, calibration et précision des scores.
 Les options (badges, alertes, apprentissage, export, import, réinitialisation) sont dans
 *Mods → Balatro Strategic Copilot → Config*.
+
+### « 25 $ d'abord » (1.0.13)
+
+Votre stratégie : en début de partie (antes 1 à 3), tant que vous avez moins de 25 $, l'argent
+va aux 25 $ qui rapportent 5 $ d'intérêts à chaque manche. Le copilote ne fait acheter que ce
+dont la prochaine blinde a besoin pour rester sûre (et le boss, dès les boutiques qui le
+précèdent s'il paraît difficile), en choisissant seulement ce qui augmente vraiment les chances
+de passer ; un objet très fort (note ≥ 75) ou un joker d'argent qui se rembourse en 3 manches
+(Golden Joker, Rocket…) reste autorisé. Sous 25 $ : pas de paquet, pas de relance, pas de joker
+pris « pour remplir ». L'étape le dit : « 25 $ d'abord : 14 $ sur 25… ». Une fois les 25 $
+atteints, le copilote reprend sa discipline habituelle (garder 25 $, dépenser l'excédent).
+Réglages dans `config.lua` (`rush_cap = false` coupe la stratégie). Mesures sur le simulateur :
+[docs/TRAINING.md](docs/TRAINING.md), « Résultats 1.0.13 ».
 
 ### « Mon choix » : apprendre de vos décisions (touche `X`, 1.0.12)
 

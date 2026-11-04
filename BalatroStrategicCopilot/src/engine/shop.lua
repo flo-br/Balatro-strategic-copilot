@@ -269,6 +269,25 @@ local function econ_of(def, joker, state)
     return v, why
 end
 
+-- Money a joker really brings per round ($), for "25 $ d'abord" (engine/advice.lua): not the
+-- debt of Credit Card, the free rerolls of Chaos the Clown or the generic guess of econ_of.
+function SH.income_of(def, state)
+    local e = def and def.econ
+    if not e then return 0 end
+    local v = 0
+    if e.per_round then v = v + e.per_round end
+    if e.per_nine_per_round then v = v + e.per_nine_per_round * ((state.full_deck_stats or {}).nines or 4) end
+    if e.interest_bonus then v = v + math.min(5, math.floor(((state.econ or {}).dollars or 0) / 5)) end
+    if e.avg_per_round then v = v + e.avg_per_round end
+    if e.per_face_scored then v = v + 1.5 end
+    if e.per_unused_discard_if_none_used then v = v + 2 end
+    if e.per_round_field then v = v + 2 end
+    if e.per_matching_discard then v = v + 3 end
+    if e.first_discard_single then v = v + 2 end
+    if e.conditional_discard then v = v + 2 end
+    return v
+end
+
 -- A stand-in for the mult the board will gain later (future context of the notes).
 SH.FUTURE_BLEND = 0
 -- profile carrying the player's "Mon choix" corrections, or nil (none, disabled, simulator)
@@ -529,7 +548,7 @@ function SH.analyse(state, opts, task)
                 if ewhy then opt.reasons[#opt.reasons + 1] = ewhy end
                 -- the rent is already in the cost (cost_component above)
                 if j.rental then ev = ev + 3 end
-                opt.econ_per_round = ev
+                opt.econ_per_round = SH.income_of(def, state)
                 if not def then opt.risks[#opt.risks + 1] = 'joker non reconnu : effet non simulé'; opt.method = 'partial' end
                 local pb, pwhy = PL.joker_bonus(def, plan)
                 if pwhy then opt.reasons[#opt.reasons + 1] = pwhy end

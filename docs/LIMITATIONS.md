@@ -109,6 +109,11 @@
   choix toujours proposés (partir, relancer, passer). Ses préférences apprises ne peuvent pas être
   mesurées sur le simulateur.
 
+* « 25 $ d'abord » (1.0.13) : mesurée sur le simulateur en mise orange, elle atteint 25 $ plus
+  tôt mais perd plus de parties aux antes 1 à 3 (16 sur 40 contre 12) ; −0,41 ± 0,62 blinde par
+  partie, dans le bruit. Elle reste active par défaut (stratégie demandée par le joueur) ;
+  `rush_cap = false` dans `config.lua` la coupe.
+
 ## Interface
 
 * Overlay dessiné par-dessus le jeu (pas d'objets UI Balatro) : pas de survol à la souris ;

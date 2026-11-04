@@ -212,6 +212,14 @@ prochaine blinde ≥ 85 % et boss ≥ 70 % ; **à partir de la mise verte, 95 % 
 sinon la puissance passe d'abord et seul le seuil de base compte) :
 * seuil de base : 56/100, **52/100 pour un paquet** (les meilleurs joueurs en achètent très
   souvent) ;
+* **« 25 $ d'abord » (1.0.13, la stratégie du joueur)** : antes 1 à 3, tant que l'argent est
+  sous le plafond, l'objectif d'épargne est le plafond dès l'ante 1 ; « sûr » = prochaine blinde
+  ≥ 95 % et boss ≥ 85 % à la dernière boutique avant lui (≥ 70 % aux boutiques
+  précédentes) ; pas sûr : seuls les objets qui relèvent les chances de la prochaine blinde ou
+  du boss d'au moins 2 points sont achetés (note de base) ; sûr : un achat qui fait passer sous le
+  plafond exige 75 ; un joker d'argent qui se rembourse en 3 manches (revenu par manche estimé)
+  est pris dès la note de base ; pas de « premiers jokers » d'office, pas de paquet (75), pas de
+  relance sous le plafond ;
 * à partir de l'ante 2 : garder le plafond d'intérêts (25 $) et ne dépenser que l'excédent ; un
   achat qui fait passer sous 25 $ exige une note ≥ 75 ;
 * ante 1 : chaque dollar d'intérêts perdu relève le seuil de 3 points ;

@@ -1,5 +1,54 @@
 # Historique des versions
 
+## 1.0.13 — 2026-11-04
+
+Demande : « se concentrer en début de partie sur les 25 $ pour avoir les 5 $ d'intérêts à
+chaque fois, le plus vite possible sans échouer sur les blindes », puis la stratégie du
+copilote ; et les retours de vos parties (dossier `BSC`, mise orange, deck rouge).
+
+### Ce que vos parties ont montré
+* Les deux parties du 4 novembre (mise orange, perdues aux antes 5 et 2) : l'argent est resté
+  entre 0 et 3 $ presque tout le temps, jamais au-dessus de 15 $, donc aucun intérêt. Dès
+  l'ante 1, le copilote a fait acheter deux paquets, un Wee Joker à 8 $ noté 62/100 et des
+  relances : il se croyait « en danger » parce que ses chances sont volontairement pessimistes
+  (mains typiques sans défausse) et qu'aux mises élevées il exige 95 % / 85 %.
+* Les écarts de score du journal (prédit très sous le réel) datent tous des versions 1.0.4 à
+  1.0.8 (cartes jouées mal lues en mode autonome, corrigé en 1.0.9) : aucun depuis la 1.0.11.
+
+### « 25 $ d'abord »
+* Antes 1 à 3, tant que l'argent est sous 25 $ : l'épargne vise 25 $ dès l'ante 1.
+  La prochaine blinde doit rester sûre (95 % sur l'estimation pessimiste du copilote) ; le boss
+  à 85 % à la dernière boutique avant lui, à 70 % aux boutiques précédentes (on épargne, il sera
+  préparé ensuite).
+* Ce qui reste acheté : ce qui relève vraiment les chances de la prochaine blinde ou du boss
+  quand elles sont trop basses, un objet très fort (note ≥ 75), un joker d'argent qui se rembourse
+  en 3 manches. Sous 25 $ : pas de paquet, pas de relance, pas de joker pris d'office.
+* L'étape le dit (« 25 $ d'abord : 14 $ sur 25… »). Une fois 25 $ atteints : la discipline
+  habituelle (garder 25 $, dépenser l'excédent). `rush_cap = false` dans `config.lua` la coupe.
+* **Mesuré** (mise orange, la vôtre, graine par graine contre la même version sans la
+  stratégie) : **25 $ atteints plus tôt** (vers la 5ᵉ blinde au lieu de la 6ᵉ) et **plus
+  d'intérêts** sur les antes 1 à 3 (9,5 $ contre 6,8 $ par partie), mais **plus de parties perdues
+  tôt** (16 sur 40 aux antes 1 à 3 contre 12) et −0,41 ± 0,62 blinde par partie : dans le bruit,
+  mais pas en faveur de la stratégie sur le simulateur. Une première version (boss jugé « sûr »
+  dès 40 % aux premières boutiques) faisait pire (−0,65 ± 0,81, 10 défaites précoces sur 30
+  contre 8) : retirée. La stratégie reste active par défaut parce que c'est la vôtre ; le
+  simulateur simplifie le jeu, vos parties diront si elle marche mieux que là-bas.
+
+### Vos corrections (`mes_choix.txt`)
+* Paquet Jumbo Arcana à 6 $ en ante 1, relance à 5 $ avec 15 $ en ante 2 : plus conseillés.
+* **Death** : en main, si une bien meilleure carte à copier (l'As acier) est encore dans le
+  paquet, le copilote garde Death et la copie quand elle revient (dans un paquet Arcane, où la
+  carte doit servir tout de suite, la meilleure carte en main).
+* `mes_choix.txt` écrit maintenant les cartes visées par un conseil de tarot (« Utiliser Death
+  sur : » restait vide).
+
+### Corrigé
+* « Joker d'argent » ne compte que l'argent vraiment gagné par manche : Credit Card (dette) et
+  Chaos the Clown (relance gratuite) n'en sont pas (vu dans le rendu LÖVE de la boutique, après
+  les mesures : la stratégie n'en devient que plus stricte).
+* Un réglage mis à `false` dans `config.lua` (ex. `reroll_once = false`) était remplacé par sa
+  valeur par défaut ; même défaut dans les options du simulateur.
+
 ## 1.0.12 — 2026-10-22
 
 Demandes : une touche pour **donner votre propre choix** à la place du conseil, avec votre

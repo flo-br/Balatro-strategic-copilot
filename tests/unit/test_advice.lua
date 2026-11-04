@@ -348,46 +348,52 @@ end
 -- "25 $ d'abord" (1.0.13, the player's strategy): the first antes, the money goes to the interest
 -- cap while the next blinds stay safe; power first when they are not
 function S.rush_to_25_first(T)
+    local function safe_result(o) local r = shop_result(o); r.base.p_next = 0.97; r.base.p_boss = 0.9; return r end
     local opts = { { kind = 'joker', uid = 'j', name = 'Greedy Joker', cost = 5, note = 66, interest_loss = 1 } }
     -- ante 1, safe, 10 $, no joker yet: kept (the usual discipline would buy a first joker)
-    local st = A().shop_step(state({ dollars = 10 }), shop_result({ options = opts }))
+    local st = A().shop_step(state({ dollars = 10 }), safe_result({ options = opts }))
     T.eq(st.action, 'next_round'); T.ok(st.why:find('25 $ d\'abord', 1, true) and st.why:find('10 $ sur 25', 1, true), st.why)
-    T.eq(A().shop_step(state({ dollars = 10 }), shop_result({ options = opts }), NORUSH).action, 'buy', 'without the rush: bought')
+    T.eq(A().shop_step(state({ dollars = 10 }), safe_result({ options = opts }), NORUSH).action, 'buy', 'without the rush: bought')
     -- the boss is not next: it is prepared at the last shop before it (40 % is enough here)
-    local res = shop_result({ options = opts }); res.base.p_boss = 0.45
+    local res = safe_result({ options = opts }); res.base.p_boss = 0.72
     T.eq(A().shop_step(state({ dollars = 10 }), res).action, 'next_round', 'boss two shops away: saved')
     -- the boss next: it must be safe (80 %): power first, with what raises its chances
-    res = shop_result({ options = opts }); res.base.p_next = 0.75; res.base.p_boss = 0.75; res.next_blind = { chips = 600, boss = true }
+    res = safe_result({ options = opts }); res.base.p_next = 0.75; res.base.p_boss = 0.75; res.next_blind = { chips = 600, boss = true }
     T.eq(A().shop_step(state({ dollars = 10 }), res).action, 'next_round', 'nothing raises the chances: kept')
     opts[1].d_boss = 0.1; opts[1].d_next = 0.1
     T.eq(A().shop_step(state({ dollars = 10 }), res).action, 'buy')
     -- the next blind in danger
-    res = shop_result({ options = opts }); res.base.p_next = 0.7
+    res = safe_result({ options = opts }); res.base.p_next = 0.8
     T.eq(A().shop_step(state({ dollars = 10 }), res).action, 'buy')
     -- the board falling behind the ante: power first
-    res = shop_result({ options = opts }); res.plan = { falling_behind = true, gaps = {} }
+    res = safe_result({ options = opts }); res.plan = { falling_behind = true, gaps = {} }
     T.eq(A().shop_step(state({ dollars = 10 }), res).action, 'buy')
     opts[1].d_boss = nil; opts[1].d_next = nil
     -- a very strong item is bought anyway
     opts[1].note = 80
-    T.eq(A().shop_step(state({ dollars = 10 }), shop_result({ options = opts })).action, 'buy')
+    T.eq(A().shop_step(state({ dollars = 10 }), safe_result({ options = opts })).action, 'buy')
     -- a money joker paying its price back within 3 rounds brings the cap closer
     local gold = { { kind = 'joker', uid = 'g', name = 'Golden Joker', cost = 6, note = 60, econ_per_round = 4, interest_loss = 1 } }
-    T.eq(A().shop_step(state({ dollars = 10 }), shop_result({ options = gold })).action, 'buy')
+    T.eq(A().shop_step(state({ dollars = 10 }), safe_result({ options = gold })).action, 'buy')
     gold[1].econ_per_round = 1.5
-    T.eq(A().shop_step(state({ dollars = 10 }), shop_result({ options = gold })).action, 'next_round', '4 rounds to pay back: kept')
+    T.eq(A().shop_step(state({ dollars = 10 }), safe_result({ options = gold })).action, 'next_round', '4 rounds to pay back: kept')
+    -- the money a joker really brings: Golden Joker yes, Credit Card (debt) and Chaos (rerolls) no
+    local SH, DB = BSCopilot.require('engine/shop'), BSCopilot.require('model/jokers_db')
+    T.ok(SH.income_of(DB.get('j_golden'), state({})) >= 4, 'Golden Joker')
+    T.eq(SH.income_of(DB.get('j_credit_card'), state({})), 0, 'Credit Card brings no money')
+    T.eq(SH.income_of(DB.get('j_chaos'), state({})), 0, 'Chaos the Clown brings no money')
     -- no pack and no reroll below the cap while safe
     local pack = { { kind = 'booster', uid = 'arc', name = 'Arcana Pack', cost = 4, note = 60, interest_loss = 0 } }
-    T.eq(A().shop_step(state({ dollars = 14 }), shop_result({ options = pack })).action, 'next_round')
-    local rr = shop_result({ reroll = { cost = 5, worth = false, p_improve = 0.4 } })
+    T.eq(A().shop_step(state({ dollars = 14 }), safe_result({ options = pack })).action, 'next_round')
+    local rr = safe_result({ reroll = { cost = 5, worth = false, p_improve = 0.4 } })
     T.eq(A().shop_step(state({ dollars = 12 }), rr).action, 'next_round')
     -- 25 $ reached: the usual strategy again (one reroll, the excess spent)
     T.eq(A().shop_step(state({ dollars = 31, ante = 2 }), rr).action, 'reroll')
     opts[1].note = 66
-    T.eq(A().shop_step(state({ dollars = 31, ante = 2, jokers = { { uid = 'a' } } }), shop_result({ options = opts })).action, 'buy')
+    T.eq(A().shop_step(state({ dollars = 31, ante = 2, jokers = { { uid = 'a' } } }), safe_result({ options = opts })).action, 'buy')
     -- after the first antes: the usual discipline (it saves too, from ante 2, while safe)
     st = A().shop_step(state({ dollars = 10, ante = 4, jokers = { { uid = 'a' }, { uid = 'b' }, { uid = 'c' } } }),
-        shop_result({ options = { { kind = 'joker', uid = 'j', name = 'Joker', cost = 4, note = 60, interest_loss = 0 } } }))
+        safe_result({ options = { { kind = 'joker', uid = 'j', name = 'Joker', cost = 4, note = 60, interest_loss = 0 } } }))
     T.eq(st.action, 'next_round'); T.ok(not st.why:find('25 $ d\'abord', 1, true), st.why)
 end
 
@@ -510,10 +516,10 @@ end
 function S.rentals_bought_only_when_strong_and_sold_when_not_needed(T)
     -- a rental ($3 every round) is not an "empty slot" joker: only strong or needed to survive
     local opts = { { kind = 'joker', uid = 'r', name = 'Lusty Joker', cost = 1, note = 64, affordable = true, rental = true } }
-    T.ok(A().shop_step(state({ dollars = 6, rerolls = 1 }), shop_result({ options = opts })).action ~= 'buy', 'safe: not bought')
+    T.ok(A().shop_step(state({ dollars = 6, rerolls = 1 }), shop_result({ options = opts }), NORUSH).action ~= 'buy', 'safe: not bought')
     local danger = shop_result({ options = opts })
     danger.base = { p_next = 0.5, p_boss = 0.3 }
-    T.eq(A().shop_step(state({ dollars = 6, rerolls = 1 }), danger).action, 'buy', 'in danger: bought')
+    T.eq(A().shop_step(state({ dollars = 6, rerolls = 1 }), danger, NORUSH).action, 'buy', 'in danger: bought')
     -- owned rental, next blinds still safe without it: sold (stops the rent)
     local jokers = { { uid = 'r', key = 'j_lusty_joker', name = 'Lusty Joker', rental = true, sell_cost = 0 } }
     local res = shop_result({ sells = { { index = 1, uid = 'r', name = 'Lusty Joker', sell = 0, note = 50, d_next = -0.02, d_boss = 0, contribution = 0.1 } } })
