@@ -596,8 +596,10 @@ local function required_note(o, money, pol, S, state)
     -- antes 1-2: any scoring joker beats an empty slot (top players)
     -- (high stakes: 4-5 jokers by the end of ante 2, top players)
     -- ("25 $ d'abord": not below the cap; a joker the next blinds need is bought below)
+    -- (never an Eternal joker that will not carry the score: it would fill the slot for good)
     if o.kind == 'joker' and pol.ante <= 2 and #(state and state.jokers or {}) < S.first_jokers + (pol.high and 1 or 0)
-        and not pol.rush_on then
+        and not pol.rush_on and not (o.eternal and BSC.require('engine/shop').ETERNAL_EARLY and o.joker_kind ~= 'xmult'
+            and o.joker_kind ~= 'scaling' and o.joker_kind ~= 'retrigger') then
         return math.min(base, S.excess_note)
     end
     if (o.note or 0) >= S.strong_note then return base end

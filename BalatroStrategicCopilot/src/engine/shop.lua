@@ -218,8 +218,10 @@ local function risk_of(def, joker, state)
             -- temporary additive one that will still fill a slot at ante 7 (top players)
             local kind = PL.joker_kind(def)
             local ante = (state and state.run and state.run.ante) or 1
-            if PL.high_stakes(state) and ante >= 3 and kind ~= 'xmult' and kind ~= 'scaling' then
-                r = r + 0.3; notes[#notes + 1] = 'éternel et temporaire : occupera une place jusqu\'à la fin'
+            local keeper = SH.eternal_keeper(def)
+            if PL.high_stakes(state) and (ante >= 3 or SH.ETERNAL_EARLY) and not keeper then
+                r = r + (SH.ETERNAL_EARLY and 0.45 or 0.3)
+                notes[#notes + 1] = 'éternel et temporaire : occupera une place jusqu\'à la fin'
             end
             if joker.rental then r = r + 0.4; notes[#notes + 1] = 'éternel + location : 3 $ par manche pour toujours' end
         end
@@ -232,6 +234,16 @@ local function risk_of(def, joker, state)
         end
     end
     return U.clamp(r, 0, 1), notes
+end
+
+-- An Eternal joker is kept all run: fine on a joker that carries the score until ante 8 (x Mult,
+-- growing, retriggers), a trap on a +Mult / +Chips / money / utility one (the player at the
+-- orange stake: Eternal jokers bought in ante 1-2, still filling slots at ante 6).
+-- SH.ETERNAL_EARLY (1.1, measured): the trap counts from ante 1, not only from ante 3.
+SH.ETERNAL_EARLY = false
+function SH.eternal_keeper(def)
+    local kind = PL.joker_kind(def)
+    return kind == 'xmult' or kind == 'scaling' or kind == 'retrigger'
 end
 
 -- rounds a rental joker is expected to be kept (two antes): its rent counts as part of its price
@@ -1068,7 +1080,9 @@ function SH.joker_samples(state, ctx, res, w, task)
                     power = U.clamp(math.log(math.max(1e-6, m.ratio)) / math.log(2), -1, 1), synergy = fit,
                     potential = pot + (PL.joker_bonus(DB.get(key), ctx.plan)) + (BD.joker_bonus(key, state, weakest and weakest.j)),
                     cost = U.clamp(((j.cost or 5) + (rental and 3 * SH.RENT_HORIZON or 0)) / math.max(10, (econ.dollars or 0) + 10), 0, 1.5),
-                    risk = (perishable and 0.3 or 0) + (eternal and 0.1 or 0), reliability = 1 }
+                    risk = (perishable and 0.3 or 0) + (eternal and 0.1 or 0)
+                        + ((eternal and SH.ETERNAL_EARLY and PL.high_stakes(state) and not SH.eternal_keeper(DB.get(key))) and 0.45 or 0),
+                    reliability = 1 }
                 note = SH.note(comp, w)
                 -- the same joker drawn from a Buffoon Pack is free (the pack price is counted
                 -- once, by the pack note): only the rent remains
