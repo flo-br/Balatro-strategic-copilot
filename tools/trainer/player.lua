@@ -314,6 +314,9 @@ function Player:play_run(g)
     return {
         seed = g.seed, won = g.won, ante = g.ante, lost_to = g.lost_to, dollars = g.dollars,
         jokers = (function() local t = {} for i, j in ipairs(g.jokers) do t[i] = j.key .. (j.edition and ('/' .. j.edition) or '') end return t end)(),
+        -- stickers of the final board (1.1: Eternal jokers kept to the end)
+        joker_stickers = (function() local t = {} for i, j in ipairs(g.jokers) do
+            t[i] = (j.eternal and 'eternal' or '') .. (j.perishable and 'perishable' or '') .. (j.rental and 'rental' or '') end return t end)(),
         hands = (function()
             local t = {}
             for name, h in pairs(g.hands) do if h.level > 1 or (h.played or 0) > 0 then t[name] = { level = h.level, played = h.played } end end

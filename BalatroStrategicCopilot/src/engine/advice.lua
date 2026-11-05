@@ -561,6 +561,13 @@ local function required_note(o, money, pol, S, state)
     local cost = o.cost or 0
     -- selling a joker to replace it loses its sale value and its growth: a clear gain only
     if o.kind == 'replace' then return math.max(S.replace_note, base) end
+    -- Eternal joker that will not carry the score (strict mode, SH.ETERNAL_EARLY = 2): never while
+    -- the next blinds are safe; in danger, 8 points more (a non-Eternal option first)
+    if o.kind == 'joker' and o.eternal and BSC.require('engine/shop').ETERNAL_EARLY == 2 and pol.high
+        and o.joker_kind ~= 'xmult' and o.joker_kind ~= 'scaling' and o.joker_kind ~= 'retrigger' then
+        if pol.safe then return 101 end
+        return base + 8
+    end
     -- "25 $ d'abord", not safe: only what raises the chances of the next blind or the boss
     -- (a very strong item still passes, a rental too only if it raises them)
     if pol.rush_on and not pol.safe then
@@ -598,7 +605,7 @@ local function required_note(o, money, pol, S, state)
     -- ("25 $ d'abord": not below the cap; a joker the next blinds need is bought below)
     -- (never an Eternal joker that will not carry the score: it would fill the slot for good)
     if o.kind == 'joker' and pol.ante <= 2 and #(state and state.jokers or {}) < S.first_jokers + (pol.high and 1 or 0)
-        and not pol.rush_on and not (o.eternal and BSC.require('engine/shop').ETERNAL_EARLY and o.joker_kind ~= 'xmult'
+        and not pol.rush_on and not (o.eternal and (BSC.require('engine/shop').ETERNAL_EARLY or 0) ~= 0 and o.joker_kind ~= 'xmult'
             and o.joker_kind ~= 'scaling' and o.joker_kind ~= 'retrigger') then
         return math.min(base, S.excess_note)
     end
@@ -780,6 +787,14 @@ function A.pack_step(state, r, cfg, partial)
     local S = settings(cfg)
     if not r or partial or not r.options then return nil end
     local best = r.options[1]
+    if BSC.require('engine/shop').ETERNAL_EARLY == 2 and PL.high_stakes(state) then
+        -- strict mode: an Eternal joker that will not carry the score is not taken from a pack
+        for _, o in ipairs(r.options) do
+            if not (o.kind == 'joker' and o.eternal and o.joker_kind ~= 'xmult' and o.joker_kind ~= 'scaling'
+                and o.joker_kind ~= 'retrigger') then best = o; break end
+            best = nil
+        end
+    end
     if best and (best.note or 0) >= math.min(S.buy_note, 50) and not best.blocked then
         -- a card that creates a joker, taken from the pack with every slot used: sell first
         if best.swap and best.swap.sell and sellable(best.swap.sell) and #(state.jokers or {}) >= (state.joker_slots or 5) then

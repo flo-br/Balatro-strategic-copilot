@@ -219,8 +219,8 @@ local function risk_of(def, joker, state)
             local kind = PL.joker_kind(def)
             local ante = (state and state.run and state.run.ante) or 1
             local keeper = SH.eternal_keeper(def)
-            if PL.high_stakes(state) and (ante >= 3 or SH.ETERNAL_EARLY) and not keeper then
-                r = r + (SH.ETERNAL_EARLY and 0.45 or 0.3)
+            if PL.high_stakes(state) and (ante >= 3 or (SH.ETERNAL_EARLY and SH.ETERNAL_EARLY ~= 0)) and not keeper then
+                r = r + ((SH.ETERNAL_EARLY and SH.ETERNAL_EARLY ~= 0) and 0.45 or 0.3)
                 notes[#notes + 1] = 'éternel et temporaire : occupera une place jusqu\'à la fin'
             end
             if joker.rental then r = r + 0.4; notes[#notes + 1] = 'éternel + location : 3 $ par manche pour toujours' end
@@ -1081,7 +1081,7 @@ function SH.joker_samples(state, ctx, res, w, task)
                     potential = pot + (PL.joker_bonus(DB.get(key), ctx.plan)) + (BD.joker_bonus(key, state, weakest and weakest.j)),
                     cost = U.clamp(((j.cost or 5) + (rental and 3 * SH.RENT_HORIZON or 0)) / math.max(10, (econ.dollars or 0) + 10), 0, 1.5),
                     risk = (perishable and 0.3 or 0) + (eternal and 0.1 or 0)
-                        + ((eternal and SH.ETERNAL_EARLY and PL.high_stakes(state) and not SH.eternal_keeper(DB.get(key))) and 0.45 or 0),
+                        + ((eternal and SH.ETERNAL_EARLY and SH.ETERNAL_EARLY ~= 0 and PL.high_stakes(state) and not SH.eternal_keeper(DB.get(key))) and 0.45 or 0),
                     reliability = 1 }
                 note = SH.note(comp, w)
                 -- the same joker drawn from a Buffoon Pack is free (the pack price is counted
