@@ -32,6 +32,8 @@ local SWITCHES = {
     w_cost = { 'engine/shop', 'DEFAULT_WEIGHTS.cost', 'number' },
     w_cost_floor = { 'engine/shop', 'DEFAULT_WEIGHTS.cost_floor', 'number' },
     w_risk = { 'engine/shop', 'DEFAULT_WEIGHTS.risk', 'number' },
+    additive_mid = { 'engine/plan', 'ADDITIVE_MID', 'number' },
+    additive_full_at = { 'engine/plan', 'ADDITIVE_FULL_AT', 'number' },
     overstock_ante = { 'model/items_db', 'VOUCHERS.v_overstock_norm.per_ante', 'number' },
     overstock2_ante = { 'model/items_db', 'VOUCHERS.v_overstock_plus.per_ante', 'number' },
 }

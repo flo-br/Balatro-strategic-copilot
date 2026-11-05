@@ -26,6 +26,10 @@ PL.XMULT_TARGET = { 0, 0, 0, 1, 1, 2, 2, 3 }
 -- (docs/TRAINING.md): above 0.5 the ante's boss was beaten 87-100 % of the time, below 0.3
 -- only 55 %.
 PL.BEHIND_RATIO = 0.5
+-- 1.1 switch: extra potential of a +Mult / +Chips joker in the mid game when the board already has
+-- PL.ADDITIVE_FULL_AT jokers (0: off)
+PL.ADDITIVE_MID = 0
+PL.ADDITIVE_FULL_AT = 3
 -- Track of the runs that WIN (1.0.10, simulated runs, docs/TRAINING.md): a typical hand (no
 -- discards) at antes 2-4 stays above 1.2 x the ante's base chips in 3 winning runs out of 4
 -- (q25 1.86 / 1.33 / 1.17), 0.79 at ante 5, 0.47 at ante 6; the median LOSING run is at 1.47 /
@@ -156,6 +160,7 @@ function PL.analyse(state, base)
     local kinds = { xmult = 0, scaling = 0, econ = 0, additive = 0, retrigger = 0, utility = 0, unknown = 0 }
     for _, j in ipairs(state.jokers or {}) do kinds[PL.joker_kind(DB.get(j.key, j.name))] = (kinds[PL.joker_kind(DB.get(j.key, j.name))] or 0) + 1 end
     plan.kinds = kinds
+    plan.jokers = #(state.jokers or {})
     -- the next multiplier is due one ante early: prepare it before the board falls behind
     local next_target = PL.XMULT_TARGET[math.min(#PL.XMULT_TARGET, eff + 1)] or 3
     plan.next_target = next_target
@@ -211,6 +216,13 @@ function PL.joker_bonus(def, plan)
         if plan.gaps.scaling then v = v + 0.1; why = 'joker qui grandit : utile tôt dans la partie' end
     elseif kind == 'additive' then
         if plan.phase == 'late' then v = -0.25; why = '+Mult / +Jetons : vite dépassé en fin de partie' end
+        -- 1.1 (switch): from the mid game, with the slots filling up, a +Mult / +Chips joker takes
+        -- the place of the multiplier the run will need (simulated orange-stake deaths: boards of
+        -- commons, Jolly, Banner, Joker, Sly...)
+        if plan.phase == 'mid' and (PL.ADDITIVE_MID or 0) ~= 0 and (plan.jokers or 0) >= (PL.ADDITIVE_FULL_AT or 3) then
+            v = v + PL.ADDITIVE_MID
+            why = why or '+Mult / +Jetons : garder la place pour un multiplicateur'
+        end
         if plan.gaps.scoring then v = v + 0.2; why = 'premiers jokers de score : la priorité des antes 1-2' end
     elseif kind == 'econ' then
         v = (plan.phase == 'early') and 0.15 or ((plan.phase == 'late') and -0.2 or 0)
