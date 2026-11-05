@@ -219,6 +219,8 @@ local function risk_of(def, joker, state)
             local kind = PL.joker_kind(def)
             local ante = (state and state.run and state.run.ante) or 1
             local keeper = SH.eternal_keeper(def)
+            -- a Negative one takes no slot: nothing is blocked (1.1)
+            if joker.edition == 'e_negative' then keeper = true end
             if PL.high_stakes(state) and (ante >= 3 or (SH.ETERNAL_EARLY and SH.ETERNAL_EARLY ~= 0)) and not keeper then
                 r = r + ((SH.ETERNAL_EARLY and SH.ETERNAL_EARLY ~= 0) and 0.45 or 0.3)
                 notes[#notes + 1] = 'éternel et temporaire : occupera une place jusqu\'à la fin'

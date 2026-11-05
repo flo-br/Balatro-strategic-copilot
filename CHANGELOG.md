@@ -1,5 +1,53 @@
 # Historique des versions
 
+## 1.1.0 — 2026-11-05
+
+Demande : « mettre les bouchées triples » pour augmenter la réussite des parties dans toutes
+les mises ; tout remettre en question, chercher de nouvelles données en ligne, s'entraîner.
+
+### Ce qui a été fait
+* **Vos parties** (dossier BSC du 5 novembre) relues : les chances annoncées sont fiables dans le
+  vrai jeu (105 blindes gagnées sur 107 annoncées à plus de 90 %) ; on meurt en mise orange aux
+  antes 4 à 6 faute de puissance ; en mode apprentissage vous achetez beaucoup de paquets et de
+  bons et relancez quand vous êtes riche.
+* **Recherche en ligne** (`docs/PRO_LESSONS_1_1.md`, sources citées).
+* **Diagnostic sur le simulateur** : à l'entrée de l'ante 5, les parties qui survivent ont
+  1,2 ×Mult (0,7 pour celles qui meurent) ; un ×Mult n'apparaît parmi les offres que 1,2 fois par
+  partie sur les antes 1 à 5 ; en mise orange, les jeux qui meurent sont remplis de jokers communs
+  faibles et presque sans argent.
+* **Entraînement** : 10 variantes mesurées sur les mêmes 40 parties en mise orange, puis validation
+  contre la 1.0.14 à la mise blanche et à la mise noire (`docs/TRAINING.md`, « Résultats 1.1 »).
+
+### Ce qui change
+* **« 25 $ d'abord » est coupé par défaut** : les guides recommandent d'acheter d'abord un joker
+  qui marque, et la stratégie mesurait neutre ou négatif (mise orange : −0,41 puis +0,05 en la
+  coupant ; mise noire : −1,48 ± 1,59). Elle reste disponible : `rush_cap = true` dans `config.lua`.
+* **Paquets** : avec un emplacement vide, le joker d'un paquet Bouffon est pris (gratuit, il marque
+  un peu et se revend) au lieu de passer, sauf s'il est éternel ; une planète est toujours prise
+  (votre remarque : Sixth Sense et 8 Ball refusés avec des emplacements vides).
+* **Éternel Négatif** : il ne prend aucune place, la pénalité « occupera une place jusqu'à la fin »
+  ne s'applique plus à lui.
+
+### Jokers éternels (votre question)
+* Le copilote connaît bien éternel, périssable, location et les éditions (Brillant +50 jetons,
+  Holographique +10 Mult, Polychrome ×1,5, Négatif : un emplacement de plus). Votre observation
+  est juste : en mise orange simulée, **45 % des jokers restants en fin de partie sont éternels**
+  (73 sur 162), surtout des +Mult achetés tôt et devenus inutiles.
+* Les corriger a été mesuré : pénalité dès l'ante 1 : −0,13 ± 0,09 blinde par partie ; refus strict
+  des éternels « temporaires » : −0,62 ± 0,51 (ils tombent à 34 sur 149, mais 16 parties perdues aux
+  antes 1 à 3 au lieu de 13). Les refuser tôt fait mourir plus tôt : la règle actuelle (pénalité à
+  partir de l'ante 3, éternel jamais pris en paquet gratuit) est gardée.
+
+### Essayé et non gardé (mise orange, 40 parties, graine par graine)
+* Relancer pour chercher un ×Mult : **−0,67 ± 0,23** (l'argent manque à cette mise).
+* Acheter un ×Mult même sous 25 $ : jamais déclenché (il est déjà acheté quand il sort).
+* Poids du prix (0,5) : +0,13 ± 0,28 ; poids de la puissance (1,4) : +0,05 ± 0,40 : dans le bruit.
+
+### Outils
+* Options du simulateur pour les poids de la note de boutique (`w_*`), la valeur d'Overstock,
+  les jokers éternels (`eternal_early` 1 / 2), la pénalité des +Mult en milieu de partie, la valeur
+  des jokers d'argent ; autocollants du jeu final enregistrés.
+
 ## 1.0.14 — 2026-11-04
 
 Demande : « une option où c'est moi qui joue et l'IA apprend de ce que je fais ».

@@ -6,7 +6,8 @@ local S = {}
 
 local function A() return BSCopilot.require('engine/advice') end
 -- the usual money discipline, without "25 $ d'abord" (what applies once the cap is reached)
-local NORUSH = { advice = { rush_cap = false } }
+local NORUSH = { advice = { rush_cap = false } }  -- the default since 1.1
+local RUSH = { advice = { rush_cap = true } }
 
 local function state(o)
     o = o or {}
@@ -151,8 +152,12 @@ function S.pack_take_or_skip(T)
     local st = A().pack_step(state({ phase = 'pack' }), res)
     T.eq(st.action, 'take'); T.eq(st.label, 'À PRENDRE'); T.eq(st.targets[1], 'k')
     res.options[1].note = 41
-    st = A().pack_step(state({ phase = 'pack' }), res)
+    st = A().pack_step(state({ phase = 'pack' }), res, { advice = { pack_free_take = false } })
     T.eq(st.action, 'skip_pack'); T.eq(st.label, 'PASSER'); T.eq(st.button, 'skip_pack')
+    -- 1.1 (pack_free_take, on by default): a free joker for an empty slot from note 30
+    T.eq(A().pack_step(state({ phase = 'pack' }), res).action, 'take', 'note 41, empty slot: taken')
+    res.options[1].note = 25
+    T.eq(A().pack_step(state({ phase = 'pack' }), res).action, 'skip_pack', 'note 25: skipped')
 end
 
 function S.arcana_pack_tarot_with_targets(T)
@@ -258,7 +263,8 @@ function S.pack_free_take(T)
     local cfgon = { advice = { pack_free_take = true } }
     local s0 = state({ phase = 'pack' })
     local res = { options = { { kind = 'joker', uid = 'six', name = 'Sixth Sense', note = 40 }, { kind = 'joker', uid = 'et', name = 'Joker', note = 45, eternal = true } } }
-    T.eq(A().pack_step(s0, res).action, 'skip_pack', 'off: skipped')
+    T.eq(A().pack_step(s0, res, { advice = { pack_free_take = false } }).action, 'skip_pack', 'off: skipped')
+    T.eq(A().pack_step(s0, res).action, 'take', 'on by default (1.1)')
     local st = A().pack_step(s0, res, cfgon)
     T.eq(st.action, 'take'); T.eq(st.targets[1], 'six', 'never the Eternal one')
     -- no free slot: skipped
@@ -367,32 +373,32 @@ function S.rush_to_25_first(T)
     local function safe_result(o) local r = shop_result(o); r.base.p_next = 0.97; r.base.p_boss = 0.9; return r end
     local opts = { { kind = 'joker', uid = 'j', name = 'Greedy Joker', cost = 5, note = 66, interest_loss = 1 } }
     -- ante 1, safe, 10 $, no joker yet: kept (the usual discipline would buy a first joker)
-    local st = A().shop_step(state({ dollars = 10 }), safe_result({ options = opts }))
+    local st = A().shop_step(state({ dollars = 10 }), safe_result({ options = opts }), RUSH)
     T.eq(st.action, 'next_round'); T.ok(st.why:find('25 $ d\'abord', 1, true) and st.why:find('10 $ sur 25', 1, true), st.why)
     T.eq(A().shop_step(state({ dollars = 10 }), safe_result({ options = opts }), NORUSH).action, 'buy', 'without the rush: bought')
     -- the boss is not next: it is prepared at the last shop before it (40 % is enough here)
     local res = safe_result({ options = opts }); res.base.p_boss = 0.72
-    T.eq(A().shop_step(state({ dollars = 10 }), res).action, 'next_round', 'boss two shops away: saved')
+    T.eq(A().shop_step(state({ dollars = 10 }), res, RUSH).action, 'next_round', 'boss two shops away: saved')
     -- the boss next: it must be safe (80 %): power first, with what raises its chances
     res = safe_result({ options = opts }); res.base.p_next = 0.75; res.base.p_boss = 0.75; res.next_blind = { chips = 600, boss = true }
-    T.eq(A().shop_step(state({ dollars = 10 }), res).action, 'next_round', 'nothing raises the chances: kept')
+    T.eq(A().shop_step(state({ dollars = 10 }), res, RUSH).action, 'next_round', 'nothing raises the chances: kept')
     opts[1].d_boss = 0.1; opts[1].d_next = 0.1
-    T.eq(A().shop_step(state({ dollars = 10 }), res).action, 'buy')
+    T.eq(A().shop_step(state({ dollars = 10 }), res, RUSH).action, 'buy')
     -- the next blind in danger
     res = safe_result({ options = opts }); res.base.p_next = 0.8
-    T.eq(A().shop_step(state({ dollars = 10 }), res).action, 'buy')
+    T.eq(A().shop_step(state({ dollars = 10 }), res, RUSH).action, 'buy')
     -- the board falling behind the ante: power first
     res = safe_result({ options = opts }); res.plan = { falling_behind = true, gaps = {} }
-    T.eq(A().shop_step(state({ dollars = 10 }), res).action, 'buy')
+    T.eq(A().shop_step(state({ dollars = 10 }), res, RUSH).action, 'buy')
     opts[1].d_boss = nil; opts[1].d_next = nil
     -- a very strong item is bought anyway
     opts[1].note = 80
-    T.eq(A().shop_step(state({ dollars = 10 }), safe_result({ options = opts })).action, 'buy')
+    T.eq(A().shop_step(state({ dollars = 10 }), safe_result({ options = opts }), RUSH).action, 'buy')
     -- a money joker paying its price back within 3 rounds brings the cap closer
     local gold = { { kind = 'joker', uid = 'g', name = 'Golden Joker', cost = 6, note = 60, econ_per_round = 4, interest_loss = 1 } }
-    T.eq(A().shop_step(state({ dollars = 10 }), safe_result({ options = gold })).action, 'buy')
+    T.eq(A().shop_step(state({ dollars = 10 }), safe_result({ options = gold }), RUSH).action, 'buy')
     gold[1].econ_per_round = 1.5
-    T.eq(A().shop_step(state({ dollars = 10 }), safe_result({ options = gold })).action, 'next_round', '4 rounds to pay back: kept')
+    T.eq(A().shop_step(state({ dollars = 10 }), safe_result({ options = gold }), RUSH).action, 'next_round', '4 rounds to pay back: kept')
     -- the money a joker really brings: Golden Joker yes, Credit Card (debt) and Chaos (rerolls) no
     local SH, DB = BSCopilot.require('engine/shop'), BSCopilot.require('model/jokers_db')
     T.ok(SH.income_of(DB.get('j_golden'), state({})) >= 4, 'Golden Joker')
@@ -400,16 +406,16 @@ function S.rush_to_25_first(T)
     T.eq(SH.income_of(DB.get('j_chaos'), state({})), 0, 'Chaos the Clown brings no money')
     -- no pack and no reroll below the cap while safe
     local pack = { { kind = 'booster', uid = 'arc', name = 'Arcana Pack', cost = 4, note = 60, interest_loss = 0 } }
-    T.eq(A().shop_step(state({ dollars = 14 }), safe_result({ options = pack })).action, 'next_round')
+    T.eq(A().shop_step(state({ dollars = 14 }), safe_result({ options = pack }), RUSH).action, 'next_round')
     local rr = safe_result({ reroll = { cost = 5, worth = false, p_improve = 0.4 } })
-    T.eq(A().shop_step(state({ dollars = 12 }), rr).action, 'next_round')
+    T.eq(A().shop_step(state({ dollars = 12 }), rr, RUSH).action, 'next_round')
     -- 25 $ reached: the usual strategy again (one reroll, the excess spent)
-    T.eq(A().shop_step(state({ dollars = 31, ante = 2 }), rr).action, 'reroll')
+    T.eq(A().shop_step(state({ dollars = 31, ante = 2 }), rr, RUSH).action, 'reroll')
     opts[1].note = 66
-    T.eq(A().shop_step(state({ dollars = 31, ante = 2, jokers = { { uid = 'a' } } }), safe_result({ options = opts })).action, 'buy')
+    T.eq(A().shop_step(state({ dollars = 31, ante = 2, jokers = { { uid = 'a' } } }), safe_result({ options = opts }), RUSH).action, 'buy')
     -- after the first antes: the usual discipline (it saves too, from ante 2, while safe)
     st = A().shop_step(state({ dollars = 10, ante = 4, jokers = { { uid = 'a' }, { uid = 'b' }, { uid = 'c' } } }),
-        safe_result({ options = { { kind = 'joker', uid = 'j', name = 'Joker', cost = 4, note = 60, interest_loss = 0 } } }))
+        safe_result({ options = { { kind = 'joker', uid = 'j', name = 'Joker', cost = 4, note = 60, interest_loss = 0 } } }), RUSH)
     T.eq(st.action, 'next_round'); T.ok(not st.why:find('25 $ d\'abord', 1, true), st.why)
 end
 

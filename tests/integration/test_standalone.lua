@@ -167,7 +167,7 @@ function S.bootstrap_runs_original_then_copilot(T)
     love.update(0.05); love.draw()
     T.eq(UPDATES, 2)
     local log = amorce(FG)
-    T.ok(log:find('amorce lue', 1, true) and log:find("main.lua d'origine exécuté", 1, true) and log:find('copilote 1.0', 1, true), log)
+    T.ok(log:find('amorce lue', 1, true) and log:find("main.lua d'origine exécuté", 1, true) and log:find('copilote ' .. BSCopilot.VERSION, 1, true), log)
     FG.uninstall()
 end
 

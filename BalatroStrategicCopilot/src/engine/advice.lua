@@ -57,7 +57,9 @@ A.DEFAULTS = {
     -- shortcut, no pack, no reroll below the cap. Then the usual discipline (save_from_ante...).
     -- (the chances are those of the shop analysis: pessimistic, typical hands without discards;
     -- announced 0.30-0.90, bosses were won 80-97 % of the time in 965 simulated bosses)
-    rush_cap = true,
+    -- 1.1: off by default. Measured in the simulator, it cost blinds at every stake tried (the
+    -- money saved arrives too late, the early jokers are missed): docs/TRAINING.md
+    rush_cap = false,
     rush_until_ante = 3,           -- ... during the first antes only
     -- (simulated orange-stake runs: 0.90 / 0.80 / 0.40 lost more blinds early, -0.65 +- 0.81
     -- blind per run on 30 runs; these: -0.44 +- 0.68 on 40, docs/TRAINING.md)
@@ -67,7 +69,7 @@ A.DEFAULTS = {
     rush_min_gain = 0.02,          -- not safe: only items raising the next blind or boss by 2 points
     rush_payback = 3,              -- a money joker paying its price back within this many rounds
     -- 1.1 experiments (simulator switches; defaults chosen by measurement, docs/TRAINING.md)
-    pack_free_take = false,        -- pack: a joker for an empty slot / any planet rather than skipping
+    pack_free_take = true,         -- pack: a joker for an empty slot / any planet rather than skipping (1.1)
     pack_free_note = 30,           -- ... a joker from this note
     rich_booster_note = 52,        -- boosters, when the purchase still leaves the cap + excess_reserve
     xmult_reserve = nil,           -- a x Mult joker the plan misses is bought down to this reserve (nil: off)

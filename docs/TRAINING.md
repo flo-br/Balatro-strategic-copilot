@@ -48,7 +48,11 @@ luajit tools/trainer/report.lua sortie.jsonl [autre.jsonl ...]
   `syn_static` (0 : synergies que le moteur de score mesure déjà), `syn_generic` (0 : règles
   générales). `syn_list=0 syn_items=0` rejoue exactement les choix de la 1.0.11 (vérifié graine
   par graine). 1.0.13 : `rush_cap=false` (coupe « 25 $ d'abord »), `rush_safe_next`,
-  `rush_safe_boss`, `rush_early_boss`, `rush_min_gain`, `rush_payback`, `rush_until_ante`.
+  `rush_safe_boss`, `rush_early_boss`, `rush_min_gain`, `rush_payback`, `rush_until_ante` ; 1.1 :
+  `pack_free_take`, `rich_booster_note`, `xmult_reserve`, `eternal_early` (1 / 2), `econ_early`,
+  `additive_mid`, `additive_full_at`, `overstock_ante`, et les poids de la note de boutique
+  `w_impact`, `w_impact_danger`, `w_power`, `w_potential`, `w_synergy`, `w_econ`, `w_cost`,
+  `w_cost_floor`, `w_risk`.
 * Une ligne JSON par partie : résultat, ante atteinte, blinde perdue, historique des manches,
   décisions, plateau, niveaux, et les anomalies (étape absente ou impossible à exécuter).
 * `report.lua` applique à chaque défaite **le bilan de partie du mod** (`learning/review.lua`) et
@@ -459,4 +463,50 @@ Chaos the Clown (ils ne rapportent rien) : la stratégie livrée en est un peu p
 Contrôle à la mise noire (4), graines 301-320, contre la 1.0.12 : 25 $ atteints vers la 5,7ᵉ blinde
 au lieu de la 6,4ᵉ, 3 parties perdues aux antes 1 à 3 au lieu de 1, **−1,48 ± 1,59** blinde par
 partie (20 parties : très bruité, même sens qu'à la mise orange).
+
+## Résultats 1.1 (2026-11-05) : tout remettre en question
+
+Demande : augmenter au maximum la réussite dans toutes les mises ; nouvelles données en ligne
+([PRO_LESSONS_1_1.md](PRO_LESSONS_1_1.md)), entraînement.
+
+### Diagnostic
+
+* **Mise noire** (60 parties de la 1.0.12) : 80 % des parties atteignent l'ante 5, 43 % l'ante 6 ;
+  22 meurent à l'ante 5, surtout contre une simple Big Blind. À l'entrée de l'ante 5 : survivants
+  1,19 ×Mult, puissance médiane 9 400 ; morts 0,68 ×Mult, 6 160 ; main principale au niveau 2,6
+  dans les deux groupes. Un ×Mult n'apparaît parmi les 5 meilleures offres que 72 fois en 60
+  parties (antes 1-5), 33 achetés.
+* **Mise orange** (40 parties de la 1.0.14, graines 7001-7040) : 0 victoire, ante moyenne 4,15 ;
+  17 morts sur 40 contre une Small ou Big Blind ; jeux finaux remplis de communs (Jolly, Banner,
+  Joker, Sly, Ice Cream, Raised Fist…), 0 à 15 $ en poche. 45 % des jokers finaux sont éternels.
+* **Ante 1** : sur 1 105 parties simulées, la Small Blind de l'ante 1 n'est perdue que 4 fois sur
+  1 102 annoncées à 100 % (le joueur en a perdu une dans le vrai jeu : malchance).
+
+### Variantes (mise orange, 40 parties chacune, graine par graine)
+
+| Variante (option) | Écart (blindes par partie) |
+|---|---|
+| « 25 $ d'abord » coupé (`rush_cap=false`), contre la 1.0.14 | +0,05 ± 0,76 |
+| les suivantes, contre « 25 $ d'abord » coupé : | |
+| ×Mult acheté sous 25 $, réserve 15 $ (`xmult_reserve=15`) | identique (jamais déclenché) |
+| paquet : joker gratuit pour un emplacement vide, planète (`pack_free_take`) | identique |
+| éternel « temporaire » pénalisé dès l'ante 1 (`eternal_early=1`) | −0,13 ± 0,09 |
+| éternel « temporaire » refusé tant que c'est sûr (`eternal_early=2`) | −0,62 ± 0,51 (éternels finaux 34 / 149 au lieu de 73 / 162 ; 16 morts aux antes 1-3 au lieu de 13) |
+| relances pour chercher un ×Mult dès l'ante 3 (`xmult_hunt=2`) | **−0,67 ± 0,23** |
+| poids du prix 0,5 au lieu de 0,7 (`w_cost=0.5`) | +0,13 ± 0,28 |
+| poids de la puissance 1,4 au lieu de 1 (`w_power=1.4`) | +0,05 ± 0,40 |
+
+### Validation contre la 1.0.14 (« 25 $ d'abord » coupé + carte gratuite de paquet)
+
+| Mise, graines | 1.0.14 | 1.1 | Écart |
+|---|---|---|---|
+| Blanche (1), 1001-1012 | VAL_WHITE_REF | VAL_WHITE_NEW | VAL_WHITE_DIFF |
+| Noire (4), 2001-2020 | VAL_BLACK_REF | VAL_BLACK_NEW | VAL_BLACK_DIFF |
+
+**Lecture honnête.** Aucune variante de réglage ne gagne nettement : le copilote est déjà proche du
+meilleur que ce simulateur permet de mesurer avec ses règles actuelles. Les morts viennent d'un
+manque de puissance et de ×Mult à l'ante 4-6 que ni l'épargne, ni les relances, ni les poids de la
+note ne corrigent ; les pistes restantes demandent des changements de fond (construction du deck
+par les tarots, choix d'une main principale plus forte que la double paire, valeur d'un joker sur
+les antes suivantes plutôt que sur la blinde suivante).
 

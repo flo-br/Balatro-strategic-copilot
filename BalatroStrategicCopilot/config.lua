@@ -70,14 +70,19 @@ return {
         -- the cap; bought meanwhile only what the next blind needs to be safe (items that raise
         -- the chances), a very strong item (strong_note) or a money joker paying its price back
         -- in rush_payback rounds; the boss must be safe from the last shop before it; no pack
-        -- and no reroll below $25 while safe. Then the usual discipline above. false: off
-        rush_cap = true,
+        -- and no reroll below $25 while safe. Then the usual discipline above.
+        -- 1.1: false (off) by default: measured in the simulator, it cost blinds at every stake
+        -- tried (docs/TRAINING.md). true: on
+        rush_cap = false,
         rush_until_ante = 3,     -- ... during the first antes only
         rush_safe_next = 0.95,   -- next blind at least 95 % (the shop's estimate, pessimistic)
         rush_safe_boss = 0.85,   -- the boss, at the last shop before it: at least 85 %
         rush_early_boss = 0.70,  -- the boss, at an earlier shop: at least 70 % (prepared at the next shop)
         rush_min_gain = 0.02,    -- not safe: only items raising the next blind or the boss by 2 points
         rush_payback = 3,        -- a money joker (Golden Joker, Rocket...) paying its price back in 3 rounds
+        -- booster pack: a joker for an empty slot (never an Eternal one) or a planet is taken
+        -- rather than skipping the pack (free once the pack is open). false: off
+        pack_free_take = true,
     },
     learning = {
         enabled = true,

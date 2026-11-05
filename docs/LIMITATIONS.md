@@ -111,9 +111,18 @@
 
 * « 25 $ d'abord » (1.0.13) : mesurée sur le simulateur en mise orange, elle atteint 25 $ plus
   tôt mais perd plus de parties aux antes 1 à 3 (16 sur 40 contre 12) ; −0,41 ± 0,62 blinde par
-  partie, dans le bruit (mise noire, 20 parties : −1,48 ± 1,59). Elle reste active par défaut
-  (stratégie demandée par le joueur) ;
-  `rush_cap = false` dans `config.lua` la coupe.
+  partie, dans le bruit (mise noire, 20 parties : −1,48 ± 1,59). **Coupée par défaut depuis la
+  1.1** (aucune mise où elle gagne) ; `rush_cap = true` dans `config.lua` la remet.
+
+* Jokers éternels (1.1) : en mise orange simulée, 45 % des jokers restants en fin de partie sont
+  éternels, surtout des +Mult achetés aux antes 1-2. Les refuser plus tôt (pénalité dès l'ante 1,
+  ou refus strict) a été mesuré plus mauvais (−0,13 et −0,62 blinde par partie) : sans eux, les
+  premières blindes sont perdues. La règle reste « risque à partir de l'ante 3 » ; une fois acheté,
+  un éternel ne peut pas être vendu, le copilote ne peut que l'utiliser au mieux.
+* Simulateur et mises élevées (1.1) : aucune des 10 variantes de stratégie essayées en mise orange
+  ne gagne nettement ; le simulateur ne gagne aucune partie à cette mise (ante 4 à 5 en moyenne).
+  Ses limites (pas de défausses dans les chances de boutique, tirage des boutiques approché)
+  peuvent cacher des gains réels : les mesures sont des tendances, pas des certitudes.
 
 * « Je joue, tu apprends » (1.0.14) : seuls les choix de boutique et de paquet font apprendre
   (préférences d'objets et habitude d'argent) ; vos jeux et défausses sont comptés, pas encore

@@ -91,16 +91,23 @@ function S.rentals_and_eternals_at_high_stakes(T)
     -- Eternal on a temporary additive joker after ante 2: a risk in the note
     local SH = BSCopilot.require('engine/shop')
     local C = BSCopilot.require('model/cards')
+    local edition
     local function note(eternal)
         local s = F.state({ dollars = 12, stake = 4, ante = 3, jokers = { F.joker('j_duo') } })
         s.phase = 'shop'; s.full_deck = C.standard_deck()
         s.round.round_hands, s.round.round_discards, s.round.hand_size = 4, 3, 8
-        local j = F.joker('j_jolly'); j.eternal = eternal
-        s.shop = { jokers = { { set = 'Joker', key = 'j_jolly', name = 'Jolly Joker', cost = 3, joker = j, uid = 'e' } }, vouchers = {}, boosters = {} }
+        local j = F.joker('j_jolly'); j.eternal = eternal; j.edition = edition
+        s.shop = { jokers = { { set = 'Joker', key = 'j_jolly', name = 'Jolly Joker', cost = 3, joker = j, uid = 'e', edition = edition } }, vouchers = {}, boosters = {} }
         return SH.analyse(s, { n = 16 }).options[1]
     end
     local plain, eternal = note(false), note(true)
     T.ok(eternal.note < plain.note, string.format('eternal %d < %d', eternal.note, plain.note))
+    local function has(o, txt) for _, r in ipairs(o.risks or {}) do if r:find(txt, 1, true) then return true end end return false end
+    T.ok(has(eternal, 'jusqu\'à la fin'), 'temporary Eternal: the slot it blocks is said')
+    -- a Negative Eternal one takes no slot (1.1): Eternal, but no slot blocked
+    edition = 'e_negative'
+    local neg = note(true)
+    T.ok(has(neg, 'éternel') and not has(neg, 'jusqu\'à la fin'), 'Negative Eternal: no slot blocked')
 end
 
 function S.vouchers_wait_for_a_safe_board(T)

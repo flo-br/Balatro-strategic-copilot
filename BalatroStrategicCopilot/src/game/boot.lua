@@ -19,8 +19,8 @@ local DEFAULTS = {
         booster_note = 52, strong_note = 75, save_from_ante = 2, interest_weight = 3, safe_next = 0.85, safe_boss = 0.70,
         reroll_once = true, reroll_once_max_loss = 1, rich_reserve = 10,
         replace_note = 60, danger_rerolls = 2, excess_note = 54, excess_reserve = 5, idle_reserve = 20, first_jokers = 3,
-        rush_cap = true, rush_until_ante = 3, rush_safe_next = 0.95, rush_safe_boss = 0.85, rush_early_boss = 0.70,
-        rush_min_gain = 0.02, rush_payback = 3 },
+        rush_cap = false, rush_until_ante = 3, rush_safe_next = 0.95, rush_safe_boss = 0.85, rush_early_boss = 0.70,
+        rush_min_gain = 0.02, rush_payback = 3, pack_free_take = true },
     learning = { enabled = true, max_runs_kept = 300, min_samples_calibration = 30, player_feedback = true, observe = true },
     log = { level = 'info', file = true, max_file_kb = 512 },
 }
