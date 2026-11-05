@@ -22,6 +22,18 @@ local SWITCHES = {
     syn_items = { 'engine/builds', 'ITEM_SCALE', 'number' },
     syn_generic = { 'engine/builds', 'GENERIC_SCALE', 'number' },
     syn_static = { 'engine/builds', 'STATIC_SCALE', 'number' },
+    -- 1.1: the weights of the shop note (engine/shop.lua, SH.DEFAULT_WEIGHTS)
+    w_impact = { 'engine/shop', 'DEFAULT_WEIGHTS.impact', 'number' },
+    w_impact_danger = { 'engine/shop', 'DEFAULT_WEIGHTS.impact_danger', 'number' },
+    w_power = { 'engine/shop', 'DEFAULT_WEIGHTS.power', 'number' },
+    w_potential = { 'engine/shop', 'DEFAULT_WEIGHTS.potential', 'number' },
+    w_synergy = { 'engine/shop', 'DEFAULT_WEIGHTS.synergy', 'number' },
+    w_econ = { 'engine/shop', 'DEFAULT_WEIGHTS.econ', 'number' },
+    w_cost = { 'engine/shop', 'DEFAULT_WEIGHTS.cost', 'number' },
+    w_cost_floor = { 'engine/shop', 'DEFAULT_WEIGHTS.cost_floor', 'number' },
+    w_risk = { 'engine/shop', 'DEFAULT_WEIGHTS.risk', 'number' },
+    overstock_ante = { 'model/items_db', 'VOUCHERS.v_overstock_norm.per_ante', 'number' },
+    overstock2_ante = { 'model/items_db', 'VOUCHERS.v_overstock_plus.per_ante', 'number' },
 }
 
 -- args: list of strings; cfg: config.lua table; opts: simulator options (modified)
@@ -41,7 +53,14 @@ function O.apply(args, from, cfg, opts, own)
             elseif sw then
                 local val = num
                 if sw[3] == 'bool' then val = (num == 1 or num == true) end
-                BSCopilot.require(sw[1])[sw[2]] = val
+                -- a dotted field name sets a field of a table of the module
+                local t, field = BSCopilot.require(sw[1]), sw[2]
+                while true do
+                    local head, rest = field:match('^([^.]+)%.(.+)$')
+                    if not head then break end
+                    t, field = t[head], rest
+                end
+                t[field] = val
             elseif k == 'stake' then opts.stake = tonumber(v)
             elseif k == 'learn' then
                 -- learn=1: lessons + settings; learn=lessons / learn=adapt: one mechanism only

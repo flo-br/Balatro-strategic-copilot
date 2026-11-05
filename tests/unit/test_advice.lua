@@ -253,6 +253,22 @@ function S.death_waits_for_the_best_card_in_the_deck(T)
     T.ok(t and t.cards[2] == k, 'pack: the King of the hand')
 end
 
+-- 1.1: a free joker for an empty slot, any planet, rather than skipping the pack (the player's remark)
+function S.pack_free_take(T)
+    local cfgon = { advice = { pack_free_take = true } }
+    local s0 = state({ phase = 'pack' })
+    local res = { options = { { kind = 'joker', uid = 'six', name = 'Sixth Sense', note = 40 }, { kind = 'joker', uid = 'et', name = 'Joker', note = 45, eternal = true } } }
+    T.eq(A().pack_step(s0, res).action, 'skip_pack', 'off: skipped')
+    local st = A().pack_step(s0, res, cfgon)
+    T.eq(st.action, 'take'); T.eq(st.targets[1], 'six', 'never the Eternal one')
+    -- no free slot: skipped
+    local full = state({ phase = 'pack', jokers = { { uid = 'a' }, { uid = 'b' }, { uid = 'c' }, { uid = 'd' }, { uid = 'e' } } })
+    T.eq(A().pack_step(full, res, cfgon).action, 'skip_pack')
+    -- a planet: a level for good
+    st = A().pack_step(full, { options = { { kind = 'planet', uid = 'pl', name = 'Pluto', note = 30 } } }, cfgon)
+    T.eq(st.action, 'take')
+end
+
 function S.strength_hanged_man_and_seals(T)
     local A_ = A()
     local IT = BSCopilot.require('model/items_db')

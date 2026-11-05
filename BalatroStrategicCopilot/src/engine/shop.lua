@@ -500,6 +500,7 @@ function SH.analyse(state, opts, task)
             local def = DB.get(j.key, j.name)
             opt.kind = 'joker'
             opt.joker_kind = PL.joker_kind(def)
+            opt.eternal = j.eternal and true or nil
             -- rental (gold stake): $1 now, then $3 at the end of EVERY round it is kept. Priced
             -- as what it costs over the rounds it is expected to be kept, not as $1: two cheap
             -- rentals in ante 1 eat all the money of the run (seen in the simulated gold stake)

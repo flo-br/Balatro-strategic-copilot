@@ -66,6 +66,10 @@ A.DEFAULTS = {
     rush_early_boss = 0.70,        -- the boss, at an earlier shop: at least 70 % (prepared later)
     rush_min_gain = 0.02,          -- not safe: only items raising the next blind or boss by 2 points
     rush_payback = 3,              -- a money joker paying its price back within this many rounds
+    -- 1.1 experiments (simulator switches; defaults chosen by measurement, docs/TRAINING.md)
+    pack_free_take = false,        -- pack: a joker for an empty slot / any planet rather than skipping
+    pack_free_note = 30,           -- ... a joker from this note
+    rich_booster_note = 52,        -- boosters, when the purchase still leaves the cap + excess_reserve
 }
 
 -- adjustments the copilot made to itself after its past runs (learning/adapt.lua); cfg.adapt_deltas
@@ -585,6 +589,7 @@ local function required_note(o, money, pol, S, state)
     -- money above the interest cap earns nothing: once the purchase still leaves the cap (and a
     -- little more), any real improvement is worth it (top players: "don't get rich")
     if pol.cap and money - cost >= math.max(pol.target, pol.cap) + S.excess_reserve then
+        if o.kind == 'booster' then return math.min(base, S.rich_booster_note or base) end
         return math.min(base, S.excess_note)
     end
     -- antes 1-2: any scoring joker beats an empty slot (top players)
@@ -793,6 +798,19 @@ function A.pack_step(state, r, cfg, partial)
             end
         end
         return step
+    end
+    -- a free card is rarely worth less than nothing (the player's remark, 1.1): a joker for an
+    -- empty slot (it scores a little, and sells for money later; never an Eternal one, it would
+    -- take the slot for good), any planet (a level for good)
+    if S.pack_free_take and S.pack_free_take ~= 0 then
+        local free_slot = #(state.jokers or {}) < (state.joker_slots or 5)
+        for _, o in ipairs(r.options) do
+            if not o.blocked and ((o.kind == 'joker' and free_slot and not o.eternal and (o.note or 0) >= (S.pack_free_note or 30))
+                or o.kind == 'planet') then
+                return { action = 'take', label = T('lbl_take'), targets = { o.uid }, text = T('step_take', o.name or o.key or '?'),
+                    why = T(o.kind == 'planet' and 'why_free_planet' or 'why_free_joker'), note = o.note, cls = 'mid' }
+            end
+        end
     end
     return { action = 'skip_pack', label = T('lbl_skip'), button = 'skip_pack', text = T('step_skip_pack'), why = T('why_pack_weak'), cls = 'mid' }
 end
