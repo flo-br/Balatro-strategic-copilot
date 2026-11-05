@@ -501,10 +501,17 @@ Demande : augmenter au maximum la réussite dans toutes les mises ; nouvelles do
 | Mise, graines | 1.0.14 | 1.1 | Écart |
 |---|---|---|---|
 | Blanche (1), 1001-1012 | 20,32 blindes, 4 victoires sur 12 | 21,78 blindes, **7 victoires sur 12** | +1,46 ± 2,21 |
-| Noire (4), 2001-2020 | VAL_BLACK_REF | VAL_BLACK_NEW | VAL_BLACK_DIFF |
+| Noire (4), 2001-2020 | 13,96 blindes, ante 5,10, 0 victoire | 15,85 blindes, ante 5,65, **2 victoires sur 20** | **+1,89 ± 1,28** |
 | Orange (7), 7001-7040 | 11,25 blindes, ante 4,15, 0 victoire | 11,31 blindes, ante 4,10, 0 victoire | +0,05 ± 0,76 |
+| **Les trois, 72 parties** | 13,52 blindes, 4 victoires | 14,31 blindes, **9 victoires** | **+0,80 ± 0,66** |
 
-**Lecture honnête.** Aucune variante de réglage ne gagne nettement : le copilote est déjà proche du
+Mise noire : 12 parties sur 20 atteignent l'ante 6 ou plus avec la 1.1 contre 6 avec la 1.0.14
+(dont 2 victoires contre 0) ; mise blanche : 7 victoires sur 12 contre 4. L'écart vient presque
+entièrement de « 25 $ d'abord » coupé (la carte gratuite de paquet ne change rien à la mise orange).
+Ces écarts sont positifs aux trois mises mais restent dans la marge d'erreur, sauf presque à la mise
+noire (+1,89 pour ± 1,28) : une tendance, pas une preuve.
+
+**Lecture honnête.** Aucune variante de réglage ne gagne nettement à la mise orange : le copilote est déjà proche du
 meilleur que ce simulateur permet de mesurer avec ses règles actuelles. Les morts viennent d'un
 manque de puissance et de ×Mult à l'ante 4-6 que ni l'épargne, ni les relances, ni les poids de la
 note ne corrigent ; les pistes restantes demandent des changements de fond (construction du deck

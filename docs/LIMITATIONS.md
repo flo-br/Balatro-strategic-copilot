@@ -112,7 +112,7 @@
 * « 25 $ d'abord » (1.0.13) : mesurée sur le simulateur en mise orange, elle atteint 25 $ plus
   tôt mais perd plus de parties aux antes 1 à 3 (16 sur 40 contre 12) ; −0,41 ± 0,62 blinde par
   partie, dans le bruit (mise noire, 20 parties : −1,48 ± 1,59). **Coupée par défaut depuis la
-  1.1** (aucune mise où elle gagne) ; `rush_cap = true` dans `config.lua` la remet.
+  1.1** (la couper fait mieux ou autant à chaque mise : +0,80 ± 0,66 blinde par partie sur 72 parties) ; `rush_cap = true` dans `config.lua` la remet.
 
 * Jokers éternels (1.1) : en mise orange simulée, 45 % des jokers restants en fin de partie sont
   éternels, surtout des +Mult achetés aux antes 1-2. Les refuser plus tôt (pénalité dès l'ante 1,

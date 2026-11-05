@@ -89,7 +89,7 @@ prédiction (journal + diagnostic de compatibilité).
 | Environnement | Résultat |
 |---|---|
 | LuaJIT 2.1.1703358377 | **292 réussis, 0 échec** |
-| Lua 5.1.5 | **292 réussis, 0 échec** (test de performance repassé seul : la machine faisait tourner 4 simulations en parallèle, tranche de 27 ms au premier passage) |
+| Lua 5.1.5 | **292 réussis, 0 échec** |
 | Mode autonome sur le **vrai LÖVE 11.5**, exécutable fusionné comme `Balatro.exe` (ci-dessous) | **5 scénarios conformes** |
 | Installateur extrait de `…-1.0.8-installateur.zip`, PowerShell 7.4 (Linux) | **9 scénarios, 53 vérifications réussies** |
 | Installateur, analyse statique de compatibilité Windows PowerShell 5.1 (PSScriptAnalyzer 1.25, profil Windows 10 / PS 5.1) | **0 erreur de syntaxe, 0 incompatibilité** |
@@ -103,7 +103,7 @@ différents dossiers de sauvegarde (l'équivalent de `%AppData%\Balatro`) rempli
 
 | Scénario | Résultat |
 |---|---|
-| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.1.0 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 359, machine chargée par 4 simulations) ; panneau et badges « JOUER » affichés (capture) |
+| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.1.0 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 377) ; panneau et badges « JOUER » affichés (capture) |
 | mod seul, sans amorce | jeu normal, pas de copilote (témoin) |
 | amorce sans le dossier du mod | jeu normal jusqu'au bout ; bandeau rouge « dossier introuvable » ; erreur dans `amorce.log` |
 | Steamodded a déjà chargé le copilote | l'amorce se retire (« Steamodded gère déjà le copilote »), pas de double chargement |

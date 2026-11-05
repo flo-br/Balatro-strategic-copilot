@@ -57,8 +57,8 @@ A.DEFAULTS = {
     -- shortcut, no pack, no reroll below the cap. Then the usual discipline (save_from_ante...).
     -- (the chances are those of the shop analysis: pessimistic, typical hands without discards;
     -- announced 0.30-0.90, bosses were won 80-97 % of the time in 965 simulated bosses)
-    -- 1.1: off by default. Measured in the simulator, it cost blinds at every stake tried (the
-    -- money saved arrives too late, the early jokers are missed): docs/TRAINING.md
+    -- 1.1: off by default. Measured in the simulator, off did better or as well at every stake
+    -- tried (the money saved arrives too late, the early jokers are missed): docs/TRAINING.md
     rush_cap = false,
     rush_until_ante = 3,           -- ... during the first antes only
     -- (simulated orange-stake runs: 0.90 / 0.80 / 0.40 lost more blinds early, -0.65 +- 0.81

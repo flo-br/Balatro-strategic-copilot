@@ -37,3 +37,13 @@ meurent) et une puissance médiane de 9 400 (6 200) ; la main principale n'est q
 dans les deux groupes. Un joker ×Mult n'apparaît parmi les offres que **1,2 fois par partie** sur
 les antes 1 à 5 : le copilote voit trop peu de jokers (il garde ses 25 $ et ne relance qu'au-delà
 de 35 $).
+
+## Ce qui a été gardé (mesuré)
+
+Les guides disent d'acheter d'abord un joker qui marque plutôt que d'épargner dès l'ante 1 ; le
+simulateur va dans le même sens : sans « 25 $ d'abord », sur 72 parties (mises blanche, noire et
+orange, mêmes graines), 9 victoires au lieu de 4, +0,80 ± 0,66 blinde par partie. Le joker gratuit
+d'un paquet pour un emplacement vide (l'habitude du joueur) est pris ; il ne change rien de mesurable
+mais ne coûte rien. Relancer pour chercher un ×Mult, recommandé par plusieurs guides, a été
+mesuré nettement plus mauvais à la mise orange (−0,67 ± 0,23) : l'argent y manque. Détails :
+[TRAINING.md](TRAINING.md), « Résultats 1.1 ».

@@ -18,6 +18,17 @@ les mises ; tout remettre en question, chercher de nouvelles données en ligne, 
 * **Entraînement** : 10 variantes mesurées sur les mêmes 40 parties en mise orange, puis validation
   contre la 1.0.14 à la mise blanche et à la mise noire (`docs/TRAINING.md`, « Résultats 1.1 »).
 
+### Résultat mesuré (simulateur, mêmes graines, 1.1 contre 1.0.14)
+| Mise | 1.0.14 | 1.1 | Écart (blindes par partie) |
+|---|---|---|---|
+| Blanche, 12 parties | 4 victoires | **7 victoires** | +1,46 ± 2,21 |
+| Noire, 20 parties | 0 victoire, ante 5,10 | **2 victoires**, ante 5,65 | **+1,89 ± 1,28** |
+| Orange, 40 parties | 0 victoire, ante 4,15 | 0 victoire, ante 4,10 | +0,05 ± 0,76 |
+| Les trois, 72 parties | 4 victoires | **9 victoires** | **+0,80 ± 0,66** |
+
+Mieux ou égal à chaque mise, mais les écarts restent dans la marge d'erreur du simulateur : c'est
+une tendance, pas une garantie. La mise orange ne progresse pas.
+
 ### Ce qui change
 * **« 25 $ d'abord » est coupé par défaut** : les guides recommandent d'acheter d'abord un joker
   qui marque, et la stratégie mesurait neutre ou négatif (mise orange : −0,41 puis +0,05 en la

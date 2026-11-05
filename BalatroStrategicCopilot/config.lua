@@ -71,8 +71,8 @@ return {
         -- the chances), a very strong item (strong_note) or a money joker paying its price back
         -- in rush_payback rounds; the boss must be safe from the last shop before it; no pack
         -- and no reroll below $25 while safe. Then the usual discipline above.
-        -- 1.1: false (off) by default: measured in the simulator, it cost blinds at every stake
-        -- tried (docs/TRAINING.md). true: on
+        -- 1.1: false (off) by default: measured in the simulator, off did better or as well at
+        -- every stake tried (docs/TRAINING.md). true: on
         rush_cap = false,
         rush_until_ante = 3,     -- ... during the first antes only
         rush_safe_next = 0.95,   -- next blind at least 95 % (the shop's estimate, pessimistic)

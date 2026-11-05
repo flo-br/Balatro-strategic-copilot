@@ -29,6 +29,7 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 | Plan de partie | Leçons des meilleurs joueurs ([sources](docs/PRO_LESSONS.md)) : main principale, ×Mult attendus par ante, argent au-delà des intérêts réinvesti, boss à préparer |
 | Apprentissage | Journal local des parties, calibration validée des probabilités, croissance de puissance, contributions des jokers, bilan après chaque partie qui cherche **pourquoi** le build n'a pas suffi (jamais « malchance ») ; après chaque défaite, le copilote **essaie un changement** de son développement (urgence des ×Mult, achats, épargne, sécurité, passages) selon la cause qui revient dans vos défaites, et ne le **garde que si les parties suivantes ne sont pas moins bonnes** ; chaque étape est expliquée dans le bilan |
 | Mises et decks | Mises 1 à 8 lues dans le jeu (Small Blind sans récompense, blindes plus grosses, autocollants éternel / périssable / **location** comptée sur toute sa durée, une défausse de moins) : ×Mult attendus plus tôt aux mises verte et violette, joker loué revendu dès qu'il n'est plus nécessaire ; decks de départ pris en compte via l'état réel (cartes, bons, consommables). **1.0.10** : règles des meilleurs joueurs à partir de la mise verte (presque jamais passer une blinde, pas d'épargne sans ×Mult à l'ante 4 ni sans plateau vraiment sûr, une seule location), mesurées sur le simulateur ([résultats](docs/TRAINING.md)) |
+| 1.1 | Tout remis en question et mesuré sur le simulateur (10 variantes) : « 25 $ d'abord » coupé par défaut, carte gratuite prise dans les paquets, éternel Négatif non pénalisé ; contre la 1.0.14 sur 72 parties : **9 victoires au lieu de 4**, +0,80 ± 0,66 blinde par partie (tendance, dans la marge d'erreur) — [résultats](docs/TRAINING.md) |
 | Compatibilité | Détection des mods, éléments inconnus signalés comme « partiel », contrôle croisé avec le jeu, dégradation contrôlée |
 
 ## Installation rapide (Windows)
@@ -124,8 +125,9 @@ l'autre jusqu'à ce que vous le coupiez ; `Suppr` dans la boîte `X` efface tout
 
 ### « 25 $ d'abord » (1.0.13, option coupée par défaut depuis la 1.1)
 
-**1.1 : coupée par défaut.** Mesurée sur le simulateur, elle fait perdre des blindes à chaque
-mise essayée : l'argent épargné arrive trop tard et les premiers jokers manquent
+**1.1 : coupée par défaut.** Mesurée sur le simulateur, la couper fait mieux ou autant à chaque
+mise essayée (mise blanche : 7 victoires sur 12 au lieu de 4 ; mise noire : 2 sur 20 au lieu de 0 ;
+mise orange : pareil) : l'argent épargné arrive trop tard et les premiers jokers manquent
 ([docs/TRAINING.md](docs/TRAINING.md), « Résultats 1.1 »). Pour la remettre :
 `rush_cap = true` dans `config.lua`, section `advice`.
 
