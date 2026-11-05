@@ -70,6 +70,7 @@ A.DEFAULTS = {
     pack_free_take = false,        -- pack: a joker for an empty slot / any planet rather than skipping
     pack_free_note = 30,           -- ... a joker from this note
     rich_booster_note = 52,        -- boosters, when the purchase still leaves the cap + excess_reserve
+    xmult_reserve = nil,           -- a x Mult joker the plan misses is bought down to this reserve (nil: off)
 }
 
 -- adjustments the copilot made to itself after its past runs (learning/adapt.lua); cfg.adapt_deltas
@@ -552,7 +553,7 @@ local function money_policy(state, r, S)
         if u.boss and u.key == 'bl_ox' and u.state ~= 'Defeated' then target = 0 end
     end
     return { safe = safe, ante = ante, target = target, cap = cap, rentals = rentals, high = high,
-        rush = rush and target > 0, rush_on = rush }
+        rush = rush and target > 0, rush_on = rush, xmult_gap = r.plan and r.plan.gaps and r.plan.gaps.xmult and true or false }
 end
 
 local function required_note(o, money, pol, S, state)
@@ -601,6 +602,12 @@ local function required_note(o, money, pol, S, state)
     end
     if (o.note or 0) >= S.strong_note then return base end
     if not pol.safe then return base end
+    -- a x Mult joker the plan misses (the best predictor of how far runs go): the savings wait,
+    -- down to a reserve
+    if S.xmult_reserve and o.kind == 'joker' and o.joker_kind == 'xmult' and pol.xmult_gap
+        and money - cost >= S.xmult_reserve then
+        return base
+    end
     if pol.target > 0 and money - cost < pol.target then return S.strong_note end
     return base + S.interest_weight * (o.interest_loss or 0)
 end
