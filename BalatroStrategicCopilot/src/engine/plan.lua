@@ -29,6 +29,8 @@ PL.BEHIND_RATIO = 0.5
 -- 1.1 switch: extra potential of a +Mult / +Chips joker in the mid game when the board already has
 -- PL.ADDITIVE_FULL_AT jokers (0: off)
 PL.ADDITIVE_MID = 0
+-- potential of a money joker in antes 1-2 (top players at high stakes: an early money joker)
+PL.ECON_EARLY = 0.15
 PL.ADDITIVE_FULL_AT = 3
 -- Track of the runs that WIN (1.0.10, simulated runs, docs/TRAINING.md): a typical hand (no
 -- discards) at antes 2-4 stays above 1.2 x the ante's base chips in 3 winning runs out of 4
@@ -225,7 +227,7 @@ function PL.joker_bonus(def, plan)
         end
         if plan.gaps.scoring then v = v + 0.2; why = 'premiers jokers de score : la priorité des antes 1-2' end
     elseif kind == 'econ' then
-        v = (plan.phase == 'early') and 0.15 or ((plan.phase == 'late') and -0.2 or 0)
+        v = (plan.phase == 'early') and (PL.ECON_EARLY or 0.15) or ((plan.phase == 'late') and -0.2 or 0)
     end
     return v, why
 end
