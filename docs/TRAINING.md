@@ -500,8 +500,9 @@ Demande : augmenter au maximum la réussite dans toutes les mises ; nouvelles do
 
 | Mise, graines | 1.0.14 | 1.1 | Écart |
 |---|---|---|---|
-| Blanche (1), 1001-1012 | VAL_WHITE_REF | VAL_WHITE_NEW | VAL_WHITE_DIFF |
+| Blanche (1), 1001-1012 | 20,32 blindes, 4 victoires sur 12 | 21,78 blindes, **7 victoires sur 12** | +1,46 ± 2,21 |
 | Noire (4), 2001-2020 | VAL_BLACK_REF | VAL_BLACK_NEW | VAL_BLACK_DIFF |
+| Orange (7), 7001-7040 | 11,25 blindes, ante 4,15, 0 victoire | 11,31 blindes, ante 4,10, 0 victoire | +0,05 ± 0,76 |
 
 **Lecture honnête.** Aucune variante de réglage ne gagne nettement : le copilote est déjà proche du
 meilleur que ce simulateur permet de mesurer avec ses règles actuelles. Les morts viennent d'un
