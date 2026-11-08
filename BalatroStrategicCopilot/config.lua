@@ -98,6 +98,12 @@ return {
         -- choices with the advice it would have given and learns from the differences (half the
         -- weight of a "Mon choix" correction, same bounds); false: the mode cannot be turned on
         observe = true,
+        -- journal of every run in BSC/journal_parties.txt (1.1.1): blinds and tags, shops seen
+        -- with the copilot's notes, purchases, sales, rerolls, packs, consumables and what they
+        -- changed, hands played and discarded with their score. Game data only, on this
+        -- computer only (3 MB, then the previous file is kept as journal_parties.old.txt).
+        -- false: not written
+        journal = true,
     },
     log = {
         level = 'info',          -- off, error, warn, info, debug, trace

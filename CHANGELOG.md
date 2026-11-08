@@ -1,5 +1,25 @@
 # Historique des versions
 
+## 1.1.1 — 2026-11-08
+
+Demande : « je vais jouer plusieurs parties gagnantes d'affilée pour te montrer comment ça marche
+et que tu en prennes de la graine ».
+
+### Journal des parties (`BSC/journal_parties.txt`)
+* Jusqu'ici, une partie enregistrée gardait les achats, les mains (type, score prévu et obtenu),
+  l'argent et les blindes, mais pas ce que la boutique proposait et que vous avez laissé, ni le
+  contenu des paquets, ni le tag d'une blinde passée, ni les cartes jouées, ni ce que vos tarots ont
+  changé. C'est pourtant ce qu'il faut pour apprendre d'une partie gagnée.
+* Le journal écrit tout cela, au fil de la partie, dans un fichier texte lisible : blindes et tags,
+  boutiques (offres, rareté, édition, prix ; notes et avis du copilote), achats, ventes, relances,
+  départ, paquets (contenu, carte prise ou paquet passé), consommables et leur effet (cartes
+  changées ou détruites, nouvelles cartes, niveaux, argent, jokers), mains jouées et défaussées avec
+  les cartes gardées et le score obtenu, fin de chaque blinde et de la partie. Chaque action porte
+  le conseil calculé pour exactement cet état, quand il l'a été.
+* Écrit avec ou sans conseils affichés (le plus utile : touche `O`, vous jouez seul). Données du jeu
+  seulement, sur votre ordinateur, 3 Mo au plus (l'ancien fichier est gardé) ; `journal = false`
+  dans `config.lua` (section `learning`) le coupe. Lecture seule : le jeu n'est jamais touché.
+
 ## 1.1.0 — 2026-11-05
 
 Demande : « mettre les bouchées triples » pour augmenter la réussite des parties dans toutes

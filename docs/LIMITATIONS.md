@@ -124,6 +124,11 @@
   Ses limites (pas de défausses dans les chances de boutique, tirage des boutiques approché)
   peuvent cacher des gains réels : les mesures sont des tendances, pas des certitudes.
 
+* Journal des parties (1.1.1) : il est écrit à partir des états stables du jeu et des actions que le
+  jeu signale. Avec un Steamodded qui ne signale pas les actions (et en mode autonome), elles sont
+  reconstruites en comparant deux états : le nom d'un paquet peut manquer, et une action très rapide
+  entre deux états peut être manquée. L'effet d'un consommable est la différence entre l'état avant
+  et l'état suivant : un effet qui arrive plus tard (Hallucination, cartes tirées) n'y est pas.
 * « Je joue, tu apprends » (1.0.14) : seuls les choix de boutique et de paquet font apprendre
   (préférences d'objets et habitude d'argent) ; vos jeux et défausses sont comptés, pas encore
   imités. Une action dont le conseil n'a pas pu être calculé avant (analyse pas finie) est ignorée.

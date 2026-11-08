@@ -136,6 +136,28 @@ identique au conseil est comptée comme accord et ne change rien. Chaque leçon 
 `profile.feedback.entries` (raison « observé ») et dans `mes_choix.txt`. `learning.observe = false`
 interdit le mode.
 
+### 4 quater. Journal des parties (1.1.1, `learning/journal.lua`)
+
+Pour apprendre d'une partie gagnée, il faut toute la partie, pas seulement les choix différents du
+conseil. Le journal (`BSC/journal_parties.txt`, texte) est écrit dans les deux modes, une ligne par
+fait, préfixée de l'ante, de la manche et de l'argent (`A2 M5 14 $ |`) :
+
+| Fait | Écrit |
+|---|---|
+| début de partie | deck, mise, graine, mode (conseils affichés ou « vous jouez seul ») |
+| choix de blinde | les trois blindes, leur taille, les tags ; `passe la Small Blind → tag …` |
+| début de blinde | taille, mains, défausses ; jokers (éditions, autocollants), niveaux des mains, consommables |
+| boutique | offres (rareté, édition, prix) à l'arrivée et après chaque relance ; avis et notes du copilote quand ils changent |
+| actions | achat (note), vente, relance (prix), ouverture de paquet, départ de la boutique, chacune avec le conseil calculé pour exactement cet état |
+| paquet | contenu et main distribuée ; carte prise (et cartes visées) ou paquet passé |
+| consommable | nom et cartes visées ; `effet :` cartes changées ou détruites, nouvelles cartes, jokers, niveaux, argent (différence entre l'état avant et après, sur tout le deck) |
+| main | `joue Paire : R♥ R♠ \| garde : …` puis le score obtenu et le total ; défausses |
+| fin | blinde gagnée (score / objectif), victoire, défaite (blinde, score) |
+
+Le conseil n'est écrit que s'il a été calculé pour l'état exact de l'action (sinon rien). Taille
+bornée à 3 Mo (l'ancien fichier est gardé sous `journal_parties.old.txt`) ; `learning.journal =
+false` le coupe. Il ne lit que l'état du jeu et n'agit jamais.
+
 ## 5. Export, import, réinitialisation
 
 Depuis *Mods → Balatro Strategic Copilot → Config* :

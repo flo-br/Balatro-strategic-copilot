@@ -12,6 +12,7 @@ local RV = BSC.require('learning/review')
 local AD = BSC.require('learning/adapt')
 local FB = BSC.require('learning/feedback')
 local OB = BSC.require('learning/observe')
+local JN = BSC.require('learning/journal')
 
 local RT = {}
 
@@ -35,7 +36,17 @@ function RT.init(store)
     end
     RT.rec = Rec.new({ version = BSC.VERSION })
     RT.cal_cache = {}
+    -- journal of the runs (learning/journal.lua): BSC/journal_parties.txt
+    RT.journal = JN.new(JN.file_writer(store))
     return RT
+end
+
+-- the journal is written unless learning.journal = false
+local function journal_on() return RT.journal and cfg().journal ~= false end
+local function journal(f, ...)
+    if not journal_on() then return end
+    local ok, err = pcall(f, RT.journal, ...)
+    if not ok then L.warn('journal', 'failed: %s', tostring(err)) end
 end
 
 function RT.profile() return RT.profile_data end
@@ -183,6 +194,7 @@ function RT.attach(Ctl)
         if kind == 'state' then
             local s = data.state
             if observing then learn(OB.on_state(data.prev, s)) end
+            journal(JN.on_state, data.prev, s, observing)
             -- resume a saved active run (game reloaded from its own save)
             if not RT.rec.run and RT.active and s and s.run and RT.active.identity then
                 local id = table.concat({ tostring(s.run.seed), tostring(s.run.deck_key), tostring(s.run.stake), tostring(s.run.challenge) }, '|')
@@ -198,9 +210,16 @@ function RT.attach(Ctl)
         elseif kind == 'event' then
             -- (the state the action was taken from: polling emits before the new snapshot)
             if observing then learn(OB.on_event(data, Ctl.state)) end
+            journal(JN.on_event, data, Ctl.state)
             RT.rec:on_event(data, { results = Ctl.results, state = Ctl.state })
         elseif kind == 'analysis' then
             if observing then OB.on_analysis(data.phase, data.result, data.state, BSC.config) end
+            if journal_on() then
+                local okA, A = pcall(BSC.require, 'engine/advice')
+                local okS, step = false, nil
+                if okA then okS, step = pcall(A.step, data.phase, data.state, data.result, BSC.config, false) end
+                journal(JN.on_analysis, data.phase, data.result, data.state, okS and step or nil)
+            end
             RT.rec:on_analysis(data.phase, data.result, data.state)
         end
     end)

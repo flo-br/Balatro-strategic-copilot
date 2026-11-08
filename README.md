@@ -5,7 +5,7 @@ partie, calcule les scores exacts, les probabilités, évalue la boutique, conse
 défausses, et **apprend de vos parties**. **Il ne joue jamais à votre place** : il n'effectue
 aucune action (sélection, jeu, défausse, achat, vente, relance).
 
-> Statut : version 1.1.0. Développée **hors du jeu** (aucune installation de Balatro n'était
+> Statut : version 1.1.1. Développée **hors du jeu** (aucune installation de Balatro n'était
 > disponible dans l'environnement de développement), puis essayée par l'utilisateur dans le vrai
 > jeu (mode copier-coller). Validée par des tests automatisés, un environnement Balatro/Steamodded
 > simulé, le vrai runtime LÖVE 11.5 et des parties complètes simulées ([entraînement](docs/TRAINING.md)).
@@ -37,7 +37,7 @@ aucune action (sélection, jeu, défausse, achat, vente, relance).
 **Méthode sans programme (recommandée, 1.0.4+)** — ni Lovely, ni Steamodded, ni script, ni DLL ;
 fonctionne aussi sur un PC protégé (contrôle parental, antivirus strict) :
 
-1. Extraire l'archive `BalatroStrategicCopilot-1.1.0.zip`.
+1. Extraire l'archive `BalatroStrategicCopilot-1.1.1.zip`.
 2. Copier le **contenu** du dossier `COPIER_DANS_AppData_Balatro` (`main.lua` + `Mods`) dans
    `%AppData%\Balatro\` (touche Windows + R, `%AppData%\Balatro`).
 3. Lancer Balatro : bandeau vert « … actif — touche C : panneau (mode autonome, sans Steamodded) ».
@@ -49,7 +49,7 @@ Balatro tourne sur LÖVE 11, qui lit `main.lua` d'abord dans le dossier de sauve
 **Avec Lovely + Steamodded** : copier le dossier `BalatroStrategicCopilot` dans
 `%AppData%\Balatro\Mods\` (de sorte que `Mods\BalatroStrategicCopilot\BalatroStrategicCopilot.json`
 existe ; une archive `.zip` déposée telle quelle est ignorée par les anciens Steamodded). L'archive
-`BalatroStrategicCopilot-1.1.0-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
+`BalatroStrategicCopilot-1.1.1-installateur.zip` contient `INSTALLER_COPILOT.bat`, qui vérifie et
 répare toute la chaîne (dossier du jeu, Lovely, Steamodded, copilote) puis confirme que tout s'est
 chargé. Un **bandeau vert « actif »** s'affiche au lancement ; **aucun bandeau = mod non trouvé**
 ([pièges vérifiés](docs/INSTALL.md)).
@@ -122,6 +122,27 @@ leçon est écrite dans `mes_choix.txt` (marquée « observé ») et le bilan de
 l'autre jusqu'à ce que vous le coupiez ; `Suppr` dans la boîte `X` efface tout ce qui a été appris.
 
 ![Je joue, tu apprends](docs/img/overlay_observe.png)
+
+**Journal des parties (1.1.1).** Chaque partie, jouée avec ou sans conseils, est écrite au fur et
+à mesure dans `%AppData%\Balatro\BSC\journal_parties.txt`, un fichier texte que vous pouvez lire
+ou envoyer : blindes proposées et tags, blindes passées, chaque boutique (offres, prix, éditions,
+autocollants, notes et avis du copilote), achats, ventes, relances, départ, paquets (contenu, carte
+prise ou paquet passé), consommables avec leur effet (cartes changées, argent, niveaux, jokers),
+chaque main jouée ou défaussée avec ses cartes et son score, fin de chaque blinde et de la partie.
+Exemple :
+
+```
+A2 M4 14 $ | BOUTIQUE : The Duo (rare, holo), 8 $ ; Mercury (Paire), 3 $ ; Arcana Pack, 4 $ | relance 5 $
+A2 M4 14 $ |    avis du copilote : Acheter The Duo (8 $) | notes : The Duo 81, Mercury 52
+A2 M4 14 $ | achète Mercury (Paire), 3 $, note 52 [conseil : Acheter The Duo (8 $)]
+A2 M5 6 $ | joue Paire : R♥ R♠ | garde : 7♦(acier) 2♣ 9♠
+A2 M5 6 $ |    → 180 jetons (total 180 / 300)
+```
+
+C'est ce qui permet d'apprendre de vos victoires : pas seulement les choix différents du conseil,
+toute la façon dont la partie a été menée. Uniquement des données du jeu, sur votre ordinateur ;
+au-delà de 3 Mo, le fichier repart de zéro et l'ancien est gardé (`journal_parties.old.txt`).
+`journal = false` dans `config.lua` (section `learning`) le coupe.
 
 ### « 25 $ d'abord » (1.0.13, option coupée par défaut depuis la 1.1)
 

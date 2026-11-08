@@ -13,8 +13,8 @@ Aucune dépendance de test : `tests/testlib.lua` fournit assertions, exécution 
 
 ```bash
 python3 tools/build.py                                    # paquet dist/…zip
-pwsh -NoProfile -File tests/installer/test_installer.ps1 -Zip dist/BalatroStrategicCopilot-1.1.0-installateur.zip [-Smods <sources Steamodded>]
-tests/standalone/run_love_standalone.sh dist/BalatroStrategicCopilot-1.1.0.zip [dossier]      # mode autonome, vrai LÖVE
+pwsh -NoProfile -File tests/installer/test_installer.ps1 -Zip dist/BalatroStrategicCopilot-1.1.1-installateur.zip [-Smods <sources Steamodded>]
+tests/standalone/run_love_standalone.sh dist/BalatroStrategicCopilot-1.1.1.zip [dossier]      # mode autonome, vrai LÖVE
 luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai chargeur Steamodded
 ```
 
@@ -40,6 +40,7 @@ luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai
 | `unit/test_persistence` | 8 | aller-retour, **écriture interrompue** (A/B), corruption détectée par somme de contrôle, migration avec sauvegarde, schéma futur jamais écrasé, export/import, rotation des logs, fichiers jamais exécutés |
 | `unit/test_adapt` | 4 | **1.0.9** : un changement n'est essayé qu'après une cause qui revient (pas après une seule défaite, jamais pour « main sous la mise » / « décrochage », 3 parties enregistrées), un seul essai à la fois, partie comptée une fois, partie abandonnée ignorée ; essai gardé si les 3 parties suivantes ne sont pas moins bonnes, annulé sinon (retour à `config.lua`, cause mise de côté) ; bornes ; réglages appliqués aux conseils, aux passages et à l'urgence des ×Mult du plan ; texte du bilan avec le verdict |
 | `unit/test_learning` | 13 | **scénarios synthétiques à vérité connue** (voir ci-dessous) ; **1.0.7** : bilan sans « malchance », causes d'une défaite (déficit, décrochage, ×Mult, argent dormant, boss, marge), causes retenues pour le plan |
+| `unit/test_journal` | 6 | **1.1.1** journal des parties : début de partie (deck, mise, graine, mode), choix de blinde avec les tags, blinde passée avec son tag et le conseil de cet état ; début de blinde (taille, mains, jokers, niveaux), main jouée (type trouvé depuis les cartes, cartes gardées avec leurs améliorations) puis son score, défausse, blinde gagnée ; boutique (rareté, édition, planète et sa main, prix, relance), avis et notes du copilote, achat avec sa note et le conseil, relance, vente d'un éternel, conseil d'un autre état jamais écrit, boutique non répétée après un achat, nouvelles offres après une relance, départ ; paquet (contenu, main distribuée, carte prise sur la carte visée, effet 2♥ → 3♥ lu sur le deck, paquet passé) ; consommables (argent de The Hermit, niveau d'une planète), victoire, défaite ; taille bornée (ancien fichier gardé), écrit par le runtime, jamais avec `journal = false` |
 | `unit/test_recorder` | 3 | manche complète journalisée, fin de partie, abandon détecté |
 | `unit/test_format` | 7 | pourcentages, classes + symboles, méthode et confiance affichées, couverture partielle, panneau boutique, traduction anglaise, **effets des cartes et autocollants affichés** |
 | `integration/test_mod_load` | 8 | `main.lua` réellement chargé via un faux Steamodded : accroches, touches (5 : X depuis 1.0.12, O depuis 1.0.14), onglet de config, **première recommandation réelle**, rendu, sélection notée exactement, `calculate` renvoie toujours `nil`, robustesse à un état cassé, **aucune action de jeu appelée** (fonctions piégées), rafraîchissement du panneau |
@@ -50,7 +51,7 @@ luajit tools/smods_loader_check.lua <sources Steamodded> <dossier Mods>   # vrai
 | `integration/test_steps_ui` | 5 | étiquette sur le bouton « blinde suivante », bouton absent : étape gardée en texte et boutons vus écrits au journal, étiquette « passer » sur la colonne de la blinde en cours, numéros d'ordre sous les jokers puis disparition une fois l'ordre corrigé, **The House** toutes cartes cachées (plus de « Aucune analyse disponible ») |
 | `integration/test_full_flow` | 2 | partie complète (main → défaite → bilan → fichiers → **redémarrage avec profil conservé**), boutique de bout en bout avec badges |
 | `unit/test_performance` | 6 | mesures (ci-dessous) |
-| **Total** | **292** | |
+| **Total** | **298** | |
 
 ### Tests de référence (scores)
 
@@ -84,12 +85,12 @@ prédiction (journal + diagnostic de compatibilité).
 * idempotence, croissance, contributions, multiplicateur inconnu à peine modifié par 1 observation ;
 * profil sauvegardé puis rechargé par une nouvelle instance (« redémarrage ») : statistiques intactes.
 
-## Résultats obtenus (2026-11-05, version 1.1.0)
+## Résultats obtenus (2026-11-08, version 1.1.1)
 
 | Environnement | Résultat |
 |---|---|
-| LuaJIT 2.1.1703358377 | **292 réussis, 0 échec** |
-| Lua 5.1.5 | **292 réussis, 0 échec** |
+| LuaJIT 2.1.1703358377 | **298 réussis, 0 échec** |
+| Lua 5.1.5 | **298 réussis, 0 échec** |
 | Mode autonome sur le **vrai LÖVE 11.5**, exécutable fusionné comme `Balatro.exe` (ci-dessous) | **5 scénarios conformes** |
 | Installateur extrait de `…-1.0.8-installateur.zip`, PowerShell 7.4 (Linux) | **9 scénarios, 53 vérifications réussies** |
 | Installateur, analyse statique de compatibilité Windows PowerShell 5.1 (PSScriptAnalyzer 1.25, profil Windows 10 / PS 5.1) | **0 erreur de syntaxe, 0 incompatibilité** |
@@ -99,11 +100,11 @@ prédiction (journal + diagnostic de compatibilité).
 Le script construit un **exécutable fusionné** (binaire LÖVE 11.5 + archive d'un Balatro simulé
 contenant `conf.lua` et `main.lua`), exactement comme `Balatro.exe`, puis le lance sous Xvfb avec
 différents dossiers de sauvegarde (l'équivalent de `%AppData%\Balatro`) remplis depuis l'archive
-`BalatroStrategicCopilot-1.1.0.zip`. Résultats (2026-11-05, paquet 1.1.0) :
+`BalatroStrategicCopilot-1.1.1.zip`. Résultats (2026-11-08, paquet 1.1.1) :
 
 | Scénario | Résultat |
 |---|---|
-| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.1.0 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 377) ; panneau et badges « JOUER » affichés (capture) |
+| amorce + mod copiés | l'amorce est lue **à la place** du `main.lua` du jeu ; le `main.lua` d'origine est exécuté **une seule fois** ; copilote démarré en mode autonome (« 1.1.1 actif … mode autonome ») ; touche C : panneau ouvert ; C pendant une saisie : ignorée ; analyse terminée (image 282) ; journal `BSC/journal_parties.txt` écrit par le vrai `love.filesystem` (début de partie, blinde, jokers) ; panneau et badges « JOUER » affichés (capture) |
 | mod seul, sans amorce | jeu normal, pas de copilote (témoin) |
 | amorce sans le dossier du mod | jeu normal jusqu'au bout ; bandeau rouge « dossier introuvable » ; erreur dans `amorce.log` |
 | Steamodded a déjà chargé le copilote | l'amorce se retire (« Steamodded gère déjà le copilote »), pas de double chargement |
@@ -133,8 +134,8 @@ exécute l'installateur **extrait de l'archive réelle**, puis contrôle le rés
 
 Les dossiers `Mods` produits par S1, S4, S5, S7 et S9 sont ensuite passés aux **deux vrais
 chargeurs** de Steamodded (ci-dessous) : copilote trouvé, activé, bandeau « 1.0.3 actif » dans
-chaque cas. Paquet 1.1.0 (2026-11-05) : **53 vérifications réussies, 0 échec** ; S1, S4, S5 et S9
-passés aux deux chargeurs (0509c et récent) : bandeau « 1.1.0 actif » dans les 8 cas.
+chaque cas. Paquet 1.1.1 (2026-11-08) : **53 vérifications réussies, 0 échec** ; S1, S4, S5 et S9
+passés aux deux chargeurs (0509c et récent) : bandeau « 1.1.1 actif » dans les 8 cas.
 
 ### Performances mesurées (LuaJIT, conteneur Linux, plusieurs exécutions)
 
@@ -196,7 +197,8 @@ décalées d'une rangée pour rester lisibles, « +335 % » dans le panneau) et 
 le joueur sélectionne Mime, touche X, 1, 1, texte tapé, Entrée : correction enregistrée, Mime +4,
 The Duo −4, ligne écrite dans `mes_choix.txt` par le vrai `love.filesystem`) et « Je joue, tu apprends »
 (1.0.14 : touche O dans la boutique, conseils et alertes masqués, achat de Hologram rapporté par le jeu
-à la place de The Duo conseillé : Hologram +2, The Duo −2, ligne « observé » dans `mes_choix.txt`) : accroches
+à la place de The Duo conseillé : Hologram +2, The Duo −2, ligne « observé » dans `mes_choix.txt` ; 1.1.1 : journal
+écrit, boutique avec notes, avis du copilote et achat de Hologram avec sa note et le conseil) : accroches
 installées, analyses terminées (28–298 images), sauvegarde/rechargement réels dans le dossier de
 sauvegarde LÖVE, **0 erreur**. Captures : `docs/img/overlay_*.png`.
 

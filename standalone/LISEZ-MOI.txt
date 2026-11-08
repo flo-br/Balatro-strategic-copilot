@@ -22,7 +22,7 @@ antivirus strict, PC restreint) qui bloquent .bat, PowerShell ou winmm.dll.
 
 3. Lancer Balatro normalement (par Steam)
    Un bandeau vert apparaît en haut de l'écran :
-     « Balatro Strategic Copilot 1.1.0 actif - touche C : panneau (mode autonome, sans Steamodded) »
+     « Balatro Strategic Copilot 1.1.1 actif - touche C : panneau (mode autonome, sans Steamodded) »
    En partie : la ligne « À FAIRE » (en haut à droite) et une étiquette au-dessus de ce qu'il
    faut toucher indiquent UNE action à faire maintenant : JOUER / DÉFAUSSER, À PRENDRE,
    À VENDRE, RELANCER, BLINDE SUIVANTE, PASSER, UTILISER (+ CIBLE). Faites-la : l'étape
@@ -42,6 +42,8 @@ antivirus strict, PC restreint) qui bloquent .bat, PowerShell ou winmm.dll.
    Touche O = « Je joue, tu apprends » : plus aucun conseil, vous jouez seul ; le copilote
    regarde ce que vous achetez, vendez, relancez ou laissez en boutique et apprend de chaque
    choix différent du sien. O à nouveau : les conseils reviennent.
+   Journal : chaque partie (boutiques, achats, paquets, mains jouées et scores) est écrite dans
+   %AppData%\Balatro\BSC\journal_parties.txt, à lire ou à envoyer.
 
 Si rien n'apparaît
    Ouvrir %AppData%\Balatro\BSC\ :
